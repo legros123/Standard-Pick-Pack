@@ -1,0 +1,1075 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Standards Pick & Pack — Rexel CLR Champigneulles</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --navy: #0A1628;
+  --navy-mid: #111D35;
+  --navy-light: #162242;
+  --teal: #0D8B8B;
+  --teal-glow: #0FB5B5;
+  --cyan: #00E5FF;
+  --white: #F0F4F8;
+  --muted: #8A9BB5;
+  --red: #CC0000;
+  --orange: #D4841A;
+  --green: #17B978;
+  --gold: #FFD700;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: 'Rajdhani', sans-serif;
+  background: var(--navy);
+  color: var(--white);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* ─── HEADER ─── */
+.header {
+  background: linear-gradient(135deg, var(--navy) 0%, var(--navy-mid) 50%, var(--navy) 100%);
+  border-bottom: 2px solid var(--teal);
+  padding: 20px 16px;
+  text-align: center;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  box-shadow: 0 4px 30px rgba(0,229,255,0.1);
+}
+
+.header h1 {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 1.1rem;
+  font-weight: 700;
+  letter-spacing: 3px;
+  color: var(--cyan);
+  text-transform: uppercase;
+}
+
+.header .subtitle {
+  font-size: 0.8rem;
+  color: var(--muted);
+  margin-top: 4px;
+  letter-spacing: 1px;
+}
+
+/* ─── NAV TABS ─── */
+.nav-tabs {
+  display: flex;
+  justify-content: center;
+  gap: 0;
+  background: var(--navy-mid);
+  border-bottom: 1px solid rgba(0,229,255,0.15);
+}
+
+.nav-tab {
+  flex: 1;
+  max-width: 200px;
+  padding: 14px 8px;
+  text-align: center;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 2px;
+  color: var(--muted);
+  cursor: pointer;
+  border-bottom: 3px solid transparent;
+  transition: all 0.3s;
+  text-transform: uppercase;
+}
+
+.nav-tab:hover { color: var(--teal-glow); }
+
+.nav-tab.active {
+  color: var(--cyan);
+  border-bottom-color: var(--cyan);
+  background: rgba(0,229,255,0.05);
+}
+
+/* ─── STANDARD LIST ─── */
+.view { display: none; }
+.view.active { display: block; }
+
+.std-list {
+  padding: 16px;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.std-card {
+  background: var(--navy-mid);
+  border: 1px solid rgba(0,229,255,0.1);
+  border-left: 4px solid var(--teal);
+  border-radius: 8px;
+  margin-bottom: 12px;
+  cursor: pointer;
+  transition: all 0.25s;
+  overflow: hidden;
+}
+
+.std-card:hover {
+  border-left-color: var(--cyan);
+  background: var(--navy-light);
+  transform: translateX(4px);
+  box-shadow: 0 4px 20px rgba(0,229,255,0.08);
+}
+
+.std-card-header {
+  display: flex;
+  align-items: center;
+  padding: 16px;
+  gap: 14px;
+}
+
+.std-badge {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.7rem;
+  font-weight: 500;
+  background: var(--teal);
+  color: var(--navy);
+  padding: 4px 10px;
+  border-radius: 4px;
+  white-space: nowrap;
+  min-width: 38px;
+  text-align: center;
+}
+
+.std-title {
+  font-size: 1rem;
+  font-weight: 600;
+  flex: 1;
+}
+
+.std-arrow {
+  color: var(--muted);
+  font-size: 1.2rem;
+  transition: transform 0.3s;
+}
+
+.std-card.open .std-arrow { transform: rotate(90deg); color: var(--cyan); }
+
+.std-content {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.4s ease;
+}
+
+.std-card.open .std-content {
+  max-height: 5000px;
+}
+
+.std-body {
+  padding: 0 16px 20px 16px;
+}
+
+.std-section {
+  margin-bottom: 16px;
+}
+
+.std-section-title {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.72rem;
+  letter-spacing: 2px;
+  color: var(--teal-glow);
+  margin-bottom: 8px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid rgba(13,139,139,0.3);
+  text-transform: uppercase;
+}
+
+.std-steps {
+  list-style: none;
+  counter-reset: step;
+}
+
+.std-steps li {
+  counter-increment: step;
+  padding: 8px 0 8px 36px;
+  position: relative;
+  font-size: 0.95rem;
+  line-height: 1.5;
+  color: rgba(240,244,248,0.9);
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+}
+
+.std-steps li::before {
+  content: counter(step);
+  position: absolute;
+  left: 0;
+  top: 8px;
+  width: 24px;
+  height: 24px;
+  background: var(--teal);
+  color: var(--navy);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.interdit-box {
+  background: rgba(204,0,0,0.12);
+  border: 1px solid rgba(204,0,0,0.4);
+  border-radius: 6px;
+  padding: 12px 14px;
+  margin-top: 4px;
+}
+
+.interdit-box .interdit-title {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.68rem;
+  color: var(--red);
+  letter-spacing: 2px;
+  margin-bottom: 6px;
+}
+
+.interdit-box ul {
+  list-style: none;
+  padding: 0;
+}
+
+.interdit-box li {
+  padding: 4px 0 4px 20px;
+  position: relative;
+  font-size: 0.9rem;
+  color: rgba(240,244,248,0.85);
+}
+
+.interdit-box li::before {
+  content: "✕";
+  position: absolute;
+  left: 0;
+  color: var(--red);
+  font-weight: 700;
+}
+
+.risk-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.risk-tag {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.68rem;
+  padding: 4px 10px;
+  border-radius: 4px;
+  letter-spacing: 0.5px;
+}
+
+.risk-critical { background: rgba(204,0,0,0.2); border: 1px solid var(--red); color: #ff6666; }
+.risk-major { background: rgba(212,132,26,0.15); border: 1px solid var(--orange); color: #f0a040; }
+
+.motto {
+  font-style: italic;
+  font-size: 0.88rem;
+  color: var(--teal-glow);
+  padding: 12px 0 0 0;
+  border-top: 1px solid rgba(13,139,139,0.2);
+  text-align: center;
+}
+
+/* ─── QUIZ ─── */
+.quiz-container {
+  padding: 16px;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.quiz-progress {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.quiz-progress-bar {
+  flex: 1;
+  height: 6px;
+  background: var(--navy-light);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.quiz-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--teal), var(--cyan));
+  border-radius: 3px;
+  transition: width 0.4s ease;
+}
+
+.quiz-progress-text {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.75rem;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.quiz-card {
+  background: var(--navy-mid);
+  border: 1px solid rgba(0,229,255,0.12);
+  border-radius: 10px;
+  padding: 24px 20px;
+  margin-bottom: 16px;
+}
+
+.quiz-std-ref {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.7rem;
+  color: var(--teal);
+  margin-bottom: 8px;
+  letter-spacing: 1px;
+}
+
+.quiz-question {
+  font-size: 1.1rem;
+  font-weight: 600;
+  line-height: 1.5;
+  margin-bottom: 20px;
+}
+
+.quiz-options {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.quiz-option {
+  background: var(--navy-light);
+  border: 2px solid rgba(255,255,255,0.08);
+  border-radius: 8px;
+  padding: 14px 16px;
+  cursor: pointer;
+  transition: all 0.25s;
+  font-size: 0.95rem;
+  line-height: 1.4;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.quiz-option:hover:not(.disabled) {
+  border-color: var(--teal);
+  background: rgba(13,139,139,0.08);
+}
+
+.quiz-option .opt-letter {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.8rem;
+  font-weight: 700;
+  min-width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.06);
+  color: var(--muted);
+  flex-shrink: 0;
+}
+
+.quiz-option.correct {
+  border-color: var(--green);
+  background: rgba(23,185,120,0.12);
+}
+
+.quiz-option.correct .opt-letter {
+  background: var(--green);
+  color: var(--navy);
+}
+
+.quiz-option.wrong {
+  border-color: var(--red);
+  background: rgba(204,0,0,0.1);
+}
+
+.quiz-option.wrong .opt-letter {
+  background: var(--red);
+  color: white;
+}
+
+.quiz-option.disabled { cursor: default; opacity: 0.7; }
+.quiz-option.disabled.correct { opacity: 1; }
+.quiz-option.disabled.wrong { opacity: 1; }
+
+.quiz-explanation {
+  margin-top: 16px;
+  padding: 14px;
+  background: rgba(13,139,139,0.08);
+  border-left: 3px solid var(--teal);
+  border-radius: 0 6px 6px 0;
+  font-size: 0.9rem;
+  color: rgba(240,244,248,0.85);
+  line-height: 1.5;
+  display: none;
+}
+
+.quiz-explanation.show { display: block; animation: fadeIn 0.3s; }
+
+.quiz-nav {
+  display: flex;
+  justify-content: center;
+  margin-top: 20px;
+}
+
+.btn {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.75rem;
+  letter-spacing: 2px;
+  padding: 12px 32px;
+  border: 2px solid var(--teal);
+  background: transparent;
+  color: var(--cyan);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.3s;
+  text-transform: uppercase;
+}
+
+.btn:hover {
+  background: var(--teal);
+  color: var(--navy);
+}
+
+.btn:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
+/* ─── RESULTS ─── */
+.quiz-results {
+  text-align: center;
+  padding: 40px 20px;
+}
+
+.results-score {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 3.5rem;
+  font-weight: 900;
+  margin: 16px 0;
+}
+
+.results-score.excellent { color: var(--green); }
+.results-score.good { color: var(--cyan); }
+.results-score.avg { color: var(--orange); }
+.results-score.poor { color: var(--red); }
+
+.results-label {
+  font-size: 1.2rem;
+  color: var(--muted);
+  margin-bottom: 8px;
+}
+
+.results-message {
+  font-size: 1.1rem;
+  margin: 16px 0 28px;
+  line-height: 1.6;
+}
+
+.results-breakdown {
+  display: flex;
+  justify-content: center;
+  gap: 24px;
+  margin-bottom: 28px;
+  flex-wrap: wrap;
+}
+
+.breakdown-item {
+  text-align: center;
+}
+
+.breakdown-num {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 1.8rem;
+  font-weight: 700;
+}
+
+.breakdown-label {
+  font-size: 0.78rem;
+  color: var(--muted);
+  letter-spacing: 1px;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ─── FOOTER ─── */
+.footer {
+  text-align: center;
+  padding: 24px 16px;
+  font-size: 0.72rem;
+  color: rgba(138,155,181,0.5);
+  letter-spacing: 1px;
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>Standards Pick & Pack</h1>
+  <div class="subtitle">CLR Champigneulles — Rexel France</div>
+</div>
+
+<div class="nav-tabs">
+  <div class="nav-tab active" onclick="switchView('standards')">Standards</div>
+  <div class="nav-tab" onclick="switchView('quiz')">Quiz</div>
+</div>
+
+<!-- ═══════ STANDARDS VIEW ═══════ -->
+<div id="view-standards" class="view active">
+  <div class="std-list" id="std-list"></div>
+</div>
+
+<!-- ═══════ QUIZ VIEW ═══════ -->
+<div id="view-quiz" class="view">
+  <div class="quiz-container" id="quiz-container"></div>
+</div>
+
+<div class="footer">STD-PP — Pick & Pack — Usage interne — 2026</div>
+
+<script>
+// ═══════════════════════════════════════
+// STANDARDS DATA
+// ═══════════════════════════════════════
+const standards = [
+  {
+    id: "P1", title: "Prise de poste",
+    steps: [
+      "S'équiper des EPI complets (chaussures de sécurité + gants de manutention)",
+      "Rejoindre la zone par l'allée piétonne — respecter le marquage au sol",
+      "Nettoyer l'EKS avec le produit mis à disposition",
+      "Contrôler l'engin : batterie, fuites, commandes — signaler tout défaut",
+      "Remplir le carnet journalier à chaque prise de poste",
+      "Se réapprovisionner en consommables"
+    ],
+    interdits: [
+      "JAMAIS sans EPI complets",
+      "JAMAIS d'engin défectueux utilisé",
+      "JAMAIS d'allée engins sans gilet haute visibilité"
+    ],
+    risks: [
+      { label: "Collision chariot → AT grave", level: "critical" },
+      { label: "Coupures / Chutes → arrêt de travail", level: "major" },
+      { label: "TMS / Mal de dos → arrêt longue durée", level: "major" }
+    ],
+    motto: "Pas d'EPI, pas de zone de travail. La sécurité commence à la prise de poste."
+  },
+  {
+    id: "P2", title: "Consommables : cartons et bacs consignés",
+    steps: [
+      "Sélectionner le bon contenant : cartons (C9–C16) ou bacs consignés (bleu foncé = MAD agences, jaune = réassort)",
+      "Remplacer immédiatement toute palette vide + défilmer",
+      "Ranger par taille, chaque référence à son emplacement",
+      "Protéger les produits : papier bulle (fragile), enveloppe + étiquette (batterie), calage (bulles), film/sachet (humidité)",
+      "Isoler les bacs HS en caisse dédiée — jamais réutiliser",
+      "Signaler les ruptures au pilote immédiatement"
+    ],
+    interdits: [
+      "JAMAIS d'emplacement vide sans action",
+      "JAMAIS réutiliser un bac détérioré",
+      "JAMAIS mélanger les références"
+    ],
+    risks: [
+      { label: "Rupture stock → arrêt prépa", level: "major" },
+      { label: "Casse produit → réclamation client", level: "major" }
+    ],
+    motto: "Palette vide non remplacée = toute l'équipe ralentie. Le bon consommable, au bon moment."
+  },
+  {
+    id: "P3", title: "Affectation & montage chariot",
+    steps: [
+      "S'affecter sur le poste informatique (menu Préparation et gestion des tournées)",
+      "Scanner le code barre de la tournée",
+      "Entrer le code opérateur + clic Affectation",
+      "Vérifier que la commande est à l'état « En cours » (F5 si nécessaire)",
+      "Monter le chariot avec les contenants indiqués (cartons/bacs) en suivant les n° de colis",
+      "Démarrer la préparation une fois le chariot terminé"
+    ],
+    interdits: [
+      "JAMAIS oublier de s'affecter",
+      "JAMAIS confondre bacs et cartons",
+      "TOUJOURS vérifier l'état « En cours »"
+    ],
+    risks: [
+      { label: "Oubli affectation → reporting faussé", level: "critical" },
+      { label: "Confusion bac/carton → mauvais destinataire", level: "critical" },
+      { label: "Mauvais n° contenant → erreur en cascade", level: "major" }
+    ],
+    motto: "Bien s'affecter, bien monter. Le chariot bien monté = une tournée sans erreur."
+  },
+  {
+    id: "P4", title: "Préparation détail",
+    steps: [
+      "Lire le talon de tournée : emplacement + 1ère étiquette colis",
+      "Lire la référence : vérifier désignation + poids produit",
+      "Lire la quantité : prélever exactement la quantité demandée",
+      "Mettre en sachet fermé avec étiquette collée",
+      "Coller l'étiquette dessus/dessous — jamais sur la référence produit",
+      "Déposer dans le colis indiqué sur l'étiquette",
+      "Ranger l'emplacement : propre, étiquette verte/rouge si vide",
+      "Adopter les bons gestes : hauteur épaules max, postures OK"
+    ],
+    interdits: [
+      "JAMAIS d'étiquette sur les pièces nues",
+      "JAMAIS d'étiquette sur la référence ou le visuel produit"
+    ],
+    risks: [
+      { label: "Erreur préparation → litige client, retour", level: "critical" },
+      { label: "Propreté allées dégradée → encombrement", level: "major" },
+      { label: "TMS / mal de dos → arrêt maladie", level: "major" }
+    ],
+    motto: "Bien lire, bien vérifier, bien prélever. La qualité se joue à chaque geste."
+  },
+  {
+    id: "P5", title: "Préparation carton",
+    steps: [
+      "Trier les BL par tournée — vérifier concordance N° BL / N° tournée",
+      "Insérer le BL en pochette « documents ci-inclus » collée sur face nue du colis",
+      "Coller l'étiquette d'expédition : visible, lisible, sur faces nues du carton",
+      "Contrôler avant expédition : BL présent + bon client + étiquette conforme"
+    ],
+    interdits: [
+      "JAMAIS d'étiquette sur la référence ou le visuel produit",
+      "JAMAIS de BL inversé (violation RGPD : données client exposées)",
+      "JAMAIS de BL manquant"
+    ],
+    risks: [
+      { label: "BL inversé → données clients exposées (RGPD)", level: "critical" },
+      { label: "Erreur concordance → colis au mauvais client", level: "critical" },
+      { label: "BL manquant → litige commercial", level: "major" }
+    ],
+    motto: "Un BL inversé = des données clients exposées. Chaque vérification compte."
+  },
+  {
+    id: "P6", title: "Préparation rétract",
+    steps: [
+      "Prendre le rétract N°96 (zone pick, bout allée 21)",
+      "Préparer les colis sur convoyeur pour prépa détail",
+      "Chercher les produits aux emplacements → dans les cartons",
+      "S'affecter et envoyer : étiquette à l'avant, convoyeur",
+      "Contrôler la palette : produits sécurisés, palette en bon état",
+      "Gerber en sécurité : distance 1,5× mât, zéro piéton/engin",
+      "Remettre le rétract dans sa zone, commandes terminées"
+    ],
+    interdits: [
+      "JAMAIS de piétons dans le périmètre de gerbage",
+      "JAMAIS d'engins dans la zone pendant le gerbage",
+      "TOUJOURS laisser dépasser le sabot de la lisse (50 mm)"
+    ],
+    risks: [
+      { label: "Chute d'objets → AT grave, casse", level: "critical" },
+      { label: "Collision engin/piéton → blessure grave", level: "critical" },
+      { label: "Désorganisation zone → perte de temps", level: "major" }
+    ],
+    motto: "La sécurité au gerbage n'est pas une option. Chaque palette sécurisée protège l'équipe."
+  },
+  {
+    id: "P7", title: "Changement de contenants",
+    steps: [
+      "Identifier le problème : colis inadapté (trop petit / trop grand)",
+      "Choisir la méthode : Informatique ou Flasheur",
+      "Changer le contenant (mise à jour système automatique)",
+      "Vérifier et envoyer : carton fermé, taille OK → convoyeur"
+    ],
+    interdits: [
+      "JAMAIS envoyer de cartons mal fermés",
+      "TOUJOURS prendre une taille de carton adaptée"
+    ],
+    risks: [
+      { label: "Rejet pondéral → taille non mise à jour", level: "major" },
+      { label: "Insatisfaction client → contenant inadapté", level: "major" }
+    ],
+    motto: "Un contenant adapté = un colis conforme. Le bon carton dès le départ."
+  },
+  {
+    id: "P8", title: "Ruptures et validation",
+    steps: [
+      "Pas de rupture → envoyer directement sur le convoyeur, valider au scan code opérateur",
+      "Rupture détectée : scanner le produit (code barre → écran Validation)",
+      "Accéder à F5 → étiquette tournée → commande",
+      "Saisir la quantité réelle dans la case « Réel »",
+      "Envoyer en case rupture",
+      "Saisir le motif : Manquant / Incomplet / Mauvaise réf.",
+      "Finaliser : Prélevé → envoyer / En cours → récupérer pièces"
+    ],
+    interdits: [
+      "JAMAIS utiliser le motif « Cassé »",
+      "JAMAIS ignorer une rupture"
+    ],
+    risks: [
+      { label: "Rupture non saisie → retour colis complet", level: "critical" },
+      { label: "Écart pondéral → blocage qualité", level: "major" },
+      { label: "Double manipulation → perte de productivité", level: "major" }
+    ],
+    motto: "Pensez à faire vos ruptures. Une rupture saisie = un colis conforme."
+  },
+  {
+    id: "P9", title: "Gestion des déchets",
+    steps: [
+      "Trier chaque déchet : identifier et déposer dans le bon flux",
+      "Aplatir les cartons à plat avant la presse",
+      "Vider régulièrement — ne pas attendre le débordement",
+      "Séparer plastique / DIB (verte = plastique, bleue = papier/cerclage)",
+      "Gérer la presse : bourrage → bouton vert, zéro plastique"
+    ],
+    interdits: [
+      "JAMAIS de plastique dans la presse à carton"
+    ],
+    risks: [
+      { label: "Bourrage presse → arrêt + intervention maintenance", level: "critical" },
+      { label: "Débordement poubelles → encombrement", level: "major" },
+      { label: "Mélange de flux → non-conformité tri", level: "major" }
+    ],
+    motto: "Un déchet bien trié = un poste propre, sûr et efficace. Le tri commence à mon poste."
+  },
+  {
+    id: "P10", title: "Aérosol / Batterie",
+    steps: [
+      "Aérosol : caler avec air-push avant fermeture",
+      "C16 aérosol : scotcher en complément du calage",
+      "Refermer les portes de stockage après chaque prélèvement",
+      "Batterie : emballer individuellement dans enveloppe bulle — sans exception",
+      "Étiqueter « DANGER BATTERIE » sur face visible, toujours lisible",
+      "Signaler toute anomalie (batterie non protégée) → alerter le Superviseur"
+    ],
+    interdits: [
+      "JAMAIS d'aérosol non calé dans un colis",
+      "JAMAIS de batterie non emballée individuellement",
+      "JAMAIS de porte de stockage laissée ouverte"
+    ],
+    risks: [
+      { label: "Ouverture contenant sur convoyeur → casse, pollution", level: "major" },
+      { label: "Départ de feu → incendie, blessure, arrêt exploitation", level: "critical" }
+    ],
+    motto: "Un aérosol non calé, une batterie non protégée = un incident évitable."
+  },
+  {
+    id: "P11", title: "Fin de poste",
+    steps: [
+      "Ranger le poste + zone : dégagé, outils remis en place",
+      "Nettoyer l'EKS + surfaces avec produit fourni, vider la poubelle",
+      "Contrôler l'engin : fuites, batterie, état général — changer batterie si nécessaire",
+      "Remplir le carnet journalier : heures compteur + signalements",
+      "Restituer les flasheurs au point de collecte — zéro oubli",
+      "Terminer sa commande en cours avant de quitter"
+    ],
+    interdits: [
+      "JAMAIS quitter sans rangement",
+      "JAMAIS de batterie déchargée laissée",
+      "JAMAIS d'allée encombrée"
+    ],
+    risks: [
+      { label: "Chute opérateur → AT grave (allée encombrée)", level: "critical" },
+      { label: "Flasheur perdu → perte de temps / coût", level: "major" },
+      { label: "Engin non chargé → blocage équipe suivante", level: "major" }
+    ],
+    motto: "Une zone propre en fin de poste = une équipe suivante efficace. Chaque minute compte."
+  },
+  {
+    id: "P12", title: "Circulation & sécurité dans le CLR",
+    steps: [
+      "Respecter les STOP : arrêt complet en fin d'allée, vérifier gauche et droite",
+      "Suivre le sens de circulation : marquage au sol, jamais à contresens",
+      "Vérifier son engin : freins, klaxon, feux, fourches — signaler toute anomalie",
+      "Conduire uniquement avec autorisation valide et à jour",
+      "Céder la priorité au piéton — ralentir aux croisements",
+      "S'annoncer derrière : klaxon ou signal vocal, ne jamais surprendre",
+      "Éviter la marche arrière abusive — vérifier derrière soi",
+      "Abaisser le poste (fourches/nacelle) avant tout déplacement"
+    ],
+    interdits: [
+      "JAMAIS franchir un STOP sans arrêt complet",
+      "JAMAIS conduire sans autorisation valide",
+      "JAMAIS se déplacer poste en hauteur"
+    ],
+    risks: [
+      { label: "Collision engin/piéton → blessure grave, décès", level: "critical" },
+      { label: "Collision entre engins → dégâts, arrêt exploitation", level: "critical" },
+      { label: "Chute de charge en hauteur → blessure, casse", level: "major" },
+      { label: "Renversement d'engin → accident corporel grave", level: "critical" }
+    ],
+    motto: "STOP respecté, sens suivi, piéton protégé. La sécurité se joue à chaque déplacement."
+  },
+  {
+    id: "P13", title: "Préparation monolignes",
+    steps: [
+      "Prendre le lot d'étiquettes d'expédition — compter (15–45)",
+      "Lire l'étiquette d'expédition : réf. article + quantité (=1) + destination — seule étiquette",
+      "Prélever exactement 1 article par étiquette — vérifier désignation + poids",
+      "Placer dans un C16 vide et propre — 1 seul article par C16",
+      "Coller l'étiquette d'expédition sur le C16, code-barres non plié",
+      "Contrôler la correspondance article = étiquette — un doute → ouvrir et vérifier",
+      "Ranger l'emplacement après prélèvement"
+    ],
+    interdits: [
+      "JAMAIS 2 articles dans le même C16",
+      "JAMAIS intervertir les étiquettes d'expédition",
+      "JAMAIS coller sans vérifier la correspondance"
+    ],
+    risks: [
+      { label: "Doublon dans un C16 → double litige client", level: "critical" },
+      { label: "Inversion d'étiquettes → retour + réexpédition", level: "critical" },
+      { label: "Erreur de référence → litige, coût reprise", level: "major" },
+      { label: "Volume sous-estimé → colis manquant", level: "major" }
+    ],
+    motto: "1 étiquette, 1 article, 1 C16. La rigueur monoligne, c'est zéro mélange."
+  }
+];
+
+// ═══════════════════════════════════════
+// QUIZ DATA
+// ═══════════════════════════════════════
+const quizData = [
+  {
+    std: "P1", question: "Que doit faire un opérateur si son engin présente un défaut lors du contrôle de prise de poste ?",
+    options: ["L'utiliser quand même en faisant attention", "Le signaler immédiatement et ne pas l'utiliser", "Attendre la fin de poste pour signaler", "Demander à un collègue de vérifier"],
+    correct: 1,
+    explanation: "Tout défaut constaté doit être signalé immédiatement. Un engin défectueux ne doit JAMAIS être utilisé (Standard P1 — Interdit)."
+  },
+  {
+    std: "P2", question: "Quand un opérateur prend le dernier carton d'une palette, que doit-il faire ?",
+    options: ["Continuer et prévenir plus tard", "Remplacer immédiatement la palette vide et la défilmer", "Attendre que le pilote s'en charge", "Mettre une étiquette « vide » dessus"],
+    correct: 1,
+    explanation: "Dernier carton/bac pris = nouvelle palette immédiatement. Une palette vide non remplacée ralentit toute l'équipe (Standard P2)."
+  },
+  {
+    std: "P3", question: "Quelle est la conséquence directe d'une confusion entre bacs consignés et cartons d'expédition ?",
+    options: ["Rejet pondéral au convoyeur", "Le colis est envoyé au mauvais destinataire", "Ralentissement de la tournée", "Erreur sans conséquence"],
+    correct: 1,
+    explanation: "Les bacs bleus sont pour les agences (MAD), les cartons pour les clients. Une confusion = mauvais destinataire (Standard P3 — Risque critique)."
+  },
+  {
+    std: "P4", question: "Où ne faut-il JAMAIS coller une étiquette de prélèvement ?",
+    options: ["Sur le dessus du sachet", "Sur le dessous du colis", "Sur la référence ou le visuel du produit", "Sur le côté du carton"],
+    correct: 2,
+    explanation: "L'étiquette ne doit JAMAIS être collée sur la référence ou le visuel produit — cela empêche l'identification et génère des retours (Standard P4 — Interdit)."
+  },
+  {
+    std: "P5", question: "Pourquoi un BL (Bon de Livraison) inversé est-il considéré comme une erreur critique ?",
+    options: ["Il ralentit le convoyeur", "Il expose les données d'un autre client (violation RGPD)", "Il provoque un rejet pondéral", "Il empêche la lecture du code-barres"],
+    correct: 1,
+    explanation: "Un BL inversé envoie les données personnelles d'un client à un autre — c'est une violation RGPD avec des conséquences légales (Standard P5 — Risque critique)."
+  },
+  {
+    std: "P6", question: "Quelle distance de sécurité faut-il respecter lors du gerbage avec le rétract ?",
+    options: ["1 mètre autour du rétract", "1,5 fois la hauteur du mât, zéro piéton/engin", "3 mètres dans toutes les directions", "Aucune distance spécifique"],
+    correct: 1,
+    explanation: "La distance de sécurité est de 1,5× la hauteur du mât, et il faut zéro piéton et zéro engin dans le périmètre de gerbage (Standard P6)."
+  },
+  {
+    std: "P7", question: "Quelles sont les deux méthodes disponibles pour changer un contenant ?",
+    options: ["Téléphone + email au superviseur", "Informatique (poste) ou Flasheur (scan)", "Demande pilote + bon papier", "SAP + formulaire qualité"],
+    correct: 1,
+    explanation: "Deux méthodes : Informatique (via le poste) ou Flasheur (scanner le colis puis le carton adapté). Les deux mettent à jour le système automatiquement (Standard P7)."
+  },
+  {
+    std: "P8", question: "Quel motif est INTERDIT lors de la saisie d'une rupture ?",
+    options: ["Manquant", "Incomplet", "Cassé", "Mauvaise référence"],
+    correct: 2,
+    explanation: "Le motif « Cassé » ne doit JAMAIS être utilisé. Les seuls motifs autorisés sont : Manquant, Incomplet, Mauvaise référence (Standard P8 — Interdit)."
+  },
+  {
+    std: "P9", question: "Que se passe-t-il si du plastique est mis dans la presse à carton ?",
+    options: ["Rien, la presse trie automatiquement", "Bourrage de la presse → arrêt + intervention maintenance", "Le plastique est compacté normalement", "Alerte sonore mais pas de dommage"],
+    correct: 1,
+    explanation: "Du plastique dans la presse provoque un bourrage, l'arrêt de la presse et nécessite une intervention maintenance. C'est un INTERDIT ABSOLU (Standard P9)."
+  },
+  {
+    std: "P10", question: "Comment doit être traitée chaque batterie avant expédition ?",
+    options: ["Mise directement dans le carton avec du calage", "Emballée individuellement dans une enveloppe bulle + étiquette DANGER BATTERIE", "Entourée de film plastique", "Placée dans un sachet avec étiquette standard"],
+    correct: 1,
+    explanation: "Chaque batterie doit être emballée individuellement dans une enveloppe bulle, puis une étiquette DANGER BATTERIE doit être apposée sur la face visible (Standard P10)."
+  },
+  {
+    std: "P11", question: "Peut-on quitter son poste si la commande en cours n'est pas terminée ?",
+    options: ["Oui, l'équipe suivante la reprend", "Non, il faut TOUJOURS terminer sa commande avant de quitter", "Oui, si on prévient le pilote", "Oui, en fin de dernière vague uniquement"],
+    correct: 1,
+    explanation: "Un opérateur ne doit JAMAIS quitter son poste sans terminer sa commande en cours. C'est une règle obligatoire de fin de poste (Standard P11)."
+  },
+  {
+    std: "P12", question: "Quelles sont les 3 actions obligatoires à chaque STOP en fin d'allée ?",
+    options: ["Ralentir, klaxonner, passer", "Arrêt complet, vérifier gauche, vérifier droite", "Klaxonner 2 fois et avancer", "Clignotant, ralentir, passer si dégagé"],
+    correct: 1,
+    explanation: "À chaque STOP : arrêt COMPLET (pas un ralentissement), puis vérifier à gauche ET à droite avant de s'engager (Standard P12)."
+  },
+  {
+    std: "P13", question: "Combien d'articles peut contenir un C16 en préparation monoligne ?",
+    options: ["2 maximum si même référence", "Autant que possible pour optimiser", "1 seul article par C16, sans exception", "Dépend de la taille du produit"],
+    correct: 2,
+    explanation: "En monoligne : 1 étiquette = 1 article = 1 C16. JAMAIS 2 articles dans le même C16. Un doublon = double litige client (Standard P13 — Interdit)."
+  }
+];
+
+// ═══════════════════════════════════════
+// RENDER STANDARDS
+// ═══════════════════════════════════════
+function renderStandards() {
+  const container = document.getElementById('std-list');
+  container.innerHTML = standards.map((s, i) => `
+    <div class="std-card" onclick="toggleCard(this)">
+      <div class="std-card-header">
+        <span class="std-badge">${s.id}</span>
+        <span class="std-title">${s.title}</span>
+        <span class="std-arrow">›</span>
+      </div>
+      <div class="std-content">
+        <div class="std-body">
+          <div class="std-section">
+            <div class="std-section-title">Gestes obligatoires</div>
+            <ol class="std-steps">
+              ${s.steps.map(st => `<li>${st}</li>`).join('')}
+            </ol>
+          </div>
+          <div class="std-section">
+            <div class="interdit-box">
+              <div class="interdit-title">INTERDITS</div>
+              <ul>${s.interdits.map(it => `<li>${it}</li>`).join('')}</ul>
+            </div>
+          </div>
+          <div class="std-section">
+            <div class="std-section-title">Risques</div>
+            <div class="risk-tags">
+              ${s.risks.map(r => `<span class="risk-tag risk-${r.level}">${r.label}</span>`).join('')}
+            </div>
+          </div>
+          <div class="motto">« ${s.motto} »</div>
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function toggleCard(card) {
+  card.classList.toggle('open');
+}
+
+// ═══════════════════════════════════════
+// QUIZ ENGINE
+// ═══════════════════════════════════════
+let currentQ = 0;
+let score = 0;
+let answered = new Array(quizData.length).fill(false);
+let userAnswers = new Array(quizData.length).fill(-1);
+
+function renderQuiz() {
+  const container = document.getElementById('quiz-container');
+  
+  if (currentQ >= quizData.length) {
+    renderResults();
+    return;
+  }
+
+  const q = quizData[currentQ];
+  const pct = ((currentQ) / quizData.length * 100).toFixed(0);
+  const letters = ['A', 'B', 'C', 'D'];
+  
+  container.innerHTML = `
+    <div class="quiz-progress">
+      <div class="quiz-progress-bar"><div class="quiz-progress-fill" style="width:${pct}%"></div></div>
+      <div class="quiz-progress-text">${currentQ + 1}/${quizData.length}</div>
+    </div>
+    <div class="quiz-card">
+      <div class="quiz-std-ref">STANDARD ${q.std}</div>
+      <div class="quiz-question">${q.question}</div>
+      <div class="quiz-options">
+        ${q.options.map((opt, i) => `
+          <div class="quiz-option ${answered[currentQ] ? 'disabled' : ''} ${answered[currentQ] && i === q.correct ? 'correct' : ''} ${answered[currentQ] && userAnswers[currentQ] === i && i !== q.correct ? 'wrong' : ''}" 
+               onclick="selectAnswer(${i})">
+            <span class="opt-letter">${letters[i]}</span>
+            <span>${opt}</span>
+          </div>
+        `).join('')}
+      </div>
+      <div class="quiz-explanation ${answered[currentQ] ? 'show' : ''}" id="explanation">
+        ${q.explanation}
+      </div>
+    </div>
+    <div class="quiz-nav">
+      ${answered[currentQ] ? `<button class="btn" onclick="nextQuestion()">${currentQ < quizData.length - 1 ? 'Question suivante ▸' : 'Voir le résultat ▸'}</button>` : ''}
+    </div>
+  `;
+}
+
+function selectAnswer(idx) {
+  if (answered[currentQ]) return;
+  answered[currentQ] = true;
+  userAnswers[currentQ] = idx;
+  if (idx === quizData[currentQ].correct) score++;
+  renderQuiz();
+}
+
+function nextQuestion() {
+  currentQ++;
+  renderQuiz();
+}
+
+function renderResults() {
+  const container = document.getElementById('quiz-container');
+  const pct = Math.round(score / quizData.length * 100);
+  let cls = 'poor', msg = '';
+  if (pct >= 85) { cls = 'excellent'; msg = 'Excellent ! Tu maîtrises les standards. Continue comme ça.'; }
+  else if (pct >= 70) { cls = 'good'; msg = 'Bon niveau. Quelques standards à revoir pour être au top.'; }
+  else if (pct >= 50) { cls = 'avg'; msg = 'Des bases, mais il faut renforcer ta connaissance des standards.'; }
+  else { msg = 'Il est important de revoir les standards en profondeur. Demande une formation.'; }
+
+  container.innerHTML = `
+    <div class="quiz-results">
+      <div class="results-label">TON SCORE</div>
+      <div class="results-score ${cls}">${pct}%</div>
+      <div class="results-breakdown">
+        <div class="breakdown-item">
+          <div class="breakdown-num" style="color:var(--green)">${score}</div>
+          <div class="breakdown-label">CORRECT${score > 1 ? 'ES' : 'E'}</div>
+        </div>
+        <div class="breakdown-item">
+          <div class="breakdown-num" style="color:var(--red)">${quizData.length - score}</div>
+          <div class="breakdown-label">ERREUR${quizData.length - score > 1 ? 'S' : ''}</div>
+        </div>
+        <div class="breakdown-item">
+          <div class="breakdown-num" style="color:var(--cyan)">${quizData.length}</div>
+          <div class="breakdown-label">QUESTIONS</div>
+        </div>
+      </div>
+      <div class="results-message">${msg}</div>
+      <button class="btn" onclick="resetQuiz()">Recommencer le quiz</button>
+    </div>
+  `;
+}
+
+function resetQuiz() {
+  currentQ = 0;
+  score = 0;
+  answered = new Array(quizData.length).fill(false);
+  userAnswers = new Array(quizData.length).fill(-1);
+  renderQuiz();
+}
+
+// ═══════════════════════════════════════
+// NAV
+// ═══════════════════════════════════════
+function switchView(view) {
+  document.querySelectorAll('.nav-tab').forEach((t, i) => {
+    t.classList.toggle('active', (view === 'standards' && i === 0) || (view === 'quiz' && i === 1));
+  });
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.getElementById('view-' + view).classList.add('active');
+  if (view === 'quiz') renderQuiz();
+}
+
+// INIT
+renderStandards();
+</script>
+</body>
+</html>
