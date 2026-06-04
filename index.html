@@ -1,0 +1,979 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#0F1A2E">
+<title>Standards Pick & Pack — Rexel France</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg-primary: #0F1A2E;
+  --bg-card: #162038;
+  --bg-card-hover: #1A2744;
+  --bg-surface: #1E2D4A;
+  --bg-input: #0B1220;
+  --text-primary: #E8ECF1;
+  --text-secondary: #8B9BB8;
+  --text-muted: #5A6B87;
+  --accent: #1A9E9E;
+  --accent-light: #22C4C4;
+  --accent-bg: rgba(26,158,158,0.10);
+  --accent-border: rgba(26,158,158,0.25);
+  --red: #D93025;
+  --red-bg: rgba(217,48,37,0.10);
+  --red-border: rgba(217,48,37,0.35);
+  --orange: #E8850C;
+  --orange-bg: rgba(232,133,12,0.10);
+  --orange-border: rgba(232,133,12,0.35);
+  --green: #1E8E3E;
+  --green-bg: rgba(30,142,62,0.10);
+  --green-light: #34D058;
+  --gold: #F0B429;
+  --gold-bg: rgba(240,180,41,0.12);
+  --purple: #8B7CF0;
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --space-xs: 6px;
+  --space-sm: 10px;
+  --space-md: 16px;
+  --space-lg: 24px;
+  --space-xl: 32px;
+  --shadow-card: 0 1px 3px rgba(0,0,0,0.3), 0 4px 12px rgba(0,0,0,0.15);
+  --font-body: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono: 'IBM Plex Mono', 'SF Mono', monospace;
+}
+* { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+html { font-size:16px; scroll-behavior:smooth; }
+body { font-family:var(--font-body); background:var(--bg-primary); color:var(--text-primary); min-height:100vh; min-height:100dvh; overflow-x:hidden; -webkit-font-smoothing:antialiased; }
+
+/* ===== CINEMATIC SPLASH ===== */
+.splash { position:fixed; inset:0; z-index:1000; background:radial-gradient(circle at 50% 40%, #1A2744 0%, #0F1A2E 60%, #070D18 100%); display:flex; flex-direction:column; align-items:center; justify-content:center; transition:opacity 0.6s ease, visibility 0.6s; overflow:hidden; }
+.splash.hide { opacity:0; visibility:hidden; pointer-events:none; }
+.splash::before { content:''; position:absolute; width:160%; height:160%; background:conic-gradient(from 0deg, transparent, rgba(26,158,158,0.06), transparent 30%); animation:splashSpin 8s linear infinite; }
+@keyframes splashSpin { to{transform:rotate(360deg)} }
+.splash-logo { width:88px; height:88px; border-radius:22px; background:linear-gradient(135deg, var(--accent) 0%, var(--accent-light) 100%); display:flex; align-items:center; justify-content:center; font-family:var(--font-mono); font-weight:600; font-size:1.4rem; color:var(--bg-primary); letter-spacing:1px; position:relative; z-index:2; box-shadow:0 0 60px rgba(26,158,158,0.5); animation:logoIn 0.8s cubic-bezier(.2,.8,.2,1) both; }
+@keyframes logoIn { from{transform:scale(0.4) translateY(20px);opacity:0} to{transform:scale(1) translateY(0);opacity:1} }
+.splash-title { font-size:1.35rem; font-weight:800; margin-top:24px; letter-spacing:0.3px; z-index:2; animation:fadeUp 0.7s ease 0.3s both; }
+.splash-sub { font-family:var(--font-mono); font-size:0.66rem; color:var(--accent-light); letter-spacing:2px; text-transform:uppercase; margin-top:8px; z-index:2; animation:fadeUp 0.7s ease 0.45s both; }
+.splash-bar { width:140px; height:3px; background:rgba(255,255,255,0.08); border-radius:2px; margin-top:32px; overflow:hidden; z-index:2; animation:fadeUp 0.7s ease 0.6s both; }
+.splash-bar-fill { height:100%; width:0; background:linear-gradient(90deg, var(--accent), var(--accent-light)); animation:loadBar 1.6s ease 0.5s forwards; }
+@keyframes loadBar { to{width:100%} }
+@keyframes fadeUp { from{opacity:0;transform:translateY(14px)} to{opacity:1;transform:translateY(0)} }
+
+/* HEADER */
+.header { position:sticky; top:0; z-index:200; background:rgba(15,26,46,0.85); backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px); border-bottom:1px solid rgba(26,158,158,0.15); padding:12px 16px 11px; }
+.header-top { display:flex; align-items:center; justify-content:space-between; }
+.header-brand { display:flex; align-items:center; gap:10px; }
+.header-logo { width:36px; height:36px; border-radius:var(--radius-sm); background:linear-gradient(135deg,var(--accent),var(--accent-light)); display:flex; align-items:center; justify-content:center; font-family:var(--font-mono); font-weight:600; font-size:0.65rem; color:var(--bg-primary); letter-spacing:0.5px; line-height:1; }
+.header-text h1 { font-size:0.95rem; font-weight:700; letter-spacing:0.3px; }
+.header-text .site-tag { font-family:var(--font-mono); font-size:0.62rem; color:var(--text-secondary); letter-spacing:0.5px; margin-top:1px; }
+.header-xp { display:flex; align-items:center; gap:7px; background:var(--gold-bg); border:1px solid rgba(240,180,41,0.3); padding:5px 10px; border-radius:99px; cursor:pointer; }
+.header-xp-lvl { font-family:var(--font-mono); font-size:0.6rem; font-weight:600; color:var(--gold); }
+.header-xp-star { font-size:0.7rem; }
+
+/* BOTTOM NAV */
+.bottom-nav { position:fixed; bottom:0; left:0; right:0; z-index:200; background:rgba(15,26,46,0.9); backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px); border-top:1px solid rgba(255,255,255,0.06); display:flex; padding:6px 0 max(6px, env(safe-area-inset-bottom)); }
+.nav-item { flex:1; display:flex; flex-direction:column; align-items:center; gap:2px; padding:6px 4px; cursor:pointer; border:none; background:none; color:var(--text-muted); transition:color 0.2s; font-family:var(--font-body); position:relative; }
+.nav-item.active { color:var(--accent-light); }
+.nav-item.active::before { content:''; position:absolute; top:0; width:24px; height:3px; border-radius:2px; background:var(--accent-light); }
+.nav-item svg { width:22px; height:22px; }
+.nav-item span { font-size:0.58rem; font-weight:600; letter-spacing:0.5px; text-transform:uppercase; }
+
+/* MAIN */
+.main { padding-bottom:calc(68px + env(safe-area-inset-bottom)); }
+.view { display:none; }
+.view.active { display:block; animation:viewIn 0.3s ease; }
+@keyframes viewIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+.section-pad { padding:var(--space-md); max-width:640px; margin:0 auto; }
+
+/* HERO */
+.hero-banner { margin:var(--space-md) var(--space-md) 0; max-width:640px; margin-left:auto; margin-right:auto; background:linear-gradient(135deg, var(--bg-card) 0%, var(--bg-surface) 100%); border:1px solid var(--accent-border); border-radius:var(--radius-lg); padding:var(--space-lg) var(--space-md); position:relative; overflow:hidden; }
+.hero-banner::before { content:''; position:absolute; top:-40px; right:-40px; width:140px; height:140px; border-radius:50%; background:radial-gradient(circle, rgba(26,158,158,0.16) 0%, transparent 70%); animation:pulseGlow 4s ease-in-out infinite; }
+@keyframes pulseGlow { 0%,100%{opacity:0.6;transform:scale(1)} 50%{opacity:1;transform:scale(1.15)} }
+.hero-banner h2 { font-size:1.2rem; font-weight:800; margin-bottom:6px; line-height:1.3; }
+.hero-banner p { font-size:0.82rem; color:var(--text-secondary); line-height:1.5; }
+.hero-stats { display:grid; grid-template-columns:repeat(3,1fr); gap:var(--space-sm); margin-top:var(--space-md); }
+.hero-stat { text-align:center; padding:var(--space-sm); background:rgba(0,0,0,0.2); border-radius:var(--radius-sm); }
+.hero-stat-num { font-family:var(--font-mono); font-size:1.4rem; font-weight:600; color:var(--accent-light); }
+.hero-stat-label { font-size:0.62rem; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.5px; margin-top:2px; }
+
+/* ===== LEVEL CARD (gamification) ===== */
+.level-card { margin-top:var(--space-md); background:linear-gradient(135deg, rgba(240,180,41,0.08), rgba(139,124,240,0.06)); border:1px solid rgba(240,180,41,0.22); border-radius:var(--radius-lg); padding:var(--space-md); position:relative; overflow:hidden; }
+.level-top { display:flex; align-items:center; gap:14px; }
+.level-medal { width:54px; height:54px; border-radius:50%; background:linear-gradient(135deg,var(--gold),#E8850C); display:flex; align-items:center; justify-content:center; font-size:1.6rem; flex-shrink:0; box-shadow:0 0 24px rgba(240,180,41,0.35); }
+.level-info { flex:1; min-width:0; }
+.level-name { font-size:1rem; font-weight:800; }
+.level-rank { font-size:0.66rem; color:var(--gold); font-family:var(--font-mono); text-transform:uppercase; letter-spacing:1px; }
+.level-xp-num { font-family:var(--font-mono); font-size:0.72rem; color:var(--text-secondary); text-align:right; flex-shrink:0; }
+.level-xp-num b { color:var(--gold); font-size:0.95rem; }
+.level-bar { height:8px; background:rgba(0,0,0,0.3); border-radius:4px; overflow:hidden; margin-top:12px; }
+.level-bar-fill { height:100%; border-radius:4px; background:linear-gradient(90deg,var(--gold),#FFD86E); transition:width 0.8s cubic-bezier(.2,.8,.2,1); box-shadow:0 0 10px rgba(240,180,41,0.5); }
+.level-next { font-size:0.62rem; color:var(--text-muted); margin-top:6px; text-align:center; }
+
+/* QUICK ACTIONS */
+.quick-actions { display:grid; grid-template-columns:1fr 1fr; gap:var(--space-sm); margin-top:var(--space-md); }
+.quick-btn { display:flex; align-items:center; gap:var(--space-sm); padding:14px var(--space-md); border-radius:var(--radius-md); border:1px solid rgba(255,255,255,0.06); background:var(--bg-card); cursor:pointer; transition:all 0.2s; color:var(--text-primary); font-family:var(--font-body); }
+.quick-btn:active { transform:scale(0.97); background:var(--bg-card-hover); }
+.quick-btn-icon { width:36px; height:36px; border-radius:var(--radius-sm); display:flex; align-items:center; justify-content:center; font-size:1.1rem; flex-shrink:0; }
+.quick-btn-icon.sec { background:var(--red-bg); }
+.quick-btn-icon.qual { background:var(--accent-bg); }
+.quick-btn-icon.quiz { background:var(--orange-bg); }
+.quick-btn-icon.newb { background:var(--green-bg); }
+.quick-btn-text { font-size:0.82rem; font-weight:600; line-height:1.3; }
+.quick-btn-sub { font-size:0.65rem; color:var(--text-secondary); font-weight:400; }
+
+.section-head { display:flex; align-items:center; justify-content:space-between; margin:var(--space-lg) 0 var(--space-sm); }
+.section-head h3 { font-size:0.75rem; font-weight:700; text-transform:uppercase; letter-spacing:1px; color:var(--text-secondary); }
+.section-head-link { font-size:0.72rem; color:var(--accent-light); cursor:pointer; font-weight:600; border:none; background:none; font-family:var(--font-body); }
+
+/* FILTER CHIPS */
+.filter-bar { display:flex; gap:8px; overflow-x:auto; padding:var(--space-sm) 0; -webkit-overflow-scrolling:touch; scrollbar-width:none; }
+.filter-bar::-webkit-scrollbar { display:none; }
+.chip { flex-shrink:0; padding:8px 16px; border-radius:99px; font-size:0.78rem; font-weight:600; cursor:pointer; border:1px solid rgba(255,255,255,0.08); background:var(--bg-card); color:var(--text-secondary); transition:all 0.2s; white-space:nowrap; font-family:var(--font-body); }
+.chip:active { transform:scale(0.96); }
+.chip.active { background:var(--accent); color:var(--bg-primary); border-color:var(--accent); }
+.chip .chip-dot { display:inline-block; width:7px; height:7px; border-radius:50%; margin-right:5px; vertical-align:middle; }
+
+/* SEARCH */
+.search-box { position:relative; margin-bottom:var(--space-sm); }
+.search-input { width:100%; padding:12px 16px 12px 42px; background:var(--bg-input); border:1px solid rgba(255,255,255,0.06); border-radius:var(--radius-md); color:var(--text-primary); font-size:0.88rem; font-family:var(--font-body); outline:none; transition:border-color 0.2s; }
+.search-input::placeholder { color:var(--text-muted); }
+.search-input:focus { border-color:var(--accent); }
+.search-icon { position:absolute; left:14px; top:50%; transform:translateY(-50%); width:18px; height:18px; color:var(--text-muted); }
+
+/* STD CARDS */
+.std-grid { display:flex; flex-direction:column; gap:var(--space-sm); }
+.std-card { background:var(--bg-card); border:1px solid rgba(255,255,255,0.05); border-radius:var(--radius-md); overflow:hidden; transition:all 0.2s; cursor:pointer; }
+.std-card:active { background:var(--bg-card-hover); }
+.std-card[data-crit="critical"] { border-left:3px solid var(--red); }
+.std-card[data-crit="major"] { border-left:3px solid var(--orange); }
+.std-card[data-crit="standard"] { border-left:3px solid var(--accent); }
+.std-card-top { display:flex; align-items:flex-start; padding:14px var(--space-md) 10px; gap:12px; }
+.std-card-code { font-family:var(--font-mono); font-size:0.68rem; font-weight:600; background:var(--bg-surface); color:var(--text-secondary); padding:4px 8px; border-radius:4px; white-space:nowrap; letter-spacing:0.5px; flex-shrink:0; margin-top:1px; }
+.std-card-info { flex:1; min-width:0; }
+.std-card-title { font-size:0.95rem; font-weight:700; line-height:1.3; margin-bottom:4px; }
+.std-card-meta { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+.std-meta-tag { font-size:0.62rem; font-weight:600; padding:2px 7px; border-radius:3px; text-transform:uppercase; letter-spacing:0.5px; }
+.meta-sec { background:var(--red-bg); color:var(--red); }
+.meta-qual { background:var(--accent-bg); color:var(--accent-light); }
+.meta-proc { background:rgba(255,255,255,0.06); color:var(--text-secondary); }
+.meta-engin { background:var(--orange-bg); color:var(--orange); }
+.std-card-time { font-family:var(--font-mono); font-size:0.6rem; color:var(--text-muted); }
+.std-card-chevron { color:var(--text-muted); flex-shrink:0; margin-top:4px; transition:transform 0.25s; }
+.std-card.open .std-card-chevron { transform:rotate(90deg); color:var(--accent-light); }
+.std-expand { max-height:0; overflow:hidden; transition:max-height 0.35s ease; }
+.std-card.open .std-expand { max-height:12000px; }
+.std-detail { padding:0 var(--space-md) var(--space-md); }
+.std-detail-section { margin-bottom:var(--space-md); }
+.std-detail-heading { font-size:0.68rem; font-weight:700; text-transform:uppercase; letter-spacing:1px; color:var(--text-muted); margin-bottom:var(--space-xs); padding-bottom:4px; border-bottom:1px solid rgba(255,255,255,0.04); }
+.std-detail-heading.accent { color:var(--accent); border-bottom-color:var(--accent-border); }
+.std-detail-heading.danger { color:var(--red); border-bottom-color:var(--red-border); }
+.std-detail-heading.green { color:var(--green-light); border-bottom-color:rgba(30,142,62,0.25); }
+.step-list { list-style:none; }
+.step-item { display:flex; gap:12px; padding:10px 0; border-bottom:1px solid rgba(255,255,255,0.03); align-items:flex-start; }
+.step-item:last-child { border-bottom:none; }
+.step-num { font-family:var(--font-mono); font-size:0.72rem; font-weight:600; width:26px; height:26px; border-radius:50%; background:var(--accent-bg); color:var(--accent-light); display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+.step-text { font-size:0.88rem; line-height:1.5; }
+.interdit-block { background:var(--red-bg); border:1px solid var(--red-border); border-radius:var(--radius-sm); padding:12px; }
+.interdit-item { display:flex; gap:8px; align-items:flex-start; padding:5px 0; font-size:0.85rem; line-height:1.4; }
+.interdit-icon { color:var(--red); font-weight:700; flex-shrink:0; font-size:0.9rem; }
+.risk-list { display:flex; flex-direction:column; gap:6px; }
+.risk-item { display:flex; align-items:center; gap:8px; padding:8px 10px; border-radius:var(--radius-sm); font-size:0.82rem; line-height:1.3; }
+.risk-item.critical { background:var(--red-bg); border:1px solid var(--red-border); }
+.risk-item.major { background:var(--orange-bg); border:1px solid var(--orange-border); }
+.risk-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+.risk-dot.critical { background:var(--red); }
+.risk-dot.major { background:var(--orange); }
+
+/* CHECKLIST */
+.checklist-block { display:flex; flex-direction:column; gap:2px; }
+.check-row { display:flex; align-items:center; gap:10px; padding:9px 10px; border-radius:var(--radius-sm); cursor:pointer; user-select:none; transition:background 0.15s; }
+.check-row:active { background:rgba(255,255,255,0.03); }
+.check-box { width:22px; height:22px; border-radius:5px; border:2px solid rgba(30,142,62,0.4); display:flex; align-items:center; justify-content:center; flex-shrink:0; font-size:0.7rem; color:transparent; transition:all 0.2s; }
+.check-row.done .check-box { background:var(--green); border-color:var(--green); color:#fff; }
+.check-row.done .check-label { color:var(--text-muted); text-decoration:line-through; }
+.check-label { font-size:0.84rem; line-height:1.4; }
+.check-progress { display:flex; align-items:center; gap:8px; margin-top:6px; }
+.check-bar { flex:1; height:4px; background:var(--bg-surface); border-radius:2px; overflow:hidden; }
+.check-bar-fill { height:100%; background:var(--green); border-radius:2px; transition:width 0.3s; }
+.check-pct { font-family:var(--font-mono); font-size:0.65rem; color:var(--green-light); min-width:32px; text-align:right; }
+
+/* RESPONSIBILITIES */
+.resp-grid { display:flex; flex-direction:column; gap:6px; }
+.resp-row { display:flex; gap:10px; padding:10px; background:var(--bg-surface); border-radius:var(--radius-sm); align-items:flex-start; }
+.resp-role { font-family:var(--font-mono); font-size:0.62rem; font-weight:600; color:var(--accent-light); text-transform:uppercase; letter-spacing:0.5px; min-width:72px; flex-shrink:0; padding-top:1px; }
+.resp-actions { font-size:0.82rem; color:var(--text-secondary); line-height:1.45; }
+
+/* MOTTO */
+.std-motto { font-size:0.82rem; font-style:italic; color:var(--accent-light); padding-top:var(--space-sm); border-top:1px solid rgba(26,158,158,0.15); text-align:center; line-height:1.5; }
+
+/* QUIZ */
+.quiz-mode-grid { display:grid; grid-template-columns:1fr 1fr; gap:var(--space-sm); }
+.quiz-mode-card { background:var(--bg-card); border:1px solid rgba(255,255,255,0.06); border-radius:var(--radius-md); padding:var(--space-md); cursor:pointer; transition:all 0.2s; text-align:center; }
+.quiz-mode-card:active { background:var(--bg-card-hover); transform:scale(0.97); }
+.quiz-mode-icon { font-size:1.5rem; margin-bottom:8px; }
+.quiz-mode-title { font-size:0.88rem; font-weight:700; margin-bottom:4px; }
+.quiz-mode-desc { font-size:0.7rem; color:var(--text-secondary); line-height:1.4; }
+.quiz-mode-badge { display:inline-block; margin-top:8px; font-family:var(--font-mono); font-size:0.58rem; font-weight:600; padding:2px 8px; border-radius:99px; letter-spacing:0.5px; }
+.badge-red { background:var(--red-bg); color:var(--red); }
+.badge-accent { background:var(--accent-bg); color:var(--accent-light); }
+.badge-orange { background:var(--orange-bg); color:var(--orange); }
+.badge-green { background:var(--green-bg); color:var(--green-light); }
+.badge-gold { background:var(--gold-bg); color:var(--gold); }
+.quiz-header { display:flex; align-items:center; gap:var(--space-sm); margin-bottom:var(--space-md); }
+.quiz-back { width:36px; height:36px; border-radius:var(--radius-sm); background:var(--bg-surface); border:none; color:var(--text-secondary); cursor:pointer; display:flex; align-items:center; justify-content:center; font-size:1.1rem; font-family:var(--font-body); }
+.quiz-progress-wrap { flex:1; }
+.quiz-progress-bar { height:4px; background:var(--bg-surface); border-radius:2px; overflow:hidden; }
+.quiz-progress-fill { height:100%; border-radius:2px; background:linear-gradient(90deg, var(--accent), var(--accent-light)); transition:width 0.4s ease; }
+.quiz-counter { font-family:var(--font-mono); font-size:0.65rem; color:var(--text-muted); margin-top:3px; text-align:right; }
+.quiz-streak { font-family:var(--font-mono); font-size:0.62rem; color:var(--gold); display:flex; align-items:center; gap:3px; }
+.quiz-q-card { background:var(--bg-card); border:1px solid rgba(255,255,255,0.06); border-radius:var(--radius-lg); padding:var(--space-lg) var(--space-md); }
+.quiz-q-std { font-family:var(--font-mono); font-size:0.68rem; font-weight:600; color:var(--accent); letter-spacing:0.5px; margin-bottom:var(--space-xs); }
+.quiz-q-cat { font-size:0.62rem; color:var(--text-muted); margin-bottom:var(--space-sm); text-transform:uppercase; letter-spacing:0.5px; }
+.quiz-q-text { font-size:1.02rem; font-weight:600; line-height:1.5; margin-bottom:var(--space-lg); }
+.quiz-options { display:flex; flex-direction:column; gap:var(--space-sm); }
+.quiz-opt { display:flex; align-items:flex-start; gap:12px; padding:14px var(--space-md); border-radius:var(--radius-md); border:2px solid rgba(255,255,255,0.06); background:var(--bg-surface); cursor:pointer; transition:all 0.2s; min-height:48px; }
+.quiz-opt:active:not(.disabled) { transform:scale(0.98); }
+.quiz-opt .opt-marker { font-family:var(--font-mono); font-size:0.75rem; font-weight:600; width:28px; height:28px; border-radius:50%; background:rgba(255,255,255,0.05); color:var(--text-muted); display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+.quiz-opt .opt-text { font-size:0.88rem; line-height:1.45; padding-top:3px; }
+.quiz-opt.correct { border-color:var(--green); background:var(--green-bg); }
+.quiz-opt.correct .opt-marker { background:var(--green); color:#fff; }
+.quiz-opt.wrong { border-color:var(--red); background:var(--red-bg); }
+.quiz-opt.wrong .opt-marker { background:var(--red); color:#fff; }
+.quiz-opt.disabled { cursor:default; opacity:0.55; }
+.quiz-opt.disabled.correct, .quiz-opt.disabled.wrong { opacity:1; }
+.quiz-feedback { margin-top:var(--space-md); padding:14px; border-radius:var(--radius-sm); font-size:0.85rem; line-height:1.55; display:none; }
+.quiz-feedback.show { display:block; animation:viewIn 0.25s ease; }
+.quiz-feedback.is-correct { background:var(--green-bg); border-left:3px solid var(--green); }
+.quiz-feedback.is-wrong { background:var(--red-bg); border-left:3px solid var(--red); }
+.quiz-feedback-title { font-weight:700; font-size:0.75rem; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:4px; }
+.quiz-feedback.is-correct .quiz-feedback-title { color:var(--green-light); }
+.quiz-feedback.is-wrong .quiz-feedback-title { color:var(--red); }
+.quiz-xp-pop { display:inline-block; font-family:var(--font-mono); font-size:0.62rem; font-weight:600; color:var(--gold); background:var(--gold-bg); padding:2px 8px; border-radius:99px; margin-left:8px; }
+.quiz-next-wrap { text-align:center; margin-top:var(--space-md); }
+
+/* BUTTONS */
+.btn-primary { display:inline-flex; align-items:center; justify-content:center; gap:8px; padding:14px 28px; border-radius:var(--radius-md); background:var(--accent); color:var(--bg-primary); font-family:var(--font-body); font-size:0.88rem; font-weight:700; border:none; cursor:pointer; transition:all 0.2s; min-height:48px; letter-spacing:0.3px; }
+.btn-primary:active { transform:scale(0.97); background:var(--accent-light); }
+.btn-secondary { display:inline-flex; align-items:center; justify-content:center; gap:8px; padding:12px 24px; border-radius:var(--radius-md); background:transparent; color:var(--accent-light); font-family:var(--font-body); font-size:0.82rem; font-weight:600; border:1px solid var(--accent-border); cursor:pointer; transition:all 0.2s; min-height:44px; }
+.btn-secondary:active { background:var(--accent-bg); }
+.btn-block { width:100%; }
+
+/* RESULTS */
+.results-hero { text-align:center; padding:var(--space-xl) 0 var(--space-md); }
+.results-ring { width:140px; height:140px; margin:0 auto var(--space-md); position:relative; }
+.results-ring svg { width:100%; height:100%; transform:rotate(-90deg); }
+.results-ring circle { fill:none; stroke-width:6; }
+.results-ring .ring-bg { stroke:var(--bg-surface); }
+.results-ring .ring-fill { stroke-linecap:round; transition:stroke-dashoffset 1s ease; }
+.results-ring .ring-fill.excellent { stroke:var(--green-light); }
+.results-ring .ring-fill.good { stroke:var(--accent-light); }
+.results-ring .ring-fill.avg { stroke:var(--orange); }
+.results-ring .ring-fill.poor { stroke:var(--red); }
+.results-pct { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); font-family:var(--font-mono); font-size:2.2rem; font-weight:700; }
+.results-label { font-size:0.75rem; font-weight:700; text-transform:uppercase; letter-spacing:1px; color:var(--text-secondary); margin-bottom:4px; }
+.results-msg { font-size:0.88rem; color:var(--text-secondary); line-height:1.5; max-width:320px; margin:0 auto; }
+.results-xp-banner { background:linear-gradient(135deg,var(--gold-bg),rgba(139,124,240,0.08)); border:1px solid rgba(240,180,41,0.25); border-radius:var(--radius-md); padding:14px; text-align:center; margin:var(--space-md) 0; }
+.results-xp-banner b { color:var(--gold); font-family:var(--font-mono); font-size:1.3rem; }
+.results-xp-banner span { display:block; font-size:0.66rem; color:var(--text-secondary); text-transform:uppercase; letter-spacing:1px; margin-top:2px; }
+.score-axes { display:grid; grid-template-columns:1fr 1fr; gap:var(--space-sm); margin:var(--space-lg) 0; }
+.score-axis { background:var(--bg-card); border-radius:var(--radius-sm); padding:12px; text-align:center; }
+.score-axis-val { font-family:var(--font-mono); font-size:1.3rem; font-weight:700; }
+.score-axis-label { font-size:0.62rem; font-weight:600; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-secondary); margin-top:2px; }
+.results-errors-title { font-size:0.72rem; font-weight:700; text-transform:uppercase; letter-spacing:1px; color:var(--red); margin-bottom:var(--space-sm); }
+.results-error-item { display:flex; align-items:center; gap:var(--space-sm); padding:10px 12px; background:var(--red-bg); border-radius:var(--radius-sm); margin-bottom:6px; font-size:0.8rem; line-height:1.3; }
+.results-error-std { font-family:var(--font-mono); font-size:0.68rem; font-weight:600; color:var(--red); min-width:28px; flex-shrink:0; }
+.results-actions { display:flex; flex-direction:column; gap:var(--space-sm); margin-top:var(--space-lg); }
+
+/* ===== BADGES VIEW ===== */
+.profile-hero { text-align:center; padding:var(--space-lg) 0 var(--space-md); }
+.profile-medal { width:90px; height:90px; border-radius:50%; margin:0 auto var(--space-sm); background:linear-gradient(135deg,var(--gold),#E8850C); display:flex; align-items:center; justify-content:center; font-size:2.6rem; box-shadow:0 0 40px rgba(240,180,41,0.4); }
+.profile-name { font-size:1.3rem; font-weight:800; }
+.profile-rank { font-family:var(--font-mono); font-size:0.7rem; color:var(--gold); text-transform:uppercase; letter-spacing:2px; margin-top:2px; }
+.profile-stats { display:grid; grid-template-columns:repeat(3,1fr); gap:var(--space-sm); margin:var(--space-md) 0; }
+.profile-stat { background:var(--bg-card); border-radius:var(--radius-md); padding:14px 8px; text-align:center; }
+.profile-stat-num { font-family:var(--font-mono); font-size:1.5rem; font-weight:700; color:var(--accent-light); }
+.profile-stat-label { font-size:0.58rem; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.5px; margin-top:2px; }
+.badge-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:var(--space-sm); }
+.badge-cell { background:var(--bg-card); border:1px solid rgba(255,255,255,0.05); border-radius:var(--radius-md); padding:var(--space-md) 8px; text-align:center; transition:all 0.2s; position:relative; overflow:hidden; }
+.badge-cell.unlocked { border-color:rgba(240,180,41,0.3); background:linear-gradient(135deg,var(--bg-card),rgba(240,180,41,0.05)); }
+.badge-cell.locked { opacity:0.4; }
+.badge-emoji { font-size:1.8rem; margin-bottom:6px; filter:grayscale(0); }
+.badge-cell.locked .badge-emoji { filter:grayscale(1); }
+.badge-name { font-size:0.66rem; font-weight:700; line-height:1.25; }
+.badge-desc { font-size:0.56rem; color:var(--text-muted); margin-top:3px; line-height:1.3; }
+.badge-cell.unlocked::after { content:'✓'; position:absolute; top:6px; right:8px; font-size:0.6rem; color:var(--gold); font-weight:700; }
+.reset-btn { width:100%; margin-top:var(--space-lg); padding:12px; background:transparent; border:1px solid rgba(217,48,37,0.3); color:var(--red); border-radius:var(--radius-md); font-family:var(--font-body); font-size:0.78rem; font-weight:600; cursor:pointer; }
+
+/* ===== TOAST (level up / badge) ===== */
+.toast-wrap { position:fixed; top:64px; left:0; right:0; z-index:300; display:flex; flex-direction:column; align-items:center; gap:8px; pointer-events:none; padding:0 16px; }
+.toast { background:linear-gradient(135deg,var(--bg-surface),var(--bg-card)); border:1px solid var(--gold); border-radius:var(--radius-md); padding:12px 18px; display:flex; align-items:center; gap:12px; box-shadow:0 8px 30px rgba(0,0,0,0.5), 0 0 30px rgba(240,180,41,0.2); max-width:380px; width:100%; animation:toastIn 0.4s cubic-bezier(.2,.8,.2,1), toastOut 0.4s ease 3s forwards; }
+.toast-emoji { font-size:1.6rem; }
+.toast-title { font-size:0.82rem; font-weight:800; }
+.toast-sub { font-size:0.66rem; color:var(--text-secondary); }
+@keyframes toastIn { from{opacity:0;transform:translateY(-20px) scale(0.9)} to{opacity:1;transform:translateY(0) scale(1)} }
+@keyframes toastOut { to{opacity:0;transform:translateY(-12px)} }
+
+/* CONFETTI */
+.confetti { position:fixed; inset:0; z-index:290; pointer-events:none; overflow:hidden; }
+.confetti i { position:absolute; top:-12px; width:8px; height:14px; opacity:0.9; animation:fall linear forwards; }
+@keyframes fall { to{transform:translateY(110vh) rotate(720deg);opacity:0} }
+
+.empty-state { text-align:center; padding:var(--space-xl); color:var(--text-muted); font-size:0.88rem; }
+.empty-state-icon { font-size:2rem; margin-bottom:var(--space-sm); opacity:0.5; }
+.mt-md { margin-top:var(--space-md); }
+.hidden { display:none !important; }
+</style>
+</head>
+<body>
+
+<!-- CINEMATIC SPLASH -->
+<div class="splash" id="splash">
+  <div class="splash-logo">STD</div>
+  <div class="splash-title">Standards Pick &amp; Pack</div>
+  <div class="splash-sub">CLR Champigneulles</div>
+  <div class="splash-bar"><div class="splash-bar-fill"></div></div>
+</div>
+
+<div class="toast-wrap" id="toast-wrap"></div>
+
+<header class="header">
+  <div class="header-top">
+    <div class="header-brand">
+      <div class="header-logo">STD</div>
+      <div class="header-text">
+        <h1>Standards Pick &amp; Pack</h1>
+        <div class="site-tag">CLR Champigneulles — Rexel France</div>
+      </div>
+    </div>
+    <div class="header-xp" onclick="switchView('profil')">
+      <span class="header-xp-star">⭐</span>
+      <span class="header-xp-lvl" id="header-lvl">Niv. 1</span>
+    </div>
+  </div>
+</header>
+
+<main class="main">
+  <!-- HOME -->
+  <div id="view-home" class="view active">
+    <div class="hero-banner">
+      <h2>Bibliothèque opérationnelle</h2>
+      <p>18 standards terrain. Consultez, apprenez, montez en niveau.</p>
+      <div class="hero-stats">
+        <div class="hero-stat"><div class="hero-stat-num">18</div><div class="hero-stat-label">Standards</div></div>
+        <div class="hero-stat"><div class="hero-stat-num" id="stat-crit">5</div><div class="hero-stat-label">Critiques</div></div>
+        <div class="hero-stat"><div class="hero-stat-num" id="stat-q">35</div><div class="hero-stat-label">Questions</div></div>
+      </div>
+      <!-- LEVEL CARD -->
+      <div class="level-card" onclick="switchView('profil')">
+        <div class="level-top">
+          <div class="level-medal" id="lc-medal">🥉</div>
+          <div class="level-info">
+            <div class="level-name" id="lc-name">Recrue</div>
+            <div class="level-rank" id="lc-rank">Niveau 1</div>
+          </div>
+          <div class="level-xp-num"><b id="lc-xp">0</b><br>XP total</div>
+        </div>
+        <div class="level-bar"><div class="level-bar-fill" id="lc-bar" style="width:0%"></div></div>
+        <div class="level-next" id="lc-next">— XP avant le niveau suivant</div>
+      </div>
+    </div>
+
+    <div class="section-pad">
+      <div class="section-head"><h3>Accès rapides</h3></div>
+      <div class="quick-actions">
+        <div class="quick-btn" onclick="goFilteredStandards('securite')"><div class="quick-btn-icon sec">🛡</div><div><div class="quick-btn-text">Sécurité</div><div class="quick-btn-sub">Standards critiques</div></div></div>
+        <div class="quick-btn" onclick="startQuizMode('express')"><div class="quick-btn-icon quiz">⚡</div><div><div class="quick-btn-text">Quiz express</div><div class="quick-btn-sub">5 questions</div></div></div>
+        <div class="quick-btn" onclick="goFilteredStandards('qualite')"><div class="quick-btn-icon qual">✓</div><div><div class="quick-btn-text">Qualité</div><div class="quick-btn-sub">Zéro erreur</div></div></div>
+        <div class="quick-btn" onclick="startQuizMode('full')"><div class="quick-btn-icon newb">📋</div><div><div class="quick-btn-text">Quiz complet</div><div class="quick-btn-sub">Tous les standards</div></div></div>
+      </div>
+      <div class="section-head"><h3>Standards critiques</h3><button class="section-head-link" onclick="goFilteredStandards('all')">Voir tout →</button></div>
+      <div id="home-critical" class="std-grid"></div>
+    </div>
+  </div>
+
+  <!-- STANDARDS -->
+  <div id="view-standards" class="view">
+    <div class="section-pad">
+      <div class="search-box">
+        <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+        <input type="text" class="search-input" id="search-input" placeholder="Rechercher un standard…" oninput="filterStandards()">
+      </div>
+      <div class="filter-bar" id="filter-bar"></div>
+      <div id="std-list" class="std-grid mt-md"></div>
+      <div id="std-empty" class="empty-state hidden"><div class="empty-state-icon">🔍</div>Aucun standard trouvé.</div>
+    </div>
+  </div>
+
+  <!-- QUIZ -->
+  <div id="view-quiz" class="view">
+    <div class="section-pad" id="quiz-container"></div>
+  </div>
+
+  <!-- PROFIL / BADGES -->
+  <div id="view-profil" class="view">
+    <div class="section-pad" id="profil-container"></div>
+  </div>
+</main>
+
+<nav class="bottom-nav">
+  <button class="nav-item active" onclick="switchView('home')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+    <span>Accueil</span>
+  </button>
+  <button class="nav-item" onclick="switchView('standards')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+    <span>Standards</span>
+  </button>
+  <button class="nav-item" onclick="switchView('quiz')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+    <span>Quiz</span>
+  </button>
+  <button class="nav-item" onclick="switchView('profil')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 4-6 8-6s8 2 8 6"/></svg>
+    <span>Profil</span>
+  </button>
+</nav>
+
+<script>
+const CATEGORIES = {
+  securite:{label:'Sécurité',color:'sec',dot:'#D93025'},
+  qualite:{label:'Qualité',color:'qual',dot:'#1A9E9E'},
+  process:{label:'Process',color:'proc',dot:'#8B9BB8'},
+  engin:{label:'Engin',color:'engin',dot:'#E8850C'}
+};
+
+const standards=[
+{id:"P1",title:"Prise de poste",cat:"securite",crit:"critical",time:"2 min",
+ steps:["S'équiper des EPI complets (chaussures de sécurité + gants de manutention)","Rejoindre la zone par l'allée piétonne — respecter le marquage au sol","Nettoyer l'EKS avec le produit mis à disposition","Contrôler l'engin : batterie, fuites, commandes — signaler tout défaut","Remplir le carnet journalier à chaque prise de poste","Se réapprovisionner en consommables"],
+ interdits:["JAMAIS sans EPI complets","JAMAIS d'engin défectueux utilisé","JAMAIS d'allée engins sans gilet haute visibilité"],
+ risks:[{l:"Collision chariot → AT grave",v:"critical"},{l:"Coupures / Chutes → arrêt de travail",v:"major"},{l:"TMS / Mal de dos → arrêt longue durée",v:"major"}],
+ checklist:["EPI complets (chaussures + gants)","Allée piétonne empruntée","EKS nettoyé avec produit","Engin contrôlé (batterie, fuites, commandes)","Carnet journalier rempli","Consommables réapprovisionnés"],
+ resp:[{r:"Opérateur",a:"S'équiper. Allée piétonne. Nettoyer. Contrôler. Carnet + réappro."},{r:"Pilotes",a:"Vérifier EPI. Contrôler carnets. Signaler engins HS."},{r:"Superviseur",a:"Auditer conformité EPI. Piloter indicateurs AT."}],
+ motto:"Pas d'EPI, pas de zone de travail."},
+{id:"P2",title:"Consommables : cartons et bacs",cat:"process",crit:"standard",time:"2 min",
+ steps:["Sélectionner le bon contenant : cartons (C9–C16) ou bacs consignés (bleu = MAD agences, jaune = réassort)","Remplacer immédiatement toute palette vide + défilmer","Ranger par taille, chaque référence à son emplacement","Protéger les produits : bulle (fragile), enveloppe + étiquette (batterie), calage, film/sachet (humidité)","Isoler les bacs HS en caisse dédiée — jamais réutiliser","Signaler les ruptures au pilote immédiatement"],
+ interdits:["JAMAIS d'emplacement vide sans action","JAMAIS réutiliser un bac détérioré","JAMAIS mélanger les références"],
+ risks:[{l:"Rupture stock → arrêt prépa",v:"major"},{l:"Casse produit → réclamation client",v:"major"}],
+ checklist:["Bon contenant sélectionné (carton ou bac)","Protection adaptée au produit","Palette vide remplacée et défilmée","Rangement par taille respecté","Bac détérioré isolé en caisse HS","Stock bas signalé au pilote"],
+ resp:[{r:"Opérateur",a:"Remplacer. Ranger. Protéger. Isoler HS."},{r:"Op. & Pilote",a:"Contrôler niveaux stock. Signaler réappro."},{r:"Superviseur",a:"Piloter réappro. Auditer rangement."}],
+ motto:"Palette vide non remplacée = toute l'équipe ralentie."},
+{id:"P3",title:"Affectation & montage chariot",cat:"process",crit:"major",time:"2 min",
+ steps:["S'affecter sur le poste informatique (menu Préparation et gestion des tournées)","Scanner le code barre de la tournée","Entrer le code opérateur + clic Affectation","Vérifier que la commande est à l'état « En cours » (F5 si nécessaire)","Monter le chariot avec les contenants indiqués en suivant les n° de colis","Démarrer la préparation une fois le chariot terminé"],
+ interdits:["JAMAIS oublier de s'affecter","JAMAIS confondre bacs et cartons","TOUJOURS vérifier l'état « En cours »"],
+ risks:[{l:"Oubli affectation → reporting faussé",v:"critical"},{l:"Confusion bac/carton → mauvais destinataire",v:"critical"},{l:"Mauvais n° contenant → erreur en cascade",v:"major"}],
+ checklist:["Affectation saisie dans le système","Code barre tournée scanné","Code opérateur saisi + Affectation","Commande « En cours » vérifiée","Contenants conformes à l'étiquette","Chariot monté avec bons n° de colis"],
+ resp:[{r:"Opérateur",a:"S'affecter. Monter chariot. Vérifier. Démarrer."},{r:"Pilotes",a:"Contrôler affectations. Former au montage."},{r:"Superviseur",a:"Piloter taux affectation. Analyser erreurs."}],
+ motto:"Le chariot bien monté = une tournée sans erreur."},
+{id:"P4",title:"Préparation détail",cat:"qualite",crit:"critical",time:"3 min",
+ steps:["Lire le talon de tournée : emplacement + 1ère étiquette colis","Lire la référence : vérifier désignation + poids produit","Lire la quantité : prélever exactement la quantité demandée","Mettre en sachet fermé avec étiquette collée","Coller l'étiquette dessus/dessous — jamais sur la référence produit","Déposer dans le colis indiqué sur l'étiquette","Ranger l'emplacement : propre, étiquette verte/rouge si vide","Adopter les bons gestes : hauteur épaules max, postures OK"],
+ interdits:["JAMAIS d'étiquette sur les pièces nues","JAMAIS d'étiquette sur la référence ou le visuel produit"],
+ risks:[{l:"Erreur préparation → litige client, retour",v:"critical"},{l:"Propreté allées dégradée → encombrement",v:"major"},{l:"TMS / mal de dos → arrêt maladie",v:"major"}],
+ checklist:["Référence lue en entier et vérifiée","Quantité exacte prélevée","Produit en sachet, étiquette collée","Étiquette hors référence/visuel","Emplacement rangé et propre","Bons gestes et postures respectés"],
+ resp:[{r:"Opérateur",a:"Lire, vérifier, prélever, coller, ranger. Autocontrôle."},{r:"Pilotes",a:"Former. Analyser erreurs. Contrôler propreté allées."},{r:"Superviseur",a:"Piloter taux erreur. Actions correctives."}],
+ motto:"La qualité se joue à chaque geste."},
+{id:"P5",title:"Préparation carton",cat:"qualite",crit:"critical",time:"2 min",
+ steps:["Trier les BL par tournée — vérifier concordance N° BL / N° tournée","Insérer le BL en pochette « documents ci-inclus » sur face nue du colis","Coller l'étiquette d'expédition : visible, lisible, sur faces nues","Contrôler avant expédition : BL présent + bon client + étiquette conforme"],
+ interdits:["JAMAIS d'étiquette sur la référence ou le visuel produit","JAMAIS de BL inversé (violation RGPD)","JAMAIS de BL manquant"],
+ risks:[{l:"BL inversé → données clients exposées (RGPD)",v:"critical"},{l:"Erreur concordance → colis au mauvais client",v:"critical"},{l:"BL manquant → litige commercial",v:"major"}],
+ checklist:["BL trié par tournée, concordance vérifiée","BL inséré dans pochette « documents ci-inclus »","Pochette collée sur face nue du colis","Étiquette d'expédition visible et lisible","Aucune étiquette sur référence/visuel","Bon client associé au bon colis"],
+ resp:[{r:"Opérateur",a:"Trier, vérifier, insérer, coller. Autocontrôle chaque colis."},{r:"Pilotes",a:"Former. Analyser réclamations. Contrôler conformité."},{r:"Superviseur",a:"Piloter taux réclamation. Actions correctives."}],
+ motto:"Un BL inversé = des données clients exposées."},
+{id:"P6",title:"Préparation rétract",cat:"engin",crit:"critical",time:"3 min",
+ steps:["Prendre le rétract N°96 (zone pick, bout allée 21)","Préparer les colis sur convoyeur pour prépa détail","Chercher les produits aux emplacements → dans les cartons","S'affecter et envoyer : étiquette à l'avant, convoyeur","Contrôler la palette : produits sécurisés, palette en bon état","Gerber en sécurité : distance 1,5× mât, zéro piéton/engin","Remettre le rétract dans sa zone, commandes terminées"],
+ interdits:["JAMAIS de piétons dans le périmètre de gerbage","JAMAIS d'engins dans la zone pendant le gerbage","TOUJOURS laisser dépasser le sabot de la lisse (50 mm)"],
+ risks:[{l:"Chute d'objets → AT grave, casse",v:"critical"},{l:"Collision engin/piéton → blessure grave",v:"critical"},{l:"Désorganisation zone → perte de temps",v:"major"}],
+ checklist:["Rétract N°96 récupéré dans sa zone","Colis préparés et envoyés (étiquette avant)","Palette sécurisée (filmée ou sanglée)","Palette/support en bon état","Périmètre sécurisé (zéro piéton/engin)","Rétract remis en zone fin de tournée"],
+ resp:[{r:"Opérateur",a:"Utiliser rétract conforme. Sécuriser. Ranger."},{r:"Pilotes",a:"Contrôler palettes. Former au gerbage sécurisé."},{r:"Superviseur",a:"Piloter incidents gerbage. Maintenir rétract."}],
+ motto:"La sécurité au gerbage n'est pas une option."},
+{id:"P7",title:"Changement de contenants",cat:"process",crit:"standard",time:"1 min",
+ steps:["Identifier le problème : colis inadapté (trop petit / trop grand)","Choisir la méthode : Informatique ou Flasheur","Changer le contenant (mise à jour système automatique)","Vérifier et envoyer : carton fermé, taille OK → convoyeur"],
+ interdits:["JAMAIS envoyer de cartons mal fermés","TOUJOURS prendre une taille de carton adaptée"],
+ risks:[{l:"Rejet pondéral → taille non mise à jour",v:"major"},{l:"Insatisfaction client → contenant inadapté",v:"major"}],
+ checklist:["Colis inadapté identifié","Méthode choisie (Informatique ou Flasheur)","Contenant changé dans le système","Nouveau carton de bonne taille","Carton correctement fermé","Colis envoyé sur le convoyeur"],
+ resp:[{r:"Opérateur",a:"Identifier. Changer. Mettre à jour. Fermer."},{r:"Pilotes",a:"Former aux 2 méthodes. Analyser rejets pondéraux."},{r:"Superviseur",a:"Piloter taux rejets. Optimiser tailles par défaut."}],
+ motto:"Un contenant adapté = un colis conforme."},
+{id:"P8",title:"Ruptures et validation",cat:"qualite",crit:"major",time:"2 min",
+ steps:["Pas de rupture → envoyer directement, valider au scan code opérateur","Rupture : scanner le produit (code barre → écran Validation)","Accéder à F5 → étiquette tournée → commande","Saisir la quantité réelle dans la case « Réel »","Envoyer en case rupture","Saisir le motif : Manquant / Incomplet / Mauvaise réf.","Finaliser : Prélevé → envoyer / En cours → récupérer pièces"],
+ interdits:["JAMAIS utiliser le motif « Cassé »","JAMAIS ignorer une rupture"],
+ risks:[{l:"Rupture non saisie → retour colis complet",v:"critical"},{l:"Écart pondéral → blocage qualité",v:"major"},{l:"Double manipulation → perte de productivité",v:"major"}],
+ checklist:["Rupture détectée → procédure lancée","Produit scanné, F5 activé","Quantité réelle saisie dans « Réel »","Motif coché (Manquant/Incomplet/Mauv. réf.)","Motif « Cassé » JAMAIS utilisé","Commande finalisée"],
+ resp:[{r:"Opérateur",a:"Saisir chaque rupture. Bon motif. Valider F5."},{r:"Pilotes",a:"Analyser taux rupture. Former. Contrôler motifs."},{r:"Superviseur",a:"Piloter taux global. Actions correctives."}],
+ motto:"Une rupture saisie = un colis conforme."},
+{id:"P9",title:"Gestion des déchets",cat:"process",crit:"standard",time:"2 min",
+ steps:["Trier chaque déchet : identifier et déposer dans le bon flux","Aplatir les cartons à plat avant la presse","Vider régulièrement — ne pas attendre le débordement","Séparer plastique / DIB (verte = plastique, bleue = papier/cerclage)","Gérer la presse : bourrage → bouton vert, zéro plastique"],
+ interdits:["JAMAIS de plastique dans la presse à carton","JAMAIS laisser déborder les poubelles","JAMAIS mélanger les flux de tri"],
+ risks:[{l:"Bourrage presse → arrêt + intervention maintenance",v:"critical"},{l:"Débordement poubelles → encombrement",v:"major"},{l:"Mélange de flux → non-conformité tri",v:"major"}],
+ checklist:["Déchets triés dans le bon flux","Cartons aplatis avant mise en presse","Poubelles vidées régulièrement","Plastiques séparés du DIB","Zéro plastique dans la presse","Bouton vert si bourrage presse"],
+ resp:[{r:"Opérateur",a:"Trier, aplatir, vider. Gérer presse (bouton vert)."},{r:"Pilotes",a:"Contrôler le tri. Sensibiliser. Signaler pannes."},{r:"Nettoyage",a:"Évacuer poubelles vertes tout au long de la journée."}],
+ motto:"Le tri commence à mon poste."},
+{id:"P10",title:"Aérosol / Batterie",cat:"securite",crit:"critical",time:"2 min",
+ steps:["Aérosol : caler avec air-push avant fermeture","C16 aérosol : scotcher en complément du calage","Refermer les portes de stockage après chaque prélèvement","Batterie : emballer individuellement dans enveloppe bulle","Étiqueter « DANGER BATTERIE » sur face visible, toujours lisible","Signaler toute anomalie → alerter le Superviseur"],
+ interdits:["JAMAIS d'aérosol non calé dans un colis","JAMAIS de batterie non emballée individuellement","JAMAIS de porte de stockage laissée ouverte"],
+ risks:[{l:"Ouverture contenant sur convoyeur → casse, pollution",v:"major"},{l:"Départ de feu → incendie, blessure, arrêt exploitation",v:"critical"}],
+ checklist:["Aérosol calé avec air-push","C16 aérosol scotché","Portes de stockage refermées","Batterie emballée individuellement (bulle)","Étiquette DANGER BATTERIE visible","Anomalie signalée au Superviseur"],
+ resp:[{r:"Opérateur",a:"Appliquer toutes les exigences. Signaler anomalie."},{r:"Superviseur",a:"Contrôler l'application. Former nouveaux entrants."},{r:"Resp. QSE",a:"Valider le standard. Auditer la conformité."}],
+ motto:"Un incident évitable, c'est un incident inacceptable."},
+{id:"P11",title:"Fin de poste",cat:"process",crit:"standard",time:"2 min",
+ steps:["Ranger le poste + zone : dégagé, outils remis en place","Nettoyer l'EKS + surfaces, vider la poubelle","Contrôler l'engin : fuites, batterie — changer si nécessaire","Remplir le carnet journalier : heures compteur + signalements","Restituer les flasheurs au point de collecte","Terminer sa commande en cours avant de quitter"],
+ interdits:["JAMAIS quitter sans rangement","JAMAIS de batterie déchargée laissée","JAMAIS d'allée encombrée"],
+ risks:[{l:"Chute opérateur → AT grave",v:"critical"},{l:"Flasheur perdu → perte de temps / coût",v:"major"},{l:"Engin non chargé → blocage équipe suivante",v:"major"}],
+ checklist:["Poste rangé et zone dégagée","EKS nettoyés","Poubelle vidée","Engin contrôlé + batterie changée","Carnet journalier rempli","Flasheurs restitués au point de collecte","Commande terminée"],
+ resp:[{r:"Opérateur",a:"Ranger. Nettoyer. Contrôler engin. Carnet. Flasheurs."},{r:"Pilote",a:"Vérifier clôture. Contrôler flasheurs. Valider passation."},{r:"Superviseur",a:"Contrôler propreté. Signaler anomalies."}],
+ motto:"Zone propre = équipe suivante efficace."},
+{id:"P12",title:"Circulation & sécurité CLR",cat:"securite",crit:"critical",time:"3 min",
+ steps:["Respecter les STOP : arrêt complet, vérifier gauche et droite","Suivre le sens de circulation : marquage au sol, jamais à contresens","Vérifier son engin : freins, klaxon, feux, fourches","Conduire uniquement avec autorisation valide et à jour","Céder la priorité au piéton — ralentir aux croisements","S'annoncer derrière : klaxon ou signal vocal","Éviter la marche arrière abusive — vérifier derrière soi","Abaisser le poste avant tout déplacement"],
+ interdits:["JAMAIS franchir un STOP sans arrêt complet","JAMAIS conduire sans autorisation valide","JAMAIS se déplacer poste en hauteur"],
+ risks:[{l:"Collision engin/piéton → blessure grave, décès",v:"critical"},{l:"Collision entre engins → dégâts, arrêt exploitation",v:"critical"},{l:"Chute de charge en hauteur → blessure, casse",v:"major"},{l:"Renversement d'engin → accident corporel grave",v:"critical"}],
+ checklist:["Arrêt complet au STOP vérifié","Sens de circulation respecté","État engin contrôlé (check-list)","Autorisation de conduite valide","Priorité piéton appliquée","Signal avant dépassement"],
+ resp:[{r:"Opérateur",a:"Respecter toutes les règles. Vérifier engin. S'annoncer."},{r:"Superviseur",a:"Former. Auditer terrain. Contrôler autorisations."},{r:"Exploitation",a:"Piloter indicateurs sécu. Valider autorisations."}],
+ motto:"STOP respecté, sens suivi, piéton protégé."},
+{id:"P13",title:"Préparation monolignes",cat:"qualite",crit:"major",time:"2 min",
+ steps:["Prendre le lot d'étiquettes d'expédition — compter (15–45)","Lire l'étiquette : réf. article + quantité (=1) + destination","Prélever exactement 1 article par étiquette — vérifier désignation + poids","Placer dans un C16 vide et propre — 1 seul article par C16","Coller l'étiquette d'expédition, code-barres non plié","Contrôler la correspondance article = étiquette","Ranger l'emplacement après prélèvement"],
+ interdits:["JAMAIS 2 articles dans le même C16","JAMAIS intervertir les étiquettes d'expédition","JAMAIS coller sans vérifier la correspondance"],
+ risks:[{l:"Doublon C16 → double litige client",v:"critical"},{l:"Inversion étiquettes → retour + réexpédition",v:"critical"},{l:"Erreur de référence → litige, coût reprise",v:"major"},{l:"Volume sous-estimé → colis manquant",v:"major"}],
+ checklist:["Nb étiquettes = nb de C16 préparés","1 seul article par C16","Correspondance étiquette / article OK","Code-barres lisible, non plié","Emplacement rangé après prélèvement","Totalité colis préparés en fin de commande"],
+ resp:[{r:"Opérateur",a:"Compter étiquettes. Prélever, 1 article/C16, coller, contrôler."},{r:"Pilotes",a:"Former sur spécificité monoligne. Analyser erreurs."},{r:"Superviseur",a:"Piloter taux erreur monolignes. Garantir dispo C16."}],
+ motto:"1 étiquette, 1 article, 1 C16. Zéro mélange."},
+{id:"P14",title:"Les interdits",cat:"securite",crit:"major",time:"2 min",
+ steps:["Porter une tenue de travail conforme — pas de casquette, débardeur ni pantacourt","Ranger son téléphone hors de la zone de travail","Bouteille d'eau uniquement — aucune boisson sucrée ni nourriture en zone","Aucune musique en zone de travail","Refuser tout alcool et stupéfiant sur le site","Vérifier sa tenue avant chaque prise de poste"],
+ interdits:["JAMAIS de casquette, débardeur ou pantacourt","JAMAIS de téléphone ou de musique en zone","JAMAIS d'alcool ni de stupéfiant sur site","JAMAIS de boisson sucrée ni de nourriture en zone"],
+ risks:[{l:"Manquement constaté → avertissement du superviseur",v:"major"},{l:"Récidive → sanction disciplinaire",v:"major"},{l:"Comportement inadapté → sécurité collective compromise",v:"critical"}],
+ checklist:["Tenue de travail conforme","Pas de casquette ni débardeur","Téléphone rangé hors zone","Pas d'alcool ni stupéfiant","Pas de boisson sucrée ni nourriture","Pas de musique en zone"],
+ resp:[{r:"Opérateur",a:"Respecter la tenue et les règles internes. Ranger téléphone et effets hors zone."},{r:"Pilotes & Sup.",a:"Contrôler le respect. Avertir en cas de manquement. Sanctionner si récidive."},{r:"Resp. QSE",a:"Mettre à jour le règlement intérieur. Piloter les rappels collectifs."}],
+ motto:"Pas de règle, pas de zone de travail."},
+{id:"P15",title:"Changement de batterie",cat:"engin",crit:"critical",time:"3 min",
+ steps:["Mettre en marche le Togger : arrêts d'urgence enlevés, bouton jaune (écran allumé), badger puis bouton sous « V »","Positionner l'EKS perpendiculaire au banc","Couper le contact et ouvrir le capot","Retirer la batterie déchargée : crochet rouge de sécurité + aimant activé tout le long","Charger la batterie déchargée : emplacement vide, brancher la poignée","Récupérer une batterie chargée : laser centré, aimant activé","Transférer sur l'EKS : remettre la cale, brancher, fermer le capot"],
+ interdits:["JAMAIS déplacer le Togger sans le crochet rouge","JAMAIS désactiver l'aimant pendant le transfert","JAMAIS oublier la cale de l'EKS"],
+ risks:[{l:"Chute de batterie → écrasement, AT grave",v:"critical"},{l:"Éclaboussure d'acide → brûlure chimique",v:"critical"},{l:"Batterie non mise en charge → arrêt d'activité du CLR",v:"critical"}],
+ checklist:["Togger allumé (arrêts, jaune, badge)","Laser centré sur la batterie","Aimant activé (LED verte)","Crochet rouge de sécurité posé","Cale EKS remise après transfert","Togger rangé et mis en charge"],
+ resp:[{r:"Opérateur",a:"Allumer le Togger, positionner, activer l'aimant, poser le crochet, ranger."},{r:"Pilotes & Sup.",a:"Contrôler l'utilisation. Signaler toute manipulation à risque ou anomalie Togger."},{r:"Resp. QSE",a:"Auditer les manipulations. Mettre à jour le DUERP. Piloter la maintenance préventive."}],
+ motto:"Aimant activé, crochet de sécurité."},
+{id:"P16",title:"Les composés",cat:"qualite",crit:"major",time:"2 min",
+ steps:["Se rendre en allée 11, fin d'allée","Lire l'étiquette : adressage, référence, quantité","Regarder l'image du composé à l'emplacement (= nombre d'éléments)","Prélever le nombre exact d'éléments (ex : 1 vis + 1 écrou + 1 rondelle)","Vérifier l'adressage : ni au-dessus, ni en-dessous","Si composé non emplacé : relever la référence, communiquer aux pilotes, attendre la création d'emplacement"],
+ interdits:["JAMAIS de composé sans image de référence","JAMAIS de prélèvement hors emplacement","JAMAIS de pièce en trop dans le composé"],
+ risks:[{l:"Composé incomplet → erreur agence",v:"critical"},{l:"Pièce manquante ou en trop → litige client",v:"critical"},{l:"Prélèvement en trop → écart de stock, inventaire faussé",v:"major"}],
+ checklist:["Étiquette lue (adressage + réf + qté)","Image du composé regardée","Nombre exact d'éléments prélevé","Adressage vérifié (ni au-dessus, ni en-dessous)","Référence relevée si non emplacée","Pilotes informés des manques"],
+ resp:[{r:"Opérateur",a:"Lire l'étiquette, regarder l'image, prélever le nombre exact. Signaler les composés non emplacés."},{r:"Pilotes & Sup.",a:"Recevoir les références non emplacées. Demander la création d'emplacement avec image."},{r:"Resp. QSE",a:"Piloter les indicateurs qualité composés. Suivre litiges agence et écarts de stock."}],
+ motto:"Une image, un composé exact."},
+{id:"P17",title:"Sécurité incendie",cat:"securite",crit:"critical",time:"3 min",
+ steps:["Connaître les rôles : Guide-file (transmet, regroupe, conduit), Serre-file (veille, vérifie, ferme), ESI (extincteur + RIA, formé)","Alerter le site : donner l'alarme immédiatement","Évacuer au point de rassemblement, vérifier les présents","Agir uniquement si formé : bon extincteur ou RIA, sinon évacuer","Choisir le bon extincteur : Classe A (bois/carton) eau-poudre-mousse, Classe B (essence/huile) poudre-CO2-mousse, électrique CO2 ou eau additif","En cas de doute, consulter les instructions de l'extincteur"],
+ interdits:["JAMAIS d'extincteur à eau sur un feu électrique","JAMAIS utiliser un extincteur trop près (brûlure)","JAMAIS rester inactif si une vie est en danger"],
+ risks:[{l:"Inaction malgré formation → vies en danger",v:"critical"},{l:"Mauvaise distance extincteur → brûlure grave ou inefficacité",v:"critical"},{l:"Mauvais extincteur → aggravation du feu",v:"critical"}],
+ checklist:["Alerter et donner l'alarme","Mettre en sécurité (évacuer)","Rejoindre le point de rassemblement","S'assurer que tout le monde est présent","Vérifier son rôle (guide / serre-file / ESI)","Prendre le bon extincteur si formé"],
+ resp:[{r:"Opérateur",a:"Alerter, évacuer, rejoindre le point de rassemblement. N'intervenir que si formé."},{r:"Pilotes & Sup.",a:"Coordonner l'évacuation. Contrôler la présence au point de rassemblement."},{r:"Resp. QSE",a:"Désigner guide-file, serre-file, ESI. Piloter exercices d'évacuation et formations."}],
+ motto:"Alerter, évacuer, agir."},
+{id:"P18",title:"Sécurité au quotidien",cat:"securite",crit:"critical",time:"3 min",
+ steps:["Signaler toute anomalie palletier ou engin","Circuler dans les allées piétonnes, respecter le sens et les stops","Se protéger : gilet fermé, gants, cutter entretenu","Signaler une palette cassée ou mal sanglée","Marquer les stops en fin d'allée","Se signaler oralement devant et derrière l'engin","Remplir le carnet après chaque signalement","Ramasser les cerclages et films au sol"],
+ interdits:["JAMAIS de marche arrière abusive","JAMAIS se balancer sur les lisses","JAMAIS de circulation à contresens"],
+ risks:[{l:"Chute (cerclage au sol, palette mal sanglée, produit en hauteur)",v:"critical"},{l:"Coupure / blessure (cutter mal entretenu, gants usés)",v:"major"},{l:"Collision engin/piéton (marche arrière, contresens, absence de signal)",v:"critical"}],
+ checklist:["Gilet de sécurité fermé","Anomalies signalées (engin, palletier)","Stops marqués en fin d'allée","Sens de circulation respecté","Cerclages/films ramassés au sol","Cutter et gants vérifiés"],
+ resp:[{r:"Opérateur",a:"Signaler, remplir le carnet, respecter la circulation, ramasser les cerclages, changer ses gants."},{r:"Pilotes & Sup.",a:"Recevoir les signalements. Contrôler les carnets. Faire remonter les dysfonctionnements engin."},{r:"Resp. QSE",a:"Piloter les indicateurs sécurité. Mettre à jour le DUERP. Suivre AT et presqu'accidents."}],
+ motto:"Une anomalie, un signalement."}
+
+];
+
+const quizBank=[
+/* ===== P1 Prise de poste ===== */
+{std:"P1",cat:"securite",q:"Que faire si l'engin présente un défaut au contrôle de prise de poste ?",opts:["L'utiliser en faisant attention","Le signaler et ne pas l'utiliser","Attendre la fin de poste","Demander à un collègue"],correct:1,feedback:"Un engin défectueux ne doit JAMAIS être utilisé. Risque immédiat : accident grave + arrêt d'activité."},
+{std:"P1",cat:"securite",q:"Quels EPI sont obligatoires pour accéder à la zone de travail ?",opts:["Casque uniquement","Chaussures de sécurité + gants de manutention","Gilet seul","Aucun en intérieur"],correct:1,feedback:"EPI complets exigés : chaussures de sécurité + gants. Pas d'EPI, pas de zone de travail."},
+{std:"P1",cat:"process",q:"À quel moment faut-il remplir le carnet journalier ?",opts:["En fin de semaine","À chaque prise de poste","Seulement si incident","Une fois par mois"],correct:1,feedback:"Le carnet journalier se remplit à CHAQUE prise de poste. Traçabilité engin et signalements."},
+
+/* ===== P2 Consommables ===== */
+{std:"P2",cat:"process",q:"Dernier carton pris sur la palette. Que faire ?",opts:["Continuer et prévenir plus tard","Remplacer immédiatement la palette et défilmer","Attendre le pilote","Mettre une étiquette « vide »"],correct:1,feedback:"Dernier carton pris = remplacement immédiat. Une palette vide ralentit toute l'équipe."},
+{std:"P2",cat:"process",q:"Que signifie un bac consigné BLEU ?",opts:["Réassort interne","Mise à disposition agences","Produit fragile","Bac détérioré"],correct:1,feedback:"Bleu = MAD agences, Jaune = réassort. Ne pas confondre les flux de contenants."},
+{std:"P2",cat:"process",q:"Que faire d'un bac détérioré (HS) ?",opts:["Le réutiliser quand même","L'isoler en caisse dédiée, jamais réutiliser","Le remettre en rayon","Le jeter au DIB"],correct:1,feedback:"Bac HS = isolé en caisse dédiée. JAMAIS réutiliser un bac détérioré."},
+
+/* ===== P3 Affectation & montage ===== */
+{std:"P3",cat:"process",q:"Quel état doit afficher la commande avant de démarrer ?",opts:["« Terminée »","« En attente »","« En cours » (F5 si besoin)","« Validée »"],correct:2,feedback:"La commande doit être à l'état « En cours ». Utiliser F5 pour rafraîchir si nécessaire."},
+{std:"P3",cat:"process",q:"Conséquence d'un oubli d'affectation sur le poste informatique ?",opts:["Aucune","Reporting faussé","Carton perdu","Rejet pondéral"],correct:1,feedback:"Oubli d'affectation = reporting faussé. Toujours s'affecter avant de préparer."},
+
+/* ===== P4 Préparation détail ===== */
+{std:"P4",cat:"qualite",q:"Où ne faut-il JAMAIS coller une étiquette ?",opts:["Dessus du sachet","Dessous du colis","Sur la référence ou le visuel produit","Côté du carton"],correct:2,feedback:"Étiquette sur la référence = identification impossible. Retours systématiques + coût de reprise."},
+{std:"P4",cat:"qualite",q:"Que vérifier en lisant la référence produit ?",opts:["Seulement le prix","La désignation ET le poids","La couleur du carton","Le numéro de tournée"],correct:1,feedback:"On vérifie désignation + poids produit. C'est l'autocontrôle qui évite le litige."},
+{std:"P4",cat:"securite",q:"Hauteur maximale recommandée pour les prises répétitives ?",opts:["Au-dessus de la tête","Hauteur des épaules max","Au niveau du sol","Sans limite"],correct:1,feedback:"Prises à hauteur des épaules maximum, bonnes postures. Prévention des TMS."},
+
+/* ===== P5 Préparation carton ===== */
+{std:"P5",cat:"qualite",q:"Pourquoi un BL inversé est-il une erreur critique ?",opts:["Ralentit le convoyeur","Expose les données d'un autre client (RGPD)","Provoque un rejet pondéral","Empêche la lecture code-barres"],correct:1,feedback:"BL inversé = données personnelles au mauvais client. Violation RGPD, conséquences légales."},
+{std:"P5",cat:"qualite",q:"Dans quoi insérer le BL sur le colis ?",opts:["Scotché directement","Pochette « documents ci-inclus » sur face nue","Dans le carton, libre","Agrafé au produit"],correct:1,feedback:"BL inséré dans la pochette « documents ci-inclus », collée sur une face nue du colis."},
+{std:"P5",cat:"qualite",q:"Dernier contrôle avant expédition d'un carton ?",opts:["Peser le carton","BL présent + bon client + étiquette conforme","Compter les BL","Vérifier la météo"],correct:1,feedback:"Contrôle final : BL présent, bon client associé, étiquette d'expédition conforme."},
+
+/* ===== P6 Rétract ===== */
+{std:"P6",cat:"engin",q:"Distance de sécurité au gerbage avec le rétract ?",opts:["1 mètre autour","1,5× hauteur du mât, zéro piéton/engin","3 mètres partout","Pas de distance spécifique"],correct:1,feedback:"1,5× la hauteur du mât. Zéro piéton, zéro engin dans le périmètre. Non négociable."},
+{std:"P6",cat:"engin",q:"De combien doit dépasser le sabot de la lisse ?",opts:["10 mm","50 mm","Aucun dépassement","200 mm"],correct:1,feedback:"Toujours laisser dépasser le sabot de la lisse de 50 mm. Sécurité du gerbage."},
+
+/* ===== P7 Changement de contenants ===== */
+{std:"P7",cat:"process",q:"Quelles méthodes pour changer un contenant ?",opts:["Téléphone + email","Informatique ou Flasheur","Demande pilote + bon papier","SAP + formulaire"],correct:1,feedback:"Deux méthodes : Informatique (poste) ou Flasheur (scan). Mise à jour système automatique."},
+{std:"P7",cat:"qualite",q:"Risque si la taille du contenant n'est pas mise à jour dans le système ?",opts:["Aucun","Rejet pondéral sur le convoyeur","Étiquette perdue","Double affectation"],correct:1,feedback:"Taille non mise à jour = écart de poids attendu = rejet pondéral sur le convoyeur."},
+
+/* ===== P8 Ruptures ===== */
+{std:"P8",cat:"qualite",q:"Quel motif est INTERDIT en saisie de rupture ?",opts:["Manquant","Incomplet","Cassé","Mauvaise référence"],correct:2,feedback:"Le motif « Cassé » est strictement INTERDIT. Seuls autorisés : Manquant, Incomplet, Mauvaise référence."},
+{std:"P8",cat:"qualite",q:"Où saisir la quantité réellement prélevée lors d'une rupture ?",opts:["Dans la case « Commandé »","Dans la case « Réel »","Sur le BL papier","On ne saisit rien"],correct:1,feedback:"La quantité réelle se saisit dans la case « Réel », après accès à F5 / étiquette tournée."},
+{std:"P8",cat:"qualite",q:"Pas de rupture détectée : comment valider ?",opts:["Rien à faire","Envoyer directement et valider au scan code opérateur","Appeler le pilote","Repasser en F5"],correct:1,feedback:"Sans rupture : envoi direct + validation au scan du code opérateur."},
+
+/* ===== P9 Déchets ===== */
+{std:"P9",cat:"process",q:"Plastique dans la presse à carton. Conséquence ?",opts:["Tri automatique","Bourrage → arrêt + intervention maintenance","Compactage normal","Alerte sans dommage"],correct:1,feedback:"Plastique dans la presse = bourrage, arrêt complet, intervention maintenance. INTERDIT ABSOLU."},
+{std:"P9",cat:"process",q:"Que contient la poubelle VERTE ?",opts:["Papier / cerclage","Plastique","Déchets alimentaires","Métaux"],correct:1,feedback:"Verte = plastique, Bleue = papier/cerclage. Bien séparer les flux de tri."},
+{std:"P9",cat:"process",q:"Réflexe en cas de bourrage de la presse ?",opts:["Forcer manuellement","Appuyer sur le bouton vert","Continuer à charger","Couper l'électricité"],correct:1,feedback:"Bourrage presse : bouton vert. Et zéro plastique dans la presse."},
+
+/* ===== P10 Aérosol / Batterie ===== */
+{std:"P10",cat:"securite",q:"Traitement d'une batterie avant expédition ?",opts:["Directement dans le carton","Enveloppe bulle individuelle + étiquette DANGER","Film plastique","Sachet + étiquette standard"],correct:1,feedback:"Chaque batterie : enveloppe bulle individuelle + étiquette DANGER BATTERIE visible. Risque incendie sinon."},
+{std:"P10",cat:"securite",q:"Comment sécuriser un aérosol avant fermeture du colis ?",opts:["Le poser au fond","Le caler avec de l'air-push","Le scotcher au produit","Rien de particulier"],correct:1,feedback:"Aérosol calé avec air-push. En C16, scotcher en complément du calage."},
+{std:"P10",cat:"securite",q:"Que faire des portes de stockage après prélèvement ?",opts:["Les laisser ouvertes","Les refermer systématiquement","Les bloquer ouvertes","Peu importe"],correct:1,feedback:"Refermer les portes de stockage après CHAQUE prélèvement. Sécurité incendie."},
+
+/* ===== P11 Fin de poste ===== */
+{std:"P11",cat:"process",q:"Peut-on quitter sans terminer la commande en cours ?",opts:["Oui, l'équipe suivante reprend","Non, TOUJOURS terminer avant de quitter","Oui, si on prévient le pilote","Oui, en fin de dernière vague"],correct:1,feedback:"JAMAIS quitter sans terminer sa commande. Règle obligatoire, sans exception."},
+{std:"P11",cat:"process",q:"Où restituer les flasheurs en fin de poste ?",opts:["Dans sa poche","Au point de collecte","Sur l'engin","Chez le pilote"],correct:1,feedback:"Flasheurs restitués au point de collecte. Un flasheur perdu = temps et coût."},
+{std:"P11",cat:"engin",q:"État de la batterie de l'engin à laisser en fin de poste ?",opts:["Déchargée, peu importe","Contrôlée et changée si nécessaire","Vide pour économiser","Débranchée"],correct:1,feedback:"Contrôler l'engin et changer la batterie si besoin. Engin non chargé = blocage équipe suivante."},
+
+/* ===== P12 Circulation ===== */
+{std:"P12",cat:"securite",q:"Actions obligatoires à chaque STOP en fin d'allée ?",opts:["Ralentir, klaxonner, passer","Arrêt complet, vérifier gauche, vérifier droite","Klaxonner 2 fois et avancer","Clignotant, ralentir, passer si dégagé"],correct:1,feedback:"STOP = arrêt COMPLET. Puis vérifier gauche ET droite. Un ralentissement n'est pas un arrêt."},
+{std:"P12",cat:"securite",q:"Qui a la priorité à un croisement ?",opts:["L'engin le plus rapide","Le piéton","Celui qui klaxonne","Le plus chargé"],correct:1,feedback:"Priorité au piéton. Ralentir aux croisements et s'annoncer."},
+{std:"P12",cat:"securite",q:"Position du poste de conduite avant tout déplacement ?",opts:["En hauteur","Abaissé","Peu importe","À mi-hauteur"],correct:1,feedback:"Toujours abaisser le poste avant de se déplacer. Jamais se déplacer poste en hauteur."},
+
+/* ===== P13 Monolignes ===== */
+{std:"P13",cat:"qualite",q:"Combien d'articles dans un C16 en monoligne ?",opts:["2 si même référence","Autant que possible","1 seul, sans exception","Dépend de la taille"],correct:2,feedback:"1 étiquette = 1 article = 1 C16. Doublon = double litige client."},
+{std:"P13",cat:"qualite",q:"Quel type d'étiquette pour une monoligne ?",opts:["Étiquette de picking","Étiquette d'expédition uniquement","BL + picking","Aucune"],correct:1,feedback:"La monoligne n'utilise qu'une étiquette d'expédition (pas d'étiquette de picking)."},
+{std:"P13",cat:"qualite",q:"Risque d'une inversion d'étiquettes d'expédition en monoligne ?",opts:["Sans conséquence","Retour + réexpédition (litige client)","Rejet pondéral","Perte de l'étiquette"],correct:1,feedback:"Inversion = mauvais article au mauvais client = retour + réexpédition. Vérifier la correspondance."},
+/* ===== P14 Les interdits ===== */
+{std:"P14",cat:"securite",q:"Quelle boisson est autorisée en zone de travail ?",opts:["Soda","Bouteille d'eau uniquement","Café sucré","Boisson énergisante"],correct:1,feedback:"Seule la bouteille d'eau est autorisée en zone. Pas de boisson sucrée ni de nourriture."},
+{std:"P14",cat:"securite",q:"Que faire de son téléphone en prise de poste ?",opts:["Le garder en poche","Le ranger hors de la zone de travail","L'utiliser en silencieux","Le poser sur l'engin"],correct:1,feedback:"Téléphone rangé hors zone. Pas de musique ni de téléphone en zone de travail."},
+{std:"P14",cat:"securite",q:"Conséquence d'un premier manquement aux règles internes ?",opts:["Sanction immédiate","Avertissement du superviseur","Aucune","Renvoi"],correct:1,feedback:"Premier constat : avertissement du superviseur. La sanction intervient en cas de récidive."},
+
+/* ===== P15 Changement de batterie ===== */
+{std:"P15",cat:"engin",q:"Quel dispositif de sécurité poser avant de déplacer le Togger ?",opts:["Une sangle","Le crochet rouge de sécurité","Une cale en bois","Rien"],correct:1,feedback:"Crochet rouge de sécurité posé + aimant activé. Jamais déplacer le Togger sans le crochet."},
+{std:"P15",cat:"engin",q:"Comment positionner l'EKS pour le changement de batterie ?",opts:["Parallèle au banc","Perpendiculaire au banc","En angle de 45°","Peu importe"],correct:1,feedback:"EKS positionné perpendiculaire au banc, contact coupé, capot ouvert."},
+{std:"P15",cat:"engin",q:"Risque si la batterie déchargée n'est pas remise en charge ?",opts:["Aucun","Arrêt d'activité de tout le CLR","Surchauffe","Perte de garantie"],correct:1,feedback:"Batterie non mise en charge = pénalisation et arrêt d'activité de tout le CLR."},
+
+/* ===== P16 Les composés ===== */
+{std:"P16",cat:"qualite",q:"Dans quelle allée prélève-t-on les composés ?",opts:["Allée 1","Allée 11, fin d'allée","Allée 21","N'importe où"],correct:1,feedback:"Les composés se prélèvent en allée 11, en fin d'allée."},
+{std:"P16",cat:"qualite",q:"Que regarder pour prélever le bon nombre d'éléments d'un composé ?",opts:["Le poids","L'image du composé à l'emplacement","La couleur","Le prix"],correct:1,feedback:"L'image à l'emplacement indique le nombre exact d'éléments (ex : 1 vis + 1 écrou + 1 rondelle)."},
+{std:"P16",cat:"qualite",q:"Composé absent en fin d'allée 11. Que faire ?",opts:["Prélever ailleurs","Relever la référence et prévenir les pilotes","Ignorer la ligne","Mettre une pièce approchante"],correct:1,feedback:"Relever la référence, communiquer aux pilotes, attendre la création d'emplacement avec image."},
+
+/* ===== P17 Sécurité incendie ===== */
+{std:"P17",cat:"securite",q:"Peut-on utiliser un extincteur à eau sur un feu électrique ?",opts:["Oui","Non, jamais","Si peu d'eau","Si formé"],correct:1,feedback:"JAMAIS d'eau sur un feu électrique. Utiliser CO2 ou eau avec additif."},
+{std:"P17",cat:"securite",q:"Rôle du serre-file lors d'une évacuation ?",opts:["Conduit le groupe","Veille, vérifie et ferme","Éteint le feu","Appelle les secours"],correct:1,feedback:"Serre-file : veille, vérifie, ferme. Guide-file : transmet, regroupe, conduit."},
+{std:"P17",cat:"securite",q:"Quand intervenir sur un départ de feu avec un extincteur ?",opts:["Toujours","Uniquement si formé, sinon évacuer","Jamais","Si le feu est petit"],correct:1,feedback:"Agir seulement si formé (ESI). Sinon : alerter et évacuer."},
+
+/* ===== P18 Sécurité au quotidien ===== */
+{std:"P18",cat:"securite",q:"Réflexe face à une anomalie palletier ou engin ?",opts:["Continuer","La signaler","Réparer soi-même","Attendre la fin de poste"],correct:1,feedback:"Une anomalie, un signalement. Puis remplir le carnet prévu après signalement."},
+{std:"P18",cat:"securite",q:"Que faire des cerclages et films trouvés au sol ?",opts:["Les laisser","Les ramasser","Les pousser de côté","Prévenir le nettoyage"],correct:1,feedback:"Ramasser les cerclages/films au sol : ils sont une cause directe de chute de plain-pied."},
+{std:"P18",cat:"securite",q:"Quel comportement de conduite est interdit au quotidien ?",opts:["Klaxonner aux croisements","La marche arrière abusive","Abaisser le poste","Céder au piéton"],correct:1,feedback:"Interdits : marche arrière abusive, contresens, se balancer sur les lisses."}
+
+];
+
+/* ===================== GAMIFICATION ===================== */
+const LEVELS=[
+  {min:0,name:"Recrue",rank:"Niveau 1",medal:"🥉"},
+  {min:100,name:"Opérateur",rank:"Niveau 2",medal:"🥈"},
+  {min:250,name:"Préparateur confirmé",rank:"Niveau 3",medal:"🥇"},
+  {min:450,name:"Référent qualité",rank:"Niveau 4",medal:"🏅"},
+  {min:700,name:"Expert standards",rank:"Niveau 5",medal:"🎖️"},
+  {min:1000,name:"Maître Pick & Pack",rank:"Niveau 6",medal:"👑"}
+];
+
+const BADGES=[
+  {id:"first",emoji:"🎯",name:"Premier pas",desc:"1er quiz terminé"},
+  {id:"perfect",emoji:"💯",name:"Sans faute",desc:"100% à un quiz"},
+  {id:"streak5",emoji:"🔥",name:"En feu",desc:"5 bonnes d'affilée"},
+  {id:"streak10",emoji:"⚡",name:"Imparable",desc:"10 bonnes d'affilée"},
+  {id:"secu",emoji:"🛡️",name:"Gardien sécu",desc:"Quiz Sécurité 100%"},
+  {id:"explorer",emoji:"📖",name:"Explorateur",desc:"13 standards ouverts"},
+  {id:"check",emoji:"✅",name:"Méthodique",desc:"1 checklist complétée"},
+  {id:"q50",emoji:"🧠",name:"Studieux",desc:"50 questions répondues"},
+  {id:"q100",emoji:"🎓",name:"Érudit",desc:"100 questions répondues"},
+  {id:"comeback",emoji:"🔄",name:"Revanche",desc:"Erreurs toutes corrigées"},
+  {id:"lvl3",emoji:"🥇",name:"Confirmé",desc:"Atteindre niveau 3"},
+  {id:"master",emoji:"👑",name:"Maître",desc:"Atteindre niveau 6"}
+];
+
+const DEFAULT={xp:0,answered:0,quizzes:0,bestStreak:0,badges:[],openedStds:[],checksDone:0};
+let G=loadProgress();
+
+function loadProgress(){
+  try{const r=localStorage.getItem('spp_progress');if(r){return Object.assign({},DEFAULT,JSON.parse(r))}}catch(e){}
+  return Object.assign({},DEFAULT);
+}
+function saveProgress(){try{localStorage.setItem('spp_progress',JSON.stringify(G))}catch(e){}}
+
+function currentLevel(){let l=LEVELS[0];for(const L of LEVELS){if(G.xp>=L.min)l=L}return l}
+function levelIndex(){return LEVELS.indexOf(currentLevel())}
+function nextLevel(){const i=levelIndex();return i<LEVELS.length-1?LEVELS[i+1]:null}
+
+function addXP(n){
+  const before=levelIndex();
+  G.xp+=n;saveProgress();
+  const after=levelIndex();
+  if(after>before){const L=LEVELS[after];showToast(L.medal,"Niveau "+ (after+1) +" atteint !",L.name);fireConfetti();
+    if(after>=2)unlockBadge('lvl3',true);
+    if(after>=5)unlockBadge('master',true);
+  }
+  refreshLevelUI();
+}
+
+function unlockBadge(id,silent){
+  if(G.badges.includes(id))return;
+  G.badges.push(id);saveProgress();
+  const b=BADGES.find(x=>x.id===id);
+  if(b&&!silent){showToast(b.emoji,"Badge débloqué !",b.name)}
+  else if(b){showToast(b.emoji,"Badge débloqué !",b.name)}
+}
+
+function refreshLevelUI(){
+  const L=currentLevel(),nx=nextLevel(),i=levelIndex();
+  document.getElementById('header-lvl').textContent="Niv. "+(i+1);
+  const med=document.getElementById('lc-medal');if(med){med.textContent=L.medal}
+  const nm=document.getElementById('lc-name');if(nm){nm.textContent=L.name}
+  const rk=document.getElementById('lc-rank');if(rk){rk.textContent=L.rank}
+  const xp=document.getElementById('lc-xp');if(xp){xp.textContent=G.xp}
+  const bar=document.getElementById('lc-bar'),next=document.getElementById('lc-next');
+  if(bar&&next){
+    if(nx){const span=nx.min-L.min,prog=G.xp-L.min,pct=Math.min(100,Math.round(prog/span*100));
+      bar.style.width=pct+'%';next.textContent=(nx.min-G.xp)+" XP avant « "+nx.name+" »";}
+    else{bar.style.width='100%';next.textContent="Niveau maximum atteint 👑";}
+  }
+}
+
+/* ===== TOAST + CONFETTI ===== */
+function showToast(emoji,title,sub){
+  const wrap=document.getElementById('toast-wrap');
+  const t=document.createElement('div');t.className='toast';
+  t.innerHTML=`<div class="toast-emoji">${emoji}</div><div><div class="toast-title">${title}</div><div class="toast-sub">${sub}</div></div>`;
+  wrap.appendChild(t);
+  if(navigator.vibrate)navigator.vibrate(40);
+  setTimeout(()=>t.remove(),3600);
+}
+function fireConfetti(){
+  const cols=['#1A9E9E','#22C4C4','#F0B429','#34D058','#8B7CF0','#E8850C'];
+  const c=document.createElement('div');c.className='confetti';document.body.appendChild(c);
+  for(let i=0;i<70;i++){const p=document.createElement('i');
+    p.style.left=Math.random()*100+'%';p.style.background=cols[i%cols.length];
+    p.style.animationDuration=(1.6+Math.random()*1.4)+'s';p.style.animationDelay=(Math.random()*0.3)+'s';
+    p.style.transform='rotate('+Math.random()*360+'deg)';c.appendChild(p);}
+  setTimeout(()=>c.remove(),3200);
+}
+
+/* ===================== FILTERS ===================== */
+const FILTERS=[{key:'all',label:'Tous'},{key:'securite',label:'Sécurité',dot:'#D93025'},{key:'qualite',label:'Qualité',dot:'#1A9E9E'},{key:'process',label:'Process',dot:'#8B9BB8'},{key:'engin',label:'Engin',dot:'#E8850C'},{key:'critical',label:'Critiques',dot:'#D93025'}];
+let activeFilter='all';
+
+function renderFilterBar(){document.getElementById('filter-bar').innerHTML=FILTERS.map(f=>`<button class="chip ${f.key===activeFilter?'active':''}" onclick="setFilter('${f.key}')">${f.dot?`<span class="chip-dot" style="background:${f.dot}"></span>`:''}${f.label}</button>`).join('')}
+function setFilter(k){activeFilter=k;renderFilterBar();filterStandards()}
+
+function filterStandards(){
+  const q=(document.getElementById('search-input')?.value||'').toLowerCase().trim();
+  let f=standards;
+  if(activeFilter==='critical')f=f.filter(s=>s.crit==='critical');
+  else if(activeFilter!=='all')f=f.filter(s=>s.cat===activeFilter);
+  if(q)f=f.filter(s=>s.title.toLowerCase().includes(q)||s.id.toLowerCase().includes(q)||s.steps.some(st=>st.toLowerCase().includes(q))||s.interdits.some(it=>it.toLowerCase().includes(q)));
+  renderStdCards(document.getElementById('std-list'),f);
+  document.getElementById('std-empty').classList.toggle('hidden',f.length>0);
+}
+
+function renderStdCards(container,items){
+  container.innerHTML=items.map(s=>{const ci=CATEGORIES[s.cat];return`
+  <div class="std-card" data-crit="${s.crit}" data-id="${s.id}" onclick="toggleStdCard(this)">
+    <div class="std-card-top">
+      <div class="std-card-code">${s.id}</div>
+      <div class="std-card-info">
+        <div class="std-card-title">${s.title}</div>
+        <div class="std-card-meta"><span class="std-meta-tag meta-${ci.color}">${ci.label}</span><span class="std-card-time">≈ ${s.time}</span></div>
+      </div>
+      <svg class="std-card-chevron" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+    </div>
+    <div class="std-expand"><div class="std-detail">
+      <div class="std-detail-section"><div class="std-detail-heading accent">Gestes obligatoires</div><ol class="step-list">${s.steps.map((st,i)=>`<li class="step-item"><span class="step-num">${i+1}</span><span class="step-text">${st}</span></li>`).join('')}</ol></div>
+      <div class="std-detail-section"><div class="interdit-block"><div class="std-detail-heading danger" style="border:none;margin:0 0 6px;padding:0">Interdits</div>${s.interdits.map(it=>`<div class="interdit-item"><span class="interdit-icon">✕</span><span>${it}</span></div>`).join('')}</div></div>
+      <div class="std-detail-section"><div class="std-detail-heading">Risques</div><div class="risk-list">${s.risks.map(r=>`<div class="risk-item ${r.v}"><span class="risk-dot ${r.v}"></span>${r.l}</div>`).join('')}</div></div>
+      <div class="std-detail-section"><div class="std-detail-heading green">✅ Checklist</div><div class="checklist-block" data-std="${s.id}">${s.checklist.map((c,i)=>`<div class="check-row" onclick="event.stopPropagation();toggleCheck(this)"><div class="check-box">✓</div><span class="check-label">${c}</span></div>`).join('')}<div class="check-progress"><div class="check-bar"><div class="check-bar-fill" style="width:0%"></div></div><span class="check-pct">0%</span></div></div></div>
+      <div class="std-detail-section"><div class="std-detail-heading accent">Responsabilités</div><div class="resp-grid">${s.resp.map(r=>`<div class="resp-row"><span class="resp-role">${r.r}</span><span class="resp-actions">${r.a}</span></div>`).join('')}</div></div>
+      <div class="std-motto">« ${s.motto} »</div>
+    </div></div>
+  </div>`}).join('');
+}
+
+function toggleStdCard(el){
+  el.classList.toggle('open');
+  if(el.classList.contains('open')){
+    const id=el.dataset.id;
+    if(id&&!G.openedStds.includes(id)){G.openedStds.push(id);saveProgress();
+      if(G.openedStds.length>=13)unlockBadge('explorer');}
+  }
+}
+
+function toggleCheck(row){
+  row.classList.toggle('done');
+  const block=row.closest('.checklist-block');
+  const rows=block.querySelectorAll('.check-row');
+  const done=block.querySelectorAll('.check-row.done').length;
+  const pct=Math.round(done/rows.length*100);
+  block.querySelector('.check-bar-fill').style.width=pct+'%';
+  block.querySelector('.check-pct').textContent=pct+'%';
+  if(pct===100&&!block.dataset.rewarded){block.dataset.rewarded="1";G.checksDone++;saveProgress();unlockBadge('check');}
+}
+
+/* ===================== HOME ===================== */
+function renderHome(){
+  const c=standards.filter(s=>s.crit==='critical');
+  document.getElementById('stat-crit').textContent=c.length;
+  document.getElementById('stat-q').textContent=quizBank.length;
+  renderStdCards(document.getElementById('home-critical'),c.slice(0,4));
+  refreshLevelUI();
+}
+function goFilteredStandards(f){activeFilter=f;switchView('standards');renderFilterBar();filterStandards()}
+
+/* ===================== QUIZ ENGINE ===================== */
+let quizState={mode:null,questions:[],current:0,answers:[],score:0,answered:[],streak:0};
+let errorBank=[];
+
+function renderQuizHub(){document.getElementById('quiz-container').innerHTML=`
+  <div class="section-head" style="margin-top:0"><h3>Choisissez un mode</h3></div>
+  <div class="quiz-mode-grid">
+    <div class="quiz-mode-card" onclick="startQuizMode('full')"><div class="quiz-mode-icon">📋</div><div class="quiz-mode-title">Complet</div><div class="quiz-mode-desc">${quizBank.length} questions, tous les standards</div><span class="quiz-mode-badge badge-accent">${quizBank.length} Q</span></div>
+    <div class="quiz-mode-card" onclick="startQuizMode('securite')"><div class="quiz-mode-icon">🛡</div><div class="quiz-mode-title">Sécurité</div><div class="quiz-mode-desc">Standards critiques sécurité</div><span class="quiz-mode-badge badge-red">CRITIQUE</span></div>
+    <div class="quiz-mode-card" onclick="startQuizMode('express')"><div class="quiz-mode-icon">⚡</div><div class="quiz-mode-title">Express</div><div class="quiz-mode-desc">7 questions aléatoires</div><span class="quiz-mode-badge badge-orange">RAPIDE</span></div>
+    <div class="quiz-mode-card" onclick="startQuizMode('erreurs')"><div class="quiz-mode-icon">🔄</div><div class="quiz-mode-title">Mes erreurs</div><div class="quiz-mode-desc">Reprendre les questions ratées</div><span class="quiz-mode-badge badge-green">RÉVISION</span></div>
+  </div>
+  <div style="margin-top:18px;padding:14px;background:var(--gold-bg);border:1px solid rgba(240,180,41,0.22);border-radius:var(--radius-md);text-align:center;font-size:0.78rem;color:var(--text-secondary)">⭐ Chaque bonne réponse rapporte <b style="color:var(--gold)">10 XP</b> · série en cours = bonus</div>`}
+
+function shuffle(a){const b=[...a];for(let i=b.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[b[i],b[j]]=[b[j],b[i]]}return b}
+
+function startQuizMode(mode){
+  let qs;
+  if(mode==='full')qs=[...quizBank];
+  else if(mode==='securite')qs=quizBank.filter(q=>q.cat==='securite');
+  else if(mode==='express')qs=shuffle(quizBank).slice(0,7);
+  else if(mode==='erreurs'){qs=errorBank.length>0?[...errorBank]:shuffle(quizBank).slice(0,7);if(!errorBank.length)mode='express'}
+  quizState={mode,questions:shuffle(qs),current:0,answers:new Array(qs.length).fill(-1),score:0,answered:new Array(qs.length).fill(false),streak:0};
+  switchView('quiz');renderQuizQuestion();
+}
+
+function renderQuizQuestion(){
+  const c=document.getElementById('quiz-container'),s=quizState;
+  if(s.current>=s.questions.length){renderQuizResults();return}
+  const q=s.questions[s.current],pct=(s.current/s.questions.length*100).toFixed(0),letters=['A','B','C','D'],isA=s.answered[s.current],uA=s.answers[s.current],isC=uA===q.correct;
+  c.innerHTML=`
+  <div class="quiz-header">
+    <button class="quiz-back" onclick="renderQuizHub()">←</button>
+    <div class="quiz-progress-wrap"><div class="quiz-progress-bar"><div class="quiz-progress-fill" style="width:${pct}%"></div></div><div class="quiz-counter">${s.current+1} / ${s.questions.length}${s.streak>1?` · <span class="quiz-streak">🔥 ${s.streak}</span>`:''}</div></div>
+  </div>
+  <div class="quiz-q-card">
+    <div class="quiz-q-std">STANDARD ${q.std}</div>
+    <div class="quiz-q-cat">${CATEGORIES[q.cat]?.label||''}</div>
+    <div class="quiz-q-text">${q.q}</div>
+    <div class="quiz-options">${q.opts.map((o,i)=>{let cl='';if(isA){cl='disabled';if(i===q.correct)cl+=' correct';if(i===uA&&i!==q.correct)cl+=' wrong'}return`<div class="quiz-opt ${cl}" onclick="quizAnswer(${i})"><span class="opt-marker">${letters[i]}</span><span class="opt-text">${o}</span></div>`}).join('')}</div>
+    <div class="quiz-feedback ${isA?'show':''} ${isA?(isC?'is-correct':'is-wrong'):''}">${isA?`<div class="quiz-feedback-title">${isC?'✓ Correct':'✕ Incorrect'}${isC?'<span class="quiz-xp-pop">+10 XP</span>':''}</div>${q.feedback}`:''}</div>
+  </div>
+  ${isA?`<div class="quiz-next-wrap"><button class="btn-primary btn-block" onclick="quizNext()">${s.current<s.questions.length-1?'Question suivante →':'Voir les résultats →'}</button></div>`:''}`;
+}
+
+function quizAnswer(idx){
+  const s=quizState;if(s.answered[s.current])return;
+  s.answered[s.current]=true;s.answers[s.current]=idx;
+  G.answered++;
+  const q=s.questions[s.current];
+  if(idx===q.correct){
+    s.score++;s.streak++;
+    addXP(10);
+    if(s.streak>G.bestStreak){G.bestStreak=s.streak}
+    if(s.streak===5)unlockBadge('streak5');
+    if(s.streak===10)unlockBadge('streak10');
+    if(navigator.vibrate)navigator.vibrate(15);
+  }else{
+    s.streak=0;
+    if(!errorBank.find(e=>e.q===q.q))errorBank.push(q);
+    if(navigator.vibrate)navigator.vibrate([30,40,30]);
+  }
+  if(G.answered>=50)unlockBadge('q50');
+  if(G.answered>=100)unlockBadge('q100');
+  saveProgress();
+  renderQuizQuestion();
+}
+function quizNext(){quizState.current++;renderQuizQuestion()}
+
+function renderQuizResults(){
+  const c=document.getElementById('quiz-container'),s=quizState,pct=Math.round(s.score/s.questions.length*100);
+  G.quizzes++;
+  unlockBadge('first');
+  if(pct===100){unlockBadge('perfect');if(s.mode==='securite')unlockBadge('secu');}
+  if(s.mode==='erreurs'&&pct===100)unlockBadge('comeback');
+  const bonus=pct===100?25:0;if(bonus)addXP(bonus);
+  saveProgress();
+  let cls='poor',msg='';
+  if(pct>=85){cls='excellent';msg='Maîtrise confirmée. Tu connais les standards.'}
+  else if(pct>=70){cls='good';msg='Bon niveau. Quelques points à retravailler.'}
+  else if(pct>=50){cls='avg';msg='Des bases à consolider. Relis les standards concernés.'}
+  else{msg='Formation nécessaire. Revois les standards avec ton pilote.'}
+  const axes={securite:{ok:0,t:0},qualite:{ok:0,t:0},process:{ok:0,t:0},engin:{ok:0,t:0}};
+  s.questions.forEach((q,i)=>{if(axes[q.cat]){axes[q.cat].t++;if(s.answers[i]===q.correct)axes[q.cat].ok++}});
+  const errors=s.questions.filter((q,i)=>s.answers[i]!==q.correct);
+  s.questions.forEach((q,i)=>{if(s.answers[i]===q.correct)errorBank=errorBank.filter(e=>e.q!==q.q)});
+  const earned=s.score*10+bonus;
+  const circ=2*Math.PI*60,offset=circ-(pct/100)*circ;
+  if(pct>=85)fireConfetti();
+  c.innerHTML=`
+  <div class="results-hero">
+    <div class="results-label">Résultat</div>
+    <div class="results-ring"><svg viewBox="0 0 140 140"><circle class="ring-bg" cx="70" cy="70" r="60"/><circle class="ring-fill ${cls}" cx="70" cy="70" r="60" stroke-dasharray="${circ}" stroke-dashoffset="${offset}"/></svg><div class="results-pct" style="color:var(--${cls==='excellent'?'green-light':cls==='good'?'accent-light':cls==='avg'?'orange':'red'})">${pct}%</div></div>
+    <div class="results-msg">${msg}</div>
+  </div>
+  <div class="results-xp-banner"><b>+${earned} XP</b><span>${bonus?'dont +25 bonus sans-faute':'gagnés sur ce quiz'}</span></div>
+  <div class="score-axes">${Object.entries(axes).filter(([,v])=>v.t>0).map(([k,v])=>{const ap=v.t>0?Math.round(v.ok/v.t*100):0;const col=ap>=80?'var(--green-light)':ap>=50?'var(--orange)':'var(--red)';return`<div class="score-axis"><div class="score-axis-val" style="color:${col}">${ap}%</div><div class="score-axis-label">${CATEGORIES[k]?.label||k}</div></div>`}).join('')}</div>
+  ${errors.length?`<div class="results-errors-title">Standards à revoir (${errors.length})</div>${errors.map(q=>`<div class="results-error-item"><span class="results-error-std">${q.std}</span>${q.q.substring(0,55)}…</div>`).join('')}`:''}
+  <div class="results-actions">${errors.length?`<button class="btn-primary btn-block" onclick="startQuizMode('erreurs')">🔄 Reprendre mes erreurs</button>`:''}<button class="btn-secondary btn-block" onclick="startQuizMode('full')">📋 Quiz complet</button><button class="btn-secondary btn-block" onclick="renderQuizHub()">← Retour aux modes</button></div>`;
+  refreshLevelUI();
+}
+
+/* ===================== PROFIL / BADGES ===================== */
+function renderProfil(){
+  const L=currentLevel(),i=levelIndex(),unlocked=G.badges.length;
+  document.getElementById('profil-container').innerHTML=`
+  <div class="profile-hero">
+    <div class="profile-medal">${L.medal}</div>
+    <div class="profile-name">${L.name}</div>
+    <div class="profile-rank">Niveau ${i+1} · ${G.xp} XP</div>
+  </div>
+  <div class="level-card" style="margin-top:0">
+    <div class="level-bar"><div class="level-bar-fill" style="width:${(()=>{const nx=nextLevel();if(!nx)return 100;return Math.min(100,Math.round((G.xp-L.min)/(nx.min-L.min)*100))})()}%"></div></div>
+    <div class="level-next">${(()=>{const nx=nextLevel();return nx?((nx.min-G.xp)+" XP avant « "+nx.name+" »"):"Niveau maximum atteint 👑"})()}</div>
+  </div>
+  <div class="profile-stats">
+    <div class="profile-stat"><div class="profile-stat-num">${G.quizzes}</div><div class="profile-stat-label">Quiz faits</div></div>
+    <div class="profile-stat"><div class="profile-stat-num">${G.answered}</div><div class="profile-stat-label">Questions</div></div>
+    <div class="profile-stat"><div class="profile-stat-num">🔥${G.bestStreak}</div><div class="profile-stat-label">Best série</div></div>
+  </div>
+  <div class="section-head"><h3>Badges (${unlocked}/${BADGES.length})</h3></div>
+  <div class="badge-grid">${BADGES.map(b=>{const ok=G.badges.includes(b.id);return`<div class="badge-cell ${ok?'unlocked':'locked'}"><div class="badge-emoji">${b.emoji}</div><div class="badge-name">${b.name}</div><div class="badge-desc">${b.desc}</div></div>`}).join('')}</div>
+  <button class="reset-btn" onclick="resetProgress()">Réinitialiser ma progression</button>`;
+}
+function resetProgress(){
+  if(!confirm("Réinitialiser toute ta progression (XP, badges, niveaux) ?"))return;
+  G=Object.assign({},DEFAULT);saveProgress();refreshLevelUI();renderProfil();
+}
+
+/* ===================== NAV ===================== */
+function switchView(v){
+  document.querySelectorAll('.view').forEach(el=>el.classList.remove('active'));
+  document.getElementById('view-'+v).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  const idx={home:0,standards:1,quiz:2,profil:3}[v]??0;
+  document.querySelectorAll('.nav-item')[idx]?.classList.add('active');
+  if(v==='standards'){renderFilterBar();filterStandards()}
+  if(v==='quiz')renderQuizHub();
+  if(v==='home')renderHome();
+  if(v==='profil')renderProfil();
+  window.scrollTo({top:0,behavior:'instant'});
+}
+
+/* ===================== INIT ===================== */
+window.addEventListener('load',()=>{setTimeout(()=>{document.getElementById('splash').classList.add('hide')},2000)});
+renderHome();
+refreshLevelUI();
+</script>
+</body>
+</html>
