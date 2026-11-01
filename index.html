@@ -585,6 +585,128 @@ h2.sect{font-size:18px;font-weight:700;letter-spacing:-.02em;margin:0}
 .net svg{color:var(--jaune)}
 body.horsligne .net{display:flex}
 
+/* ════════ IDENTIFICATION ════════ */
+.hello{position:fixed;inset:0;z-index:2500;background:var(--beton);display:none;overflow-y:auto;
+ background-image:radial-gradient(120% 60% at 100% 0%,rgba(255,212,0,.07),transparent 60%)}
+.hello.live{display:block;animation:rise .45s cubic-bezier(.2,.8,.2,1)}
+.hl-in{max-width:460px;margin:0 auto;padding:calc(40px + env(safe-area-inset-top)) 20px calc(30px + env(safe-area-inset-bottom))}
+.hl-k{font-family:var(--fm);font-size:10.5px;letter-spacing:.14em;color:var(--jaune);margin-top:22px}
+.hl-h{font-size:clamp(32px,9vw,42px);font-weight:900;letter-spacing:-.04em;line-height:1;margin-top:8px}
+.hl-p{font-size:14.5px;color:var(--acier);margin:12px 0 24px;max-width:38ch}
+.fld span i{font-style:normal;text-transform:none;letter-spacing:0;color:#3D434D}
+.hl-eq{display:flex;gap:6px;flex-wrap:wrap}
+.hl-eq .tab-b{padding:10px 14px;font-size:13.5px}
+.hello .go{margin-top:24px;font-size:16px;padding:16px}
+.hl-rgpd{display:flex;gap:10px;align-items:flex-start;margin-top:22px;padding:13px 14px;border-radius:4px;background:var(--surf);
+ box-shadow:inset 0 0 0 1px var(--edge);font-size:11.5px;line-height:1.5;color:var(--acier-2)}
+.hl-rgpd svg{flex:0 0 14px;color:var(--acier);margin-top:2px}
+
+/* ════════ SUIVI EN DIRECT ════════ */
+.seg{display:grid;grid-template-columns:1fr 1fr;gap:3px;padding:3px;border-radius:5px;background:var(--surf);box-shadow:inset 0 0 0 1px var(--edge);margin-bottom:18px}
+.seg button{padding:10px 6px;border-radius:3px;font-size:13px;font-weight:600;color:var(--acier)}
+.seg button.live{background:var(--plate-2);color:var(--craie);box-shadow:inset 0 0 0 1px var(--edge-2),0 2px 8px -2px rgba(0,0,0,.6)}
+.cfg{padding:20px 18px;border-radius:4px;background:var(--surf);box-shadow:inset 0 0 0 1px var(--edge)}
+.cfg-ic{width:44px;height:44px;border-radius:4px;display:grid;place-items:center;background:rgba(255,212,0,.1);color:var(--jaune);margin-bottom:14px}
+.cfg>b{display:block;font-size:17px;font-weight:800;letter-spacing:-.02em}
+.cfg>p{font-size:13.5px;color:var(--acier);margin-top:7px;line-height:1.55}
+.cfg>p b{color:var(--craie);font-weight:600}
+.cfg-f{margin-top:16px}
+.demo{display:flex;align-items:center;gap:8px;padding:9px 12px;border-radius:3px;background:rgba(255,212,0,.1);
+ box-shadow:inset 0 0 0 1px rgba(255,212,0,.3);color:var(--jaune);font-family:var(--fm);font-size:10.5px;letter-spacing:.08em}
+.demo span{flex:1}.demo button{font-family:var(--ff);font-size:12.5px;font-weight:700;color:var(--jaune);letter-spacing:0}
+.maj{display:flex;align-items:center;justify-content:space-between;gap:10px;font-family:var(--fm);font-size:10px;letter-spacing:.08em;color:var(--acier-2)}
+.maj button{display:flex;align-items:center;gap:6px;font-family:var(--ff);font-size:12.5px;font-weight:600;color:var(--jaune);letter-spacing:0}
+.kpi{display:grid;grid-template-columns:repeat(2,1fr);gap:7px;margin-top:14px}
+@media (min-width:640px){.kpi{grid-template-columns:repeat(3,1fr)}}
+.kp{padding:14px 14px 13px;border-radius:4px;background:var(--surf);box-shadow:inset 0 0 0 1px var(--edge);position:relative;overflow:hidden}
+.kp b{display:block;font-size:28px;font-weight:800;letter-spacing:-.045em;line-height:1}
+.kp b.ok{color:var(--vert)}.kp b.warn{color:var(--jaune)}
+.kp span{display:block;font-size:12px;color:var(--acier);margin-top:7px;font-weight:500}
+.kp em{display:block;font-style:normal;font-family:var(--fm);font-size:9.5px;letter-spacing:.04em;color:var(--acier-2);margin-top:3px}
+.ch{padding:16px 14px 12px;border-radius:4px;background:var(--surf);box-shadow:inset 0 0 0 1px var(--edge)}
+.ch-h{display:flex;gap:26px;margin-bottom:12px}
+.ch-h b{display:block;font-size:22px;font-weight:800;letter-spacing:-.04em;line-height:1}
+.ch-h span{display:block;font-size:11.5px;color:var(--acier-2);margin-top:4px}
+.ch-w{position:relative;height:170px}
+.ch-s{display:block;width:100%;height:100%;overflow:visible}
+.ch-s .gl{stroke:rgba(255,255,255,.05);stroke-width:1;vector-effect:non-scaling-stroke}
+.ch-s .bl{stroke:#3A404A;stroke-width:1;vector-effect:non-scaling-stroke}
+.ch-s .bar path{fill:var(--jaune);transition:opacity .15s}
+.ch-s .bar path.we{fill:#6E6020}
+.ch-s:hover .bar path{opacity:.45}.ch-s .bar.on-h path{opacity:1}
+.ch-mx{position:absolute;transform:translate(-50%,-125%);font-family:var(--fm);font-size:10.5px;font-weight:600;color:var(--craie);pointer-events:none}
+.ch-x{display:flex;justify-content:space-between;font-family:var(--fm);font-size:9.5px;color:var(--acier-2);margin-top:6px;letter-spacing:.03em}
+.ch-n{font-size:11px;color:var(--acier-2);margin-top:10px}
+.tip{position:fixed;z-index:3000;pointer-events:none;padding:8px 10px;border-radius:4px;background:#2A2F37;
+ box-shadow:var(--ombre-h),inset 0 0 0 1px var(--edge-2);opacity:0;transition:opacity .12s;max-width:260px}
+.tip.on{opacity:1}
+.tip b{display:block;font-size:12px;font-weight:700}
+.tip span{display:block;font-family:var(--fm);font-size:10.5px;color:var(--acier);margin-top:2px}
+.ch-w .tip{display:none}
+.hb{display:flex;flex-direction:column;gap:9px;padding:15px 14px;border-radius:4px;background:var(--surf);box-shadow:inset 0 0 0 1px var(--edge)}
+.hb-r{display:grid;grid-template-columns:86px 1fr 44px;align-items:center;gap:10px}
+.hb-r b{font-size:13px;font-weight:600}
+.hb-t{height:10px;border-radius:2px;background:#22262D;overflow:hidden}
+.hb-t i{display:block;height:100%;background:var(--jaune);border-radius:0 4px 4px 0}
+.hb-r span{font-family:var(--fm);font-size:11px;color:var(--acier);text-align:right}
+.lg{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:12px}
+.lg span{display:flex;align-items:center;gap:6px;font-size:11.5px;color:var(--acier)}
+.lg i{width:10px;height:10px;border-radius:2px;display:block}
+.lg i.h,.sb-t i.h{background:var(--vert)}.lg i.f,.sb-t i.f{background:var(--jaune)}.lg i.n{background:#22262D}
+.sb{display:flex;flex-direction:column;gap:3px}
+.sb-r{display:grid;grid-template-columns:34px 1fr 40px;align-items:center;gap:9px;padding:3px 0;border-radius:2px}
+.sb-r.on-h{background:rgba(255,255,255,.035)}
+.sb-c{font-family:var(--fm);font-size:10.5px;font-weight:600;color:var(--acier)}
+.sb-c.c{color:var(--rouge)}
+.sb-t{display:flex;gap:2px;height:12px;border-radius:2px;background:#22262D;overflow:hidden}
+.sb-t i{display:block;height:100%}
+.sb-t i:last-child{border-radius:0 4px 4px 0}
+.sb-r b{font-family:var(--fm);font-size:11px;font-weight:600;text-align:right;color:var(--craie)}
+.ops{display:flex;flex-direction:column;border-radius:4px;background:var(--surf);box-shadow:inset 0 0 0 1px var(--edge);overflow:hidden}
+.op{display:flex;align-items:center;gap:12px;padding:12px 13px;border-bottom:1px solid var(--edge)}
+.op:last-child{border-bottom:none}
+.op-av{flex:0 0 38px;height:38px;border-radius:50%;display:grid;place-items:center;font-size:12.5px;font-weight:700;
+ background:var(--plate-2);color:var(--acier);position:relative}
+.op-av::after{content:'';position:absolute;right:0;bottom:0;width:10px;height:10px;border-radius:50%;border:2px solid var(--surf);background:#3A404A}
+.op-av.on::after{background:var(--vert)}.op-av.warn::after{background:var(--jaune)}.op-av.off::after{background:var(--rouge)}
+.op-i{flex:1;min-width:0}
+.op-i b{display:block;font-size:14px;font-weight:600;letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.op-i>span{display:block;font-family:var(--fm);font-size:9.5px;color:var(--acier-2);margin-top:1px;letter-spacing:.03em}
+.op-h{display:flex;align-items:center;gap:8px;margin-top:7px}
+.op-t{flex:1;display:flex;gap:2px;height:5px;border-radius:1px;background:#22262D;overflow:hidden;max-width:160px}
+.op-t i{display:block;background:var(--vert)}.op-t em{display:block;background:rgba(255,212,0,.55)}
+.op-h small{font-family:var(--fm);font-size:10px;color:var(--acier)}
+.op-r{text-align:right;flex:0 0 auto}
+.op-r b{display:block;font-size:12.5px;font-weight:600}
+.op-r b.on{color:var(--vert)}.op-r b.warn{color:var(--jaune)}.op-r b.off{color:var(--rouge)}
+.op-r span{display:block;font-family:var(--fm);font-size:9.5px;color:var(--acier-2);margin-top:2px}
+
+/* ════════ FINITIONS VISUELLES ════════ */
+:root{--sec:#E5332A;--sec-bg:rgba(229,51,42,.12);--qual:#4C9AFF;--qual-bg:rgba(76,154,255,.12);
+ --proc:#98A0AC;--proc-bg:rgba(152,160,172,.12);--engin:#FF8A3D;--engin-bg:rgba(255,138,61,.12)}
+button,input,select{font-family:inherit;color:inherit}
+.screen.live{animation:entre .32s cubic-bezier(.2,.8,.2,1)}
+@keyframes entre{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.act b,.mode b,.doc b,.big b{color:var(--craie)}
+.big.key b{color:#0B0C0E}
+.act{transition:transform .12s,background .15s}.act:active{transform:scale(.98)}
+.row-m em{display:inline-flex;align-items:center;gap:6px}
+.row-m em::before{content:'';width:6px;height:6px;border-radius:50%;background:var(--c,var(--acier-2))}
+.hi{display:flex;align-items:center;gap:13px;margin-top:20px}
+.hi-av{flex:0 0 46px;height:46px;border-radius:50%;display:grid;place-items:center;font-size:15px;font-weight:800;color:#0B0C0E;
+ background:linear-gradient(135deg,#FFE14D,#FFC400);box-shadow:0 0 0 3px var(--beton),0 0 0 4px rgba(255,212,0,.35)}
+.hi-t{flex:1;min-width:0}
+.hi-t b{display:block;font-size:21px;font-weight:800;letter-spacing:-.03em;line-height:1.1}
+.hi-t span{display:block;font-family:var(--fm);font-size:10px;letter-spacing:.08em;color:var(--acier-2);margin-top:4px}
+.hi-s{text-align:right;flex:0 0 auto}
+.hi-s b{display:block;font-family:var(--fm);font-size:18px;font-weight:600;color:var(--jaune);line-height:1}
+.hi-s span{display:block;font-family:var(--fm);font-size:9px;letter-spacing:.08em;color:var(--acier-2);margin-top:4px}
+.panel-cta{display:inline-flex;align-items:center;gap:6px;margin-left:auto;font-size:12.5px;font-weight:700;color:var(--jaune)}
+.bar{box-shadow:0 -10px 30px -10px rgba(0,0,0,.8)}
+.bb svg{transition:transform .2s cubic-bezier(.2,.8,.2,1)}
+.bb.live svg{transform:translateY(-1px) scale(1.08)}
+.bb.live::before{width:28px;height:3px;border-radius:0 0 2px 2px;box-shadow:0 0 12px rgba(255,212,0,.6)}
+
 /* ════════ IMPRESSION ════════ */
 #print{display:none}
 @page{size:A4 portrait;margin:11mm 12mm}
@@ -666,13 +788,15 @@ body.horsligne .net{display:flex}
 </div>
 
 <div class="notes" id="notes"></div>
+<div class="hello" id="hello" role="dialog" aria-modal="true" aria-label="Identification"></div>
+<div class="tip" id="tip2" aria-hidden="true"></div>
 <div class="net" data-i="off">HORS LIGNE / CONTENU DISPONIBLE</div>
 
 <header class="top">
   <div class="top-in">
     <div class="top-l">
       <div class="mark">P&amp;P</div>
-      <div class="top-t"><b>Standards Pick &amp; Pack</b><span>REXEL / CLR CHAMPIGNEULLES</span></div>
+      <div class="top-t"><b>Standards Pick &amp; Pack</b><span id="top-s">REXEL / CLR CHAMPIGNEULLES</span></div>
     </div>
     <button class="grade" onclick="show('moi')" aria-label="Mon niveau">
       <b id="gr-n">N1</b>
@@ -686,12 +810,13 @@ body.horsligne .net{display:flex}
   <!-- ══ AUJOURD'HUI ══ -->
   <section id="s-jour" class="screen live">
     <div class="wrap">
+      <div class="hi" id="hi"></div>
       <button class="panel" id="panel" onclick="openFile(TODAY.id)">
         <div class="panel-ghost" id="panel-ghost">P00</div>
         <div class="hazard"></div>
         <div class="panel-day" id="panel-day"></div>
         <q id="panel-q"></q>
-        <div class="panel-src"><span class="tab" id="panel-tab">P00</span><span id="panel-name"></span></div>
+        <div class="panel-src"><span class="tab" id="panel-tab">P00</span><span id="panel-name"></span><span class="panel-cta">Lire<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M9 4.5 16.5 12 9 19.5"/></svg></span></div>
       </button>
 
       <button class="instr" onclick="show('moi')">
@@ -820,6 +945,11 @@ const DECK_BASE = "standards/";
    Si un support change : réexporter ses images, ajuster son nombre de slides ci-dessous,
    puis changer SLIDE_V pour forcer les téléphones à recharger les nouvelles images
    (et mettre à jour VERSION + la liste SLIDES dans sw.js, qui gère le hors ligne). */
+/* SUIVI D'ACTIVITÉ : adresse de l'appli web Google Apps Script du classeur de suivi
+   (voir suivi/INSTALLATION.md). Laisser "" tant que le classeur n'est pas installé : rien n'est envoyé. */
+const SUIVI_URL = "";
+const APP_V = "2026.11";
+
 const SLIDE_BASE = "slides/";
 const SLIDE_V = "2610";
 const SLIDES = {P1:8,P2:8,P3:8,P4:8,P5:8,P6:8,P7:8,P8:8,P9:8,P10:8,P11:8,P12:8,P13:8,P14:8,P15:8,P16:8,P17:8,P18:8};
@@ -1220,9 +1350,10 @@ const MARKS=[
  {id:"g6",i:"crown",n:"Niveau 6",d:"Grade N6 atteint"}];
 
 const BASE={xp:0,vu:0,bon:0,tests:0,run:0,marks:[],ouverts:[],valides:[],chk:{},rates:[],briefs:0,lus:[],
- qs:{},best:{},dv:{},dl:{},who:{nom:"",prenom:"",mat:"",eq:""}};
+ qs:{},best:{},dv:{},dl:{},jours:[],sync:false,who:{nom:"",prenom:"",mat:"",eq:""}};
 let S=charge(),ecran="jour",tri="tous",fiche=null,onglet=0;
 S.lus=(S.lus||[]).slice();
+S.jours=Array.isArray(S.jours)?S.jours:[];
 ["qs","best","dv","dl"].forEach(k=>{if(!S[k]||typeof S[k]!=="object")S[k]={}});
 S.who=Object.assign({nom:"",prenom:"",mat:"",eq:""},S.who||{});
 const auj=()=>new Date().toISOString().slice(0,10);
@@ -1316,7 +1447,7 @@ function sift(){
 function lignes(box,items){
  box.innerHTML=items.map(s=>{
   const ok=S.valides.includes(s.id),vu=S.ouverts.includes(s.id);
-  return '<button class="row" data-k="'+s.crit+'" onclick="openFile(\''+s.id+'\')">'
+  return '<button class="row" style="--c:'+CATS[s.cat].c+'" data-k="'+s.crit+'" onclick="openFile(\''+s.id+'\')">'
   +'<span class="row-edge"></span><span class="row-tab">'+s.id+'</span>'
   +'<span class="row-b"><span class="row-i"><b>'+s.title+'</b><span class="row-m">'
   +'<em>'+CATS[s.cat].l+'</em>'+(s.crit==="critical"?'<span class="kx">CRITIQUE</span>':"")+'</span></span>'
@@ -1326,6 +1457,7 @@ function lignes(box,items){
 /* ── fiche ── */
 function openFile(id){
  fiche=par(id);if(!fiche)return;onglet=0;
+ trace("ouverture",id);
  if(!S.ouverts.includes(id)){S.ouverts.push(id);garde();
   if(S.ouverts.length>=9)marque("read9");if(S.ouverts.length>=STD.length)marque("read18");jauge()}
  document.getElementById("f-title").textContent=fiche.title;
@@ -1390,7 +1522,7 @@ function coche(i,el){
  const id=fiche.id;if(!S.chk[id])S.chk[id]=[];
  S.chk[id][i]=!S.chk[id][i];garde();el.classList.toggle("done");barreChk();vib(9);
  if(fiche.check.every((_,j)=>S.chk[id][j])&&!S.valides.includes(id)){
-  S.valides.push(id);S.dv[id]=auj();garde();xp(20);note("check","Standard validé",fiche.id+" "+fiche.title);
+  S.valides.push(id);S.dv[id]=auj();garde();xp(20);trace("checklist",id);note("check","Standard validé",fiche.id+" "+fiche.title);
   marque("chk1");if(S.valides.length>=5)marque("chk5")}}
 function barreChk(){if(!fiche)return;
  const c=S.chk[fiche.id]||[],n=fiche.check.length,d=fiche.check.filter((_,i)=>c[i]).length,p=Math.round(d/n*100);
@@ -1406,7 +1538,14 @@ const CINQ=(()=>{const o=[];for(let i=0;i<5;i++)o.push(STD[(J+i*4)%STD.length]);
 let bi=0;
 function jour(){
  const d=new Date().toLocaleDateString("fr-FR",{weekday:"long",day:"numeric",month:"long"});
- document.getElementById("panel-day").textContent=d.charAt(0).toUpperCase()+d.slice(1);
+ document.getElementById("panel-day").textContent=("Standard du jour / "+d).toUpperCase();
+ const hi=document.getElementById("hi"),h=new Date().getHours();
+ if(S.who.prenom){
+  hi.innerHTML='<span class="hi-av">'+esc((S.who.prenom[0]||"")+(S.who.nom[0]||"")).toUpperCase()+'</span>'
+   +'<div class="hi-t"><b>'+(h>=18||h<5?"Bonsoir":"Bonjour")+' '+esc(S.who.prenom)+'</b><span>'+(S.who.eq?"ÉQUIPE "+esc(S.who.eq).toUpperCase()+" / ":"")+grade().n.toUpperCase()+'</span></div>'
+   +'<div class="hi-s"><b>'+Math.max(1,S.jours.length)+'</b><span>JOUR'+(S.jours.length>1?"S":"")+' ACTIF'+(S.jours.length>1?"S":"")+'</span></div>';
+  document.getElementById("top-s").textContent=(nomComplet()+(S.who.eq?" / "+S.who.eq:"")).toUpperCase()}
+ else hi.innerHTML="";
  document.getElementById("panel-q").textContent=TODAY.motto;
  document.getElementById("panel-tab").textContent=TODAY.id;
  document.getElementById("panel-name").textContent=TODAY.title;
@@ -1438,7 +1577,7 @@ function dessineBrief(){
   +(SLIDES[s.id]?'<button class="br-sup" onclick="openDeck(\''+s.id+'\',0,true)">'+ic("screen",18)+'<span>Projeter le support '+s.id+'</span></button>':'');
  document.getElementById("br-go").textContent=bi===4?"Terminer":"Suivant";
  document.getElementById("br-body").scrollTop=0}
-function brGo(){if(bi<4){bi++;dessineBrief();vib(9)}else{closeBrief();S.briefs++;garde();xp(15);marque("brief");
+function brGo(){if(bi<4){bi++;dessineBrief();vib(9)}else{closeBrief();S.briefs++;garde();trace("brief");xp(15);marque("brief");
  note("brief","Brief terminé","5 standards passés en revue")}}
 function brBack(){if(bi>0){bi--;dessineBrief();vib(9)}else closeBrief()}
 
@@ -1511,6 +1650,7 @@ function stop(){T=null;hub()}
 function bilan(){
  const n=T.p.length,p=Math.round(T.ok/n*100);
  S.tests++;
+ trace("test",T.mode==="un"?T.cible:"",p,T.mode);
  if(T.mode==="un"&&T.cible&&p>(S.best[T.cible]==null?-1:S.best[T.cible]))S.best[T.cible]=p;
  garde();
  let t,m;
@@ -1555,7 +1695,7 @@ function moi(){
   +'<div class="sect-bar"><h2 class="sect">Marques</h2><span class="code">'+S.marks.length+"/"+MARKS.length+'</span></div>'
   +'<div class="marks">'+MARKS.map(x=>'<div class="mk '+(S.marks.includes(x.id)?"won":"")+'">'+ic(x.i,22)+'<b>'+x.n+'</b><span>'+x.d+'</span></div>').join("")+'</div>'
   +'<button class="go flat" onclick="raz()" style="margin-top:24px">Repartir de zéro</button>'
-  +'<div class="foot"><p>DONNÉES CONSERVÉES SUR CET APPAREIL UNIQUEMENT<br>AUCUN ENVOI AUTOMATIQUE / EXPORT À LA DEMANDE</p></div>';
+  +'<div class="foot"><p>PROGRESSION ENREGISTRÉE SUR CET APPAREIL<br>ACTIVITÉ TRANSMISE À L\'ENCADREMENT POUR LE SUIVI DE FORMATION</p></div>';
  paint(document.getElementById("moi-box"));jauge()}
 function raz(){if(!confirm("Effacer toute votre progression : XP, marques, checklists ?"))return;
  const w=S.who;S=JSON.parse(JSON.stringify(BASE));S.who=w;garde();moi();jour();note("cycle","Progression effacée","Tout repart de zéro")}
@@ -1699,14 +1839,15 @@ function eqVue(){return EQ.map((o,i)=>({o,i})).filter(x=>!eqF||x.o.eq===eqF)
  .sort((a,b)=>(a.o.nom+a.o.prenom).localeCompare(b.o.nom+b.o.prenom,"fr"))}
 
 function openSup(){document.getElementById("sup").classList.add("live");document.body.style.overflow="hidden";dessineSup();vib(12)}
-function closeSup(){document.getElementById("sup").classList.remove("live");document.body.style.overflow="";if(ecran==="moi")moi()}
-function dessineSup(){
+function cacheBulle(){const t=document.getElementById("tip2");if(t)t.classList.remove("on")}
+document.getElementById("sup-body").addEventListener("scroll",cacheBulle,{passive:true});
+function closeSup(){cacheBulle();document.getElementById("sup").classList.remove("live");document.body.style.overflow="";if(ecran==="moi")moi()}
+function vueMx(){
  const V=eqVue(),eqs=[...new Set(EQ.map(o=>o.eq).filter(Boolean))].sort(),n=V.length;
  const cov=s=>V.filter(x=>x.o.st[s.id]==="H").length;
  const alertes=STD.filter(s=>s.crit==="critical"&&n&&cov(s)<Math.min(2,n));
  const glob=n?Math.round(V.reduce((a,x)=>a+pctH(x.o),0)/n):0;
- document.getElementById("sup-body").innerHTML=
-  '<p class="spv-int">Chaque opérateur exporte son fichier depuis <b>Moi › Export Excel</b>. Importez ici les fichiers reçus : la matrice se construit et reste sur cet appareil.</p>'
+ return '<p class="spv-int">Alimentez la matrice depuis <b>Suivi en direct</b>, ou importez les fichiers que les opérateurs exportent depuis <b>Moi › Export Excel</b>.</p>'
   +'<div class="spv-act"><label class="go">'+ic("dl",16)+'Importer des fichiers .csv<input type="file" accept=".csv,text/csv" multiple hidden onchange="importe(this.files);this.value=\'\'"></label>'
   +'<button class="go flat" onclick="ajouteMoi()">Ajouter les données de cet appareil</button></div>'
   +(EQ.length?
@@ -1727,8 +1868,7 @@ function dessineSup(){
    +'<button class="big" onclick="imprMatrice()"><b>Imprimer la matrice</b><span>A4 PAYSAGE / PDF</span></button></div>'
    +'<button class="go flat" onclick="videEq()" style="margin-top:14px">Vider la matrice</button>'
   :'<div class="void"><b>Aucun opérateur</b><p>Importez les exports .csv de l\'équipe pour construire la matrice de polyvalence.</p></div>')
-  +'<div class="foot"><p>DONNÉES CONSERVÉES SUR CET APPAREIL UNIQUEMENT</p></div>';
- paint(document.getElementById("sup"))}
+  +'<div class="foot"><p>MATRICE CONSERVÉE SUR CET APPAREIL</p></div>'}
 function exportMatrice(){const V=eqVue();
  const H=["Nom","Prénom","Matricule","Équipe","Export le"].concat(STD.map(s=>s.id+" "+s.title),["Habilités","Polyvalence %"]);
  const L=V.map(({o})=>[o.nom,o.prenom,o.mat,o.eq,o.le].concat(STD.map(s=>ST_L[o.st[s.id]||"N"]),[STD.filter(s=>o.st[s.id]==="H").length,pctH(o)]));
@@ -1742,6 +1882,208 @@ function imprMatrice(){const V=eqVue(),n=V.length;
   +'</tbody><tfoot><tr><td>Habilités</td>'+STD.map(s=>'<td>'+V.filter(x=>x.o.st[s.id]==="H").length+'</td>').join("")+'<td></td></tr></tfoot></table>'
   +'<p class="pr-note">● Habilité (checklist validée + test ≥ '+SEUIL+' %) / ○ En formation / vide : non formé. Codes en rouge : standards critiques. '
   +STD.map(s=>s.id+" "+s.title).join(" · ")+'</p>'+piedPage("Matrice de polyvalence")+'</div>',true)}
+
+/* ════════════════════════════════════════════════════════════
+   SUIVI D'ACTIVITÉ — envoi vers le classeur Google Sheets du service
+   File d'attente locale : rien n'est perdu sans réseau, tout part au retour.
+   ════════════════════════════════════════════════════════════ */
+const ls=(k,v)=>{try{if(v===undefined)return localStorage.getItem(k);if(v===null)localStorage.removeItem(k);else localStorage.setItem(k,v)}catch(e){return null}};
+const DEV=(()=>{let d=ls("spp_dev");if(!d){d=Math.random().toString(36).slice(2,8)+Date.now().toString(36).slice(-4);ls("spp_dev",d)}return d||"anon"})();
+function suiviUrl(){return SUIVI_URL||ls("spp_suivi_url")||""}
+let Q=(()=>{try{return JSON.parse(ls("spp_q")||"[]")}catch(e){return[]}})(),envoiH=0,envoiEnCours=false;
+function gardeQ(){Q=Q.slice(-800);ls("spp_q",JSON.stringify(Q))}
+function trace(t,std,score,mode){
+ if(!S.who.nom||!S.who.prenom)return;
+ Q.push({t,std:std||"",score:score==null?"":score,mode:mode||"",ts:Date.now(),
+  op:{nom:S.who.nom,prenom:S.who.prenom,mat:S.who.mat,eq:S.who.eq},dev:DEV,v:APP_V});
+ gardeQ();envoi()}
+function envoi(){if(!suiviUrl()||!Q.length||!navigator.onLine)return;clearTimeout(envoiH);envoiH=setTimeout(flush,1200)}
+function flush(beacon){
+ const u=suiviUrl();if(!u||!Q.length||envoiEnCours)return;
+ const lot=Q.slice(0,150),body=JSON.stringify({events:lot});
+ if(beacon){if(navigator.sendBeacon&&navigator.sendBeacon(u,new Blob([body],{type:"text/plain;charset=utf-8"}))){Q=Q.slice(lot.length);gardeQ()}return}
+ envoiEnCours=true;
+ fetch(u,{method:"POST",mode:"no-cors",headers:{"Content-Type":"text/plain;charset=utf-8"},body,keepalive:body.length<60000})
+  .then(()=>{Q=Q.slice(lot.length);gardeQ();envoiEnCours=false;if(Q.length)envoi()})
+  .catch(()=>{envoiEnCours=false})}
+/* une « connexion » = ouverture de l'appli après 30 min sans activité */
+function session(){const l=+ls("spp_last")||0,n=Date.now();ls("spp_last",String(n));
+ const d=auj();if(!S.jours.includes(d)){S.jours.push(d);S.jours=S.jours.slice(-400);garde()}
+ if(n-l>18e5)trace("session")}
+document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="hidden"){ls("spp_last",String(Date.now()));flush(true)}else session()});
+addEventListener("online",envoi);
+/* à la première identification, on remonte la progression déjà faite sur l'appareil */
+function rattrapage(){if(S.sync)return;S.sync=true;garde();
+ S.ouverts.forEach(id=>trace("ouverture",id));S.lus.forEach(id=>trace("support",id));
+ S.valides.forEach(id=>trace("checklist",id));Object.keys(S.best).forEach(id=>trace("test",id,S.best[id],"un"))}
+
+/* ════════ IDENTIFICATION (premier lancement) ════════ */
+const EQUIPES=["Matin","Après-midi","Nuit","Journée"];
+let helloEq="";
+function hello(){
+ const h=document.getElementById("hello");helloEq=S.who.eq||"";
+ h.innerHTML='<div class="hl-in"><div class="hazard" style="width:64px"></div>'
+  +'<div class="hl-k">PREMIÈRE CONNEXION</div><h1 class="hl-h">Qui êtes-vous ?</h1>'
+  +'<p class="hl-p">Votre nom sert à suivre votre formation aux standards et à éditer votre attestation.</p>'
+  +'<form onsubmit="entrer(event)" autocomplete="on"><div class="flds">'
+  +'<label class="fld"><span>Prénom</span><input id="h-prenom" required autocomplete="given-name" value="'+esc(S.who.prenom)+'"></label>'
+  +'<label class="fld"><span>Nom</span><input id="h-nom" required autocomplete="family-name" value="'+esc(S.who.nom)+'"></label></div>'
+  +'<label class="fld" style="margin-top:8px"><span>Matricule <i>(recommandé)</i></span><input id="h-mat" inputmode="numeric" autocomplete="off" value="'+esc(S.who.mat)+'"></label>'
+  +'<div class="fld" style="margin-top:12px"><span>Équipe</span><div class="hl-eq" id="h-eq">'
+  +EQUIPES.map(e=>'<button type="button" class="tab-b'+(helloEq===e?" live":"")+'" onclick="choixEq(this,\''+e+'\')">'+e+'</button>').join("")+'</div></div>'
+  +'<button class="go" type="submit">Entrer</button></form>'
+  +'<p class="hl-rgpd">'+ic("lock",14)+'<span>Vos connexions, les standards consultés et vos résultats sont transmis à l\'encadrement Pick &amp; Pack '
+  +'pour le suivi de formation. Ils ne servent pas à évaluer la productivité. Droit d\'accès et de rectification auprès de votre superviseur.</span></p></div>';
+ h.classList.add("live");document.body.style.overflow="hidden"}
+function choixEq(b,e){helloEq=helloEq===e?"":e;document.querySelectorAll("#h-eq .tab-b").forEach(x=>x.classList.toggle("live",x.textContent===helloEq));vib(8)}
+function entrer(ev){ev.preventDefault();
+ const v=id=>document.getElementById(id).value.trim();
+ if(!v("h-prenom")||!v("h-nom"))return;
+ S.who={prenom:v("h-prenom").replace(/^./,c=>c.toUpperCase()),nom:v("h-nom"),mat:v("h-mat"),eq:helloEq};garde();
+ document.getElementById("hello").classList.remove("live");document.body.style.overflow="";
+ ls("spp_last",null);session();rattrapage();jour();
+ note("user","Bienvenue "+S.who.prenom,"Bonne formation sur les standards");vib([20,40,20])}
+
+/* ════════ SUIVI EN DIRECT (espace superviseur) ════════ */
+let supOng="live",LIVE=(()=>{try{return JSON.parse(ls("spp_live")||"null")}catch(e){return null}})(),liveEtat="",liveF="",liveTri="dernier",DEMO=false;
+const cleSup=()=>ls("spp_cle")||"";
+function setOng(k){supOng=k;dessineSup();document.getElementById("sup-body").scrollTop=0}
+function dessineSup(){
+ const b=document.getElementById("sup-body");
+ b.innerHTML='<div class="seg"><button class="'+(supOng==="live"?"live":"")+'" onclick="setOng(\'live\')">Suivi en direct</button>'
+  +'<button class="'+(supOng==="mx"?"live":"")+'" onclick="setOng(\'mx\')">Matrice de polyvalence</button></div>'
+  +(supOng==="live"?vueLive():vueMx());
+ paint(document.getElementById("sup"))}
+function charge_live(){
+ const u=suiviUrl(),c=cleSup();if(!u||!c)return;
+ liveEtat="charge";DEMO=false;dessineSup();
+ fetch(u+(u.includes("?")?"&":"?")+"cle="+encodeURIComponent(c)).then(r=>r.json()).then(d=>{
+  if(!d.ok){liveEtat=d.err==="cle"?"cle":"err";if(d.err==="cle")ls("spp_cle",null)}
+  else{LIVE=d;liveEtat="";ls("spp_live",JSON.stringify(d))}
+  dessineSup()}).catch(()=>{liveEtat="err";dessineSup()})}
+function setCle(ev){ev.preventDefault();const v=document.getElementById("sv-cle").value.trim();if(!v)return;ls("spp_cle",v);charge_live()}
+function setUrl(ev){ev.preventDefault();const v=document.getElementById("sv-url").value.trim();
+ if(!/^https:\/\//.test(v)){note("alert","Adresse invalide","Elle commence par https://script.google.com/…");return}
+ ls("spp_suivi_url",v);note("check","Suivi branché sur cet appareil","Saisissez le code d'accès");envoi();dessineSup()}
+function demo(){DEMO=true;LIVE=fauxLive();liveEtat="";dessineSup();document.getElementById("sup-body").scrollTop=0}
+function quitteDemo(){DEMO=false;try{LIVE=JSON.parse(ls("spp_live")||"null")}catch(e){LIVE=null}dessineSup()}
+const ilya=iso=>{const j=Math.floor((Date.now()-new Date(iso))/864e5);
+ if(j<=0){const h=Math.floor((Date.now()-new Date(iso))/36e5);return h<1?"à l'instant":"il y a "+h+" h"}return j===1?"hier":"il y a "+j+" j"};
+const joursDe=iso=>(Date.now()-new Date(iso))/864e5;
+function vueLive(){
+ const u=suiviUrl();
+ if(!u&&!DEMO)return '<div class="cfg"><div class="cfg-ic">'+ic("off",22)+'</div><b>Le suivi n\'est pas encore branché</b>'
+  +'<p>Pour voir qui se connecte et qui réalise les standards, l\'appli doit envoyer son activité vers un classeur Google Sheets du service. '
+  +'L\'installation prend 10 minutes : suivez <b>suivi/INSTALLATION.md</b>, puis collez l\'adresse obtenue dans <b>SUIVI_URL</b> (index.html) pour tous les téléphones.</p>'
+  +'<form onsubmit="setUrl(event)" class="cfg-f"><label class="fld"><span>Tester sur cet appareil uniquement</span><input id="sv-url" placeholder="https://script.google.com/macros/s/…/exec" autocomplete="off"></label>'
+  +'<button class="go flat" type="submit">Brancher</button></form></div>'
+  +'<button class="go" onclick="demo()">Voir le tableau de bord en démonstration</button>';
+ if(!DEMO&&!cleSup())return '<div class="cfg"><div class="cfg-ic">'+ic("lock",22)+'</div><b>Accès superviseur</b>'
+  +'<p>'+(liveEtat==="cle"?'<span style="color:var(--rouge)">Code refusé.</span> ':'')+'Saisissez le code d\'accès défini dans le script du classeur (constante CLE).</p>'
+  +'<form onsubmit="setCle(event)" class="cfg-f"><label class="fld"><span>Code d\'accès</span><input id="sv-cle" type="password" autocomplete="current-password"></label>'
+  +'<button class="go" type="submit">Ouvrir le tableau de bord</button></form></div>'
+  +'<button class="go flat" onclick="demo()">Voir une démonstration</button>';
+ if(!LIVE&&liveEtat!=="err"){if(liveEtat!=="charge")setTimeout(charge_live,0);return '<div class="void"><b>Chargement…</b><p>Lecture du classeur de suivi</p></div>'}
+ const d=LIVE;if(!d)return '<div class="void"><b>Classeur injoignable</b><p>Vérifiez la connexion puis réessayez.</p><button class="go flat" onclick="charge_live()">Réessayer</button></div>';
+ const eqs=[...new Set(d.users.map(x=>x.eq).filter(Boolean))].sort();
+ const U=d.users.filter(x=>!liveF||x.eq===liveF),n=U.length;
+ const a7=U.filter(x=>joursDe(x.dernier)<7).length,inact=U.filter(x=>joursDe(x.dernier)>=14);
+ const tri={dernier:(a,b)=>b.dernier.localeCompare(a.dernier),hab:(a,b)=>b.habilites-a.habilites||b.sessions-a.sessions,
+  conn:(a,b)=>b.sessions-a.sessions,nom:(a,b)=>(a.nom+a.prenom).localeCompare(b.nom+b.prenom,"fr")}[liveTri];
+ const hab=U.reduce((s,x)=>s+x.habilites,0),moyT=(()=>{const t=U.filter(x=>x.moy!=null);return t.length?Math.round(t.reduce((s,x)=>s+x.moy,0)/t.length):null})();
+ return (DEMO?'<div class="demo">'+ic("alert",14)+'<span>DÉMONSTRATION / DONNÉES FICTIVES</span><button onclick="quitteDemo()">Quitter</button></div>'
+   :'<div class="maj"><span>'+(liveEtat==="charge"?"MISE À JOUR…":liveEtat==="err"?"HORS LIGNE / DERNIÈRES DONNÉES":"MIS À JOUR "+ilya(d.maj).toUpperCase())+'</span><button onclick="charge_live()">'+ic("cycle",14)+'Actualiser</button></div>')
+  +(eqs.length>1?'<div class="tabs spv-tabs"><button class="tab-b '+(liveF?"":"live")+'" onclick="liveF=\'\';dessineSup()">Toutes équipes</button>'
+   +eqs.map(e=>'<button class="tab-b '+(liveF===e?"live":"")+'" onclick="liveF=\''+esc(e).replace(/'/g,"\\'")+'\';dessineSup()">'+esc(e)+'</button>').join("")+'</div>':'')
+  +'<div class="kpi">'
+  +kpi(n,"Inscrits",n?"":"aucun pour l'instant")
+  +kpi(liveF?U.filter(x=>joursDe(x.dernier)<1).length:d.total.auj,"Actifs aujourd'hui")
+  +kpi(a7,"Actifs 7 jours",n?Math.round(a7/n*100)+" % des inscrits":"",a7/Math.max(n,1)>=.6?"ok":"warn")
+  +kpi(U.reduce((s,x)=>s+x.sessions,0),"Connexions","depuis le début")
+  +kpi(hab,"Habilitations",n?(hab/n).toFixed(1).replace(".",",")+" / opérateur":"")
+  +kpi(moyT==null?"—":moyT+" %","Score moyen aux tests","",moyT==null?"":moyT>=80?"ok":"warn")+'</div>'
+  +'<div class="sect-bar"><h2 class="sect">Affluence</h2><span class="code">30 DERNIERS JOURS</span></div>'
+  +grapheJours(d.jours)
+  +(eqs.length>1&&!liveF?'<div class="sect-bar"><h2 class="sect">Engouement par équipe</h2><span class="code">ACTIFS 7 J / INSCRITS</span></div>'
+   +'<div class="hb">'+eqs.map(e=>{const x=d.users.filter(u=>u.eq===e),a=x.filter(u=>joursDe(u.dernier)<7).length,p=Math.round(a/x.length*100);
+    return '<div class="hb-r" title="'+esc(e)+' : '+a+' actifs sur '+x.length+'"><b>'+esc(e)+'</b><div class="hb-t"><i style="width:'+p+'%"></i></div><span>'+a+'/'+x.length+'</span></div>'}).join("")+'</div>':'')
+  +'<div class="sect-bar"><h2 class="sect">Réalisation des standards</h2><span class="code">'+n+' OPÉRATEURS</span></div>'
+  +grapheStd(U)
+  +'<div class="sect-bar"><h2 class="sect">Opérateurs</h2>'+(inact.length?'<span class="code" style="color:var(--rouge)">'+inact.length+' INACTIF'+(inact.length>1?"S":"")+' +14 J</span>':'')+'</div>'
+  +'<div class="tabs" style="padding-top:0;margin-bottom:10px">'+[["dernier","Dernière connexion"],["hab","Habilitations"],["conn","Connexions"],["nom","Nom"]]
+   .map(([k,l])=>'<button class="tab-b '+(liveTri===k?"live":"")+'" onclick="liveTri=\''+k+'\';dessineSup()">'+l+'</button>').join("")+'</div>'
+  +'<div class="ops">'+U.slice().sort(tri).map(x=>{const j=joursDe(x.dernier),c=j<1?"on":j<7?"":j<14?"warn":"off";
+   return '<div class="op"><span class="op-av '+c+'">'+esc((x.prenom[0]||"")+(x.nom[0]||"")).toUpperCase()+'</span>'
+   +'<div class="op-i"><b>'+esc(x.prenom)+' '+esc(x.nom)+'</b><span>'+esc([x.eq,x.mat].filter(Boolean).join(" / "))+'</span>'
+   +'<div class="op-h"><div class="op-t"><i style="width:'+(x.habilites/STD.length*100)+'%"></i><em style="width:'+((x.ouverts-x.habilites)/STD.length*100)+'%"></em></div><small>'+x.habilites+'/'+STD.length+'</small></div></div>'
+   +'<div class="op-r"><b class="'+c+'">'+ilya(x.dernier)+'</b><span>'+x.sessions+' connexion'+(x.sessions>1?"s":"")+(x.moy!=null?' / '+x.moy+' %':'')+'</span></div></div>'}).join("")
+  +(n?'':'<div class="void"><b>Personne pour l\'instant</b><p>Les opérateurs apparaissent ici dès leur première connexion.</p></div>')+'</div>'
+  +'<div class="pair"><button class="big key" onclick="liveVersMx()"><b>Matrice de polyvalence</b><span>À PARTIR DU SUIVI</span></button>'
+  +'<button class="big" onclick="exportLive()"><b>Exporter</b><span>EXCEL .CSV</span></button></div>'
+  +(DEMO?'':'<button class="go flat" onclick="ls(\'spp_cle\',null);LIVE=null;ls(\'spp_live\',null);dessineSup()" style="margin-top:14px">Verrouiller (oublier le code)</button>')
+  +'<div class="foot"><p>SOURCE : CLASSEUR DE SUIVI DU SERVICE<br>ACTIF = AU MOINS UNE CONNEXION SUR LA PÉRIODE</p></div>'}
+function kpi(v,l,s,t){return '<div class="kp"><b'+(t?' class="'+t+'"':'')+'>'+v+'</b><span>'+l+'</span>'+(s?'<em>'+s+'</em>':'')+'</div>'}
+
+/* histogramme : utilisateurs actifs par jour (une série, survol = détail) */
+function grapheJours(J){
+ const W=600,H=170,pl=4,pr=4,pt=22,pb=22,max=Math.max(1,...J.map(j=>j.users)),bw=(W-pl-pr)/J.length,
+  y=v=>pt+(H-pt-pb)*(1-v/max),im=J.reduce((a,j,i)=>j.users>J[a].users?i:a,0),tot=J.reduce((s,j)=>s+j.sessions,0);
+ const moy=(J.slice(-7).reduce((s,j)=>s+j.users,0)/7).toFixed(1).replace(".",",");
+ const jl=d=>new Date(d+"T12:00:00").toLocaleDateString("fr-FR",{weekday:"short",day:"numeric",month:"short"});
+ return '<div class="ch"><div class="ch-h"><div><b>'+moy+'</b><span>actifs par jour en moyenne (7 j)</span></div><div><b>'+tot+'</b><span>connexions sur 30 j</span></div></div>'
+  +'<div class="ch-w"><svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none" class="ch-s" role="img" aria-label="Utilisateurs actifs par jour sur 30 jours">'
+  +[.5,1].map(f=>'<line x1="0" x2="'+W+'" y1="'+y(max*f)+'" y2="'+y(max*f)+'" class="gl"/>').join("")
+  +'<line x1="0" x2="'+W+'" y1="'+(H-pb)+'" y2="'+(H-pb)+'" class="bl"/>'
+  +J.map((j,i)=>{const x=pl+i*bw+1,h=(H-pb)-y(j.users),we=[0,6].includes(new Date(j.d+"T12:00:00").getDay());
+   return '<g class="bar" data-t="'+jl(j.d)+'" data-v="'+j.users+' actif'+(j.users>1?"s":"")+' / '+j.sessions+' connexion'+(j.sessions>1?"s":"")+'">'
+   +'<rect x="'+(pl+i*bw)+'" y="0" width="'+bw+'" height="'+H+'" fill="transparent"/>'
+   +(j.users?'<path d="'+barre(x,y(j.users),bw-2,h)+'" class="'+(we?"we":"")+'"/>':'')+'</g>'}).join("")
+  +'</svg><div class="ch-mx" style="left:'+((pl+im*bw+bw/2)/W*100)+'%;top:'+(y(J[im].users)/H*100)+'%">'+J[im].users+'</div><div class="tip" id="tip"></div></div>'
+  +'<div class="ch-x"><span>'+jl(J[0].d)+'</span><span>'+jl(J[14].d)+'</span><span>Aujourd\'hui</span></div>'
+  +'<p class="ch-n">Hauteur = opérateurs différents connectés ce jour-là. Week-ends en foncé. Touchez une barre pour le détail.</p></div>'}
+/* barre à bout arrondi (4 px), base carrée posée sur l'axe */
+function barre(x,y0,w,h){const r=Math.min(4,w/2,h);return "M"+x+","+(y0+h)+"V"+(y0+r)+"Q"+x+","+y0+" "+(x+r)+","+y0+"H"+(x+w-r)+"Q"+(x+w)+","+y0+" "+(x+w)+","+(y0+r)+"V"+(y0+h)+"Z"}
+
+/* réalisation par standard : habilités + en cours, en barres horizontales */
+function grapheStd(U){const n=Math.max(U.length,1);
+ return '<div class="ch"><div class="lg"><span><i class="h"></i>Habilités</span><span><i class="f"></i>En cours</span><span><i class="n"></i>Pas commencé</span></div>'
+  +'<div class="sb">'+STD.map(s=>{const h=U.filter(x=>x.st[s.id]==="H").length,f=U.filter(x=>x.st[s.id]==="F").length;
+   return '<div class="sb-r" data-t="'+s.id+' '+esc(s.title)+'" data-v="'+h+' habilité'+(h>1?"s":"")+' / '+f+' en cours / '+(U.length-h-f)+' pas commencé"><span class="sb-c'+(s.crit==="critical"?" c":"")+'">'+s.id+'</span>'
+   +'<div class="sb-t">'+(h?'<i class="h" style="width:'+(h/n*100)+'%"></i>':'')+(f?'<i class="f" style="width:'+(f/n*100)+'%"></i>':'')+'</div>'
+   +'<b>'+Math.round(h/n*100)+' %</b></div>'}).join("")+'</div>'
+  +'<p class="ch-n">% = part des opérateurs habilités. Code rouge = standard critique.</p></div>'}
+
+/* infobulle commune (souris et doigt) */
+function bulle(e){const t=e.target.closest("[data-t]"),tip=document.getElementById("tip2");if(!tip)return;
+ if(!t||!t.closest("#sup")){tip.classList.remove("on");return}
+ tip.innerHTML='<b>'+t.dataset.t+'</b><span>'+t.dataset.v+'</span>';tip.classList.add("on");
+ const r=t.getBoundingClientRect(),w=tip.offsetWidth;
+ tip.style.left=Math.max(8,Math.min(innerWidth-w-8,(e.clientX||r.left+r.width/2)-w/2))+"px";tip.style.top=Math.max(8,(e.clientY||r.top)-tip.offsetHeight-16)+"px";
+ document.querySelectorAll("#sup .on-h").forEach(x=>x.classList.remove("on-h"));t.classList.add("on-h")}
+document.addEventListener("pointermove",bulle);document.addEventListener("pointerdown",bulle);
+
+function liveVersMx(){if(!LIVE)return;
+ LIVE.users.filter(x=>!liveF||x.eq===liveF).forEach(x=>ajouteOp({nom:x.nom,prenom:x.prenom,mat:x.mat,eq:x.eq,le:frDate(x.dernier.slice(0,10)),st:x.st,best:{}}));
+ gardeEq();supOng="mx";dessineSup();note("team","Matrice à jour","Depuis le suivi en direct")}
+function exportLive(){if(!LIVE)return;const U=LIVE.users.filter(x=>!liveF||x.eq===liveF);
+ telecharge("SPP_Suivi_"+(liveF?slug(liveF)+"_":"")+auj()+".csv",[["Nom","Prénom","Matricule","Équipe","Première connexion","Dernière connexion","Connexions","Jours actifs",
+  "Standards ouverts","Supports lus","Checklists validées","Habilités","Tests","Score moyen %"].concat(STD.map(s=>s.id))]
+  .concat(U.map(x=>[x.nom,x.prenom,x.mat,x.eq,frDate(x.premier.slice(0,10)),frDate(x.dernier.slice(0,10)),x.sessions,x.jours,x.ouverts,x.supports,x.valides,x.habilites,x.tests,x.moy==null?"":x.moy]
+  .concat(STD.map(s=>ST_L[x.st[s.id]])))));note("sheet","Suivi exporté",U.length+" opérateurs")}
+
+/* données de démonstration : même format que le classeur */
+function fauxLive(){let g=7;const r=()=>(g=(g*16807)%2147483647)/2147483647;
+ const P=["Julie","Karim","Sophie","Mehdi","Laura","Thomas","Inès","Kevin","Sarah","Lucas","Nadia","Hugo","Emma","Yanis","Chloé","Bruno","Aïcha","Maxime","Léa","Rachid","Manon","Dylan","Camille","Samir"],
+  N=["MARTIN","BENALI","PETIT","HADDAD","ROUX","LEROY","MOREAU","GARNIER","FAURE","ANDRÉ","MERCIER","BLANC","GUÉRIN","BOYER","CHEVALIER","FRANÇOIS","LAMBERT","BONNET","FONTAINE","ROUSSEAU","VINCENT","MULLER","LEFÈVRE","GIRARD"];
+ const now=Date.now(),users=P.map((p,i)=>{const eng=r(),st={};let h=0,o=0;
+  STD.forEach(s=>{const x=r();const v=x<eng*.75?"H":x<eng*.95+.05?"F":"N";st[s.id]=v;if(v==="H")h++;if(v!=="N")o++});
+  const last=now-Math.floor(Math.pow(r(),2.2)*(eng>.3?9:26))*864e5-Math.floor(r()*8)*36e5;
+  return{nom:N[i],prenom:p,mat:String(104100+i*37),eq:EQUIPES[i%3],premier:new Date(now-(20+Math.floor(r()*10))*864e5).toISOString(),
+   dernier:new Date(last).toISOString(),sessions:Math.round(2+eng*28),jours:Math.round(1+eng*16),ouverts:o,supports:Math.round(o*.7),valides:h+Math.round(r()*2),
+   habilites:h,tests:Math.round(eng*14),moy:Math.round(62+eng*34),st}});
+ const jours=[];for(let i=29;i>=0;i--){const d=new Date(now-i*864e5),we=[0,6].includes(d.getDay()),
+  u=we?Math.round(r()*3):Math.round(5+(29-i)*.35+r()*7);jours.push({d:d.toISOString().slice(0,10),users:u,sessions:Math.round(u*(1.3+r()))})}
+ return{ok:true,maj:new Date().toISOString(),seuil:80,total:{users:users.length,auj:jours[29].users},users,jours,parStd:[]}}
 
 /* ════════ SUPPORT DE FORMATION ════════ */
 const pad2=n=>String(n).padStart(2,"0");
@@ -1801,7 +2143,7 @@ function dkMaj(){if(!DK)return;
  go.textContent=fin?(DK.brief?"Retour au brief":"Se tester sur "+s.id):"Suivant";
  go.classList.toggle("fin",fin&&!DK.brief);
  if(fin)dkEl("deck").classList.remove("calm");
- if(fin&&!S.lus.includes(s.id)){S.lus.push(s.id);S.dl[s.id]=auj();garde();xp(5);note("book","Support lu jusqu'au bout",s.id+" "+s.title)}}
+ if(fin&&!S.lus.includes(s.id)){S.lus.push(s.id);S.dl[s.id]=auj();garde();trace("support",s.id);xp(5);note("book","Support lu jusqu'au bout",s.id+" "+s.title)}}
 
 function dkAller(i,doux){if(!DK)return;
  i=Math.max(0,Math.min(i,DK.n-1));dkDezoom();DK.cur=i;dkCalme();
@@ -1863,6 +2205,8 @@ document.addEventListener("fullscreenchange",()=>{
 
 /* ── démarrage ── */
 tabs();sift();jour();hub();paint();jauge();
+if(!S.who.nom||!S.who.prenom)hello();else session();
+envoi();
 
 /* ── hors ligne : l'appli et les supports restent consultables sans réseau ── */
 function reseau(){document.body.classList.toggle("horsligne",!navigator.onLine)}

@@ -10,6 +10,16 @@ fiches, supports de formation, tests et suivi d'habilitation.
 | `standards/*.pptx` | Supports PowerPoint d'origine (téléchargeables depuis chaque fiche) |
 | `slides/*.webp` | Supports exportés en images, lus dans l'appli |
 | `manifest.webmanifest`, `sw.js`, `icons/` | Installation sur l'écran d'accueil + fonctionnement hors ligne |
+| `suivi/Code.gs`, `suivi/INSTALLATION.md` | Serveur de suivi d'activité (Google Sheets) et guide d'installation |
+
+## Suivi d'activité (qui se connecte, qui réalise les standards)
+Au premier lancement, chaque opérateur s'identifie (prénom, nom, matricule, équipe).
+L'appli envoie ensuite son activité (connexions, standards ouverts, supports lus, checklists, tests)
+vers un classeur Google Sheets du service. Le superviseur consulte le tableau de bord dans
+**Moi › Espace superviseur › Suivi en direct** (protégé par un code d'accès) : affluence sur 30 jours,
+engouement par équipe, réalisation par standard, liste des opérateurs et inactifs.
+Une **démonstration** avec données fictives est disponible avant installation.
+Installation et cadre RH/RGPD : [`suivi/INSTALLATION.md`](suivi/INSTALLATION.md).
 
 ## Traçabilité formation (écran « Moi »)
 - **Mon dossier de formation** : nom, prénom, matricule, équipe (stockés sur l'appareil).
@@ -27,4 +37,4 @@ Chaque fiche standard peut aussi être **imprimée en A4** pour affichage au pos
 2. Ajuster `SLIDES` et changer `SLIDE_V` dans `index.html`.
 3. Changer `VERSION` (et la liste `SLIDES` si le nombre d'images change) dans `sw.js`.
 
-Aucune donnée n'est envoyée sur un serveur : tout reste sur l'appareil, les exports se font à la demande.
+Tant que `SUIVI_URL` est vide, rien n'est envoyé : la progression reste sur l'appareil.
