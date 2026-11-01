@@ -10,6 +10,10 @@
 <meta name="theme-color" content="#0B0C0E">
 <meta name="description" content="Les 18 standards du service Pick & Pack — Rexel CLR Champigneulles.">
 <title>Standards Pick &amp; Pack — CLR Champigneulles</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/svg+xml" href="icons/icon.svg">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -515,6 +519,139 @@ h2.sect{font-size:18px;font-weight:700;letter-spacing:-.02em;margin:0}
 .foot{padding:34px 16px 14px;text-align:center}
 .foot p{font-family:var(--fm);font-size:10px;letter-spacing:.08em;color:#343A43;line-height:2}
 @media (min-width:600px){.duo{grid-template-columns:1fr 1fr}}
+/* ════════ DOSSIER DE FORMATION ════════ */
+.dossier{padding:16px 15px;border-radius:4px;background:var(--surf);box-shadow:inset 0 0 0 1px var(--edge)}
+.flds{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.fld span{display:block;font-family:var(--fm);font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--acier-2);margin-bottom:5px}
+.fld input{width:100%;padding:11px 11px;border-radius:3px;border:none;background:var(--beton);color:var(--craie);
+ font:inherit;font-size:15px;box-shadow:inset 0 0 0 1px var(--edge-2);outline:none}
+.fld input:focus{box-shadow:inset 0 0 0 1.5px var(--jaune)}
+.fld input::placeholder{color:#3D434D}
+.hab{margin-top:16px;padding-top:14px;border-top:1px solid var(--edge)}
+.hab-b{height:5px;border-radius:1px;background:#23272E;overflow:hidden}
+.hab-b i{display:block;height:100%;background:var(--vert)}
+.hab p{font-size:13.5px;margin-top:9px}
+.hab span{display:block;font-family:var(--fm);font-size:10px;letter-spacing:.05em;color:var(--acier-2);margin-top:4px}
+.docs{display:flex;flex-direction:column;gap:6px;margin-top:14px}
+.doc{width:100%;text-align:left;display:flex;align-items:center;gap:13px;padding:13px 14px;border-radius:4px;
+ background:var(--plate);box-shadow:inset 0 0 0 1px var(--edge)}
+.doc svg{flex:0 0 18px;color:var(--jaune)}
+.doc b{display:block;font-size:14px;font-weight:600;letter-spacing:-.015em}
+.doc span span{display:block;font-family:var(--fm);font-size:9.5px;letter-spacing:.07em;color:var(--acier-2);margin-top:3px}
+.pr-btn{display:flex;align-items:center;justify-content:center;gap:9px;font-size:13.5px;margin-top:10px}
+.pr-btn svg{color:var(--jaune)}
+
+/* ════════ ESPACE SUPERVISEUR ════════ */
+.spv{z-index:950}
+.spv .br-body>*{flex-shrink:0}
+.spv .br-body{justify-content:flex-start;max-width:980px;width:100%;margin:0 auto;padding-bottom:calc(30px + env(safe-area-inset-bottom))}
+.spv-int{font-size:13.5px;color:var(--acier);line-height:1.55}
+.spv-int b{color:var(--craie)}
+.spv-act{display:grid;gap:0}
+.spv-act label.go{display:flex;align-items:center;justify-content:center;gap:9px;cursor:pointer}
+.spv-tabs{padding-top:18px}
+.spv-k{grid-template-columns:repeat(3,1fr);margin-top:18px}
+.spv-k .tilecell b{font-size:22px}
+.spv-al{margin-top:10px;padding:12px 13px;border-radius:4px;background:rgba(229,51,42,.08);box-shadow:inset 0 0 0 1px rgba(229,51,42,.28);
+ display:flex;gap:10px;align-items:flex-start}
+.spv-al svg{flex:0 0 16px;color:var(--rouge);margin-top:1px}
+.spv-al p{font-size:12.5px;line-height:1.45;color:var(--craie)}
+.spv-al b{color:var(--rouge)}
+.mx-w{overflow-x:auto;margin-top:14px;border-radius:4px;box-shadow:inset 0 0 0 1px var(--edge);background:var(--surf);
+ scrollbar-width:thin;-webkit-overflow-scrolling:touch}
+.mx-w::-webkit-scrollbar{height:4px}.mx-w::-webkit-scrollbar-thumb{background:#2B3038}
+.mx{border-collapse:separate;border-spacing:0;font-size:12px;min-width:100%}
+.mx th,.mx td{padding:0;text-align:center;border-bottom:1px solid var(--edge);height:38px;min-width:30px}
+.mx thead th{font-family:var(--fm);font-size:9.5px;font-weight:600;color:var(--acier-2);height:30px;letter-spacing:.02em}
+.mx thead th.c{color:var(--rouge)}
+.mx .mx-n{position:sticky;left:0;z-index:1;background:var(--surf);text-align:left;padding:0 12px;min-width:148px;
+ box-shadow:1px 0 0 var(--edge)}
+.mx td.mx-n b{display:block;font-size:12.5px;font-weight:600;white-space:nowrap}
+.mx td.mx-n span{display:block;font-family:var(--fm);font-size:9px;color:var(--acier-2);white-space:nowrap;margin-top:1px}
+.mx tbody td.H::after,.mx tbody td.F::after,.mx tbody td.N::after{content:'';display:inline-block;vertical-align:middle;border-radius:50%}
+.mx tbody td.H::after{width:12px;height:12px;background:var(--vert)}
+.mx tbody td.F::after{width:12px;height:12px;box-shadow:inset 0 0 0 2px var(--jaune)}
+.mx tbody td.N::after{width:6px;height:6px;border-radius:1px;background:#23272E}
+.mx td.mx-p{font-family:var(--fm);font-weight:600;font-size:11px;padding:0 8px}
+.mx tfoot td{font-family:var(--fm);font-size:11px;font-weight:600;color:var(--acier);border-bottom:none}
+.mx tfoot td.al{color:var(--rouge)}
+.mx-x{width:26px;height:26px;display:grid;place-items:center;color:var(--acier-2);margin:0 6px}
+.spv .legend{margin-top:12px}
+
+/* ════════ HORS LIGNE ════════ */
+.net{position:fixed;left:50%;bottom:calc(var(--nav) + 10px);transform:translateX(-50%);z-index:500;display:none;
+ align-items:center;gap:7px;padding:7px 12px;border-radius:3px;background:var(--plate-2);box-shadow:var(--ombre),inset 0 0 0 1px var(--edge-2);
+ font-family:var(--fm);font-size:10px;letter-spacing:.08em;color:var(--acier);white-space:nowrap}
+.net svg{color:var(--jaune)}
+body.horsligne .net{display:flex}
+
+/* ════════ IMPRESSION ════════ */
+#print{display:none}
+@page{size:A4 portrait;margin:11mm 12mm}
+@page land{size:A4 landscape;margin:9mm 10mm}
+@media print{
+ html,body{background:#fff!important;color:#111!important;min-height:0}
+ body::after{display:none!important}
+ body.imprime>*:not(#print){display:none!important}
+ body.imprime #print{display:block!important}
+ #print.land{page:land}
+ #print{font-family:var(--ff);font-size:9.6pt;line-height:1.42;color:#111;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+ .pr-pg{display:flex;flex-direction:column;min-height:270mm}
+ #print.land .pr-pg{min-height:186mm}
+ .pr-hd{display:flex;align-items:center;gap:10px;padding-bottom:7px;border-bottom:2.5pt solid #111}
+ .pr-mk{width:30px;height:30px;background:#FFD400;color:#111;display:grid;place-items:center;font-family:var(--fm);font-weight:700;font-size:9pt}
+ .pr-org{flex:1}.pr-org b{display:block;font-size:10pt}.pr-org span{display:block;font-size:8pt;color:#555}
+ .pr-ref{text-align:right}.pr-ref b{display:block;font-family:var(--fm);font-size:12pt;letter-spacing:.02em}
+ .pr-ref span{display:block;font-size:8pt;color:#555}
+ .pr-h1{font-size:21pt;font-weight:900;letter-spacing:-.03em;line-height:1.05;margin:12px 0 0}
+ .pr-motto{margin-top:8px;padding:8px 12px;border-left:5pt solid #FFD400;background:#F6F6F4;font-size:13pt;font-weight:800;letter-spacing:-.015em}
+ .pr-motto small{display:block;font-size:9pt;font-weight:500;color:#555;margin-top:2px;letter-spacing:0}
+ .pr-keys{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px}
+ .pr-keys div{border:.8pt solid #CCC;padding:7px 9px;break-inside:avoid}
+ .pr-keys em{font-style:normal;font-family:var(--fm);font-size:8pt;color:#8A7200;font-weight:600}
+ .pr-keys b{display:block;font-size:10pt;margin-top:1px}.pr-keys p{font-size:8.6pt;color:#333;margin-top:2px}
+ .pr-2{display:grid;grid-template-columns:1.25fr 1fr;gap:14px;margin-top:12px}
+ .pr-2 h2{font-size:10.5pt;font-weight:800;text-transform:uppercase;letter-spacing:.04em;margin:0 0 5px;padding-bottom:3px;border-bottom:1pt solid #111}
+ .pr-2 section>h2~h2{margin-top:10px}
+ .pr-2 ol{padding-left:24px}.pr-2 ol li{margin:2px 0;padding-left:2px}
+ .pr-2 ol li::marker{font-family:var(--fm);font-weight:700}
+ .pr-2 ul{list-style:none}
+ .pr-no ul li{margin:2px 0;padding-left:13px;position:relative;color:#B0221B;font-weight:600}
+ .pr-no ul li::before{content:'✕';position:absolute;left:0}
+ .pr-no ul.pr-rk li{color:#222;font-weight:400}.pr-no ul.pr-rk li::before{content:'▲';font-size:7pt;top:2px;color:#B0221B}
+ .pr-box li{margin:3px 0;padding-left:19px;position:relative}
+ .pr-box li::before{content:'';position:absolute;left:0;top:1px;width:10px;height:10px;border:1pt solid #111}
+ .pr-t{width:100%;border-collapse:collapse}
+ .pr-t th,.pr-t td{border-bottom:.6pt solid #CCC;padding:4px 4px;vertical-align:top;text-align:left;font-size:8.8pt}
+ .pr-t th{width:34%;font-weight:700}
+ .pr-ft{margin-top:auto;padding-top:7px;border-top:.8pt solid #999;display:flex;justify-content:space-between;
+  font-family:var(--fm);font-size:7.2pt;color:#666;letter-spacing:.03em}
+ .pr-id{width:100%;border-collapse:collapse;margin-top:12px}
+ .pr-id th,.pr-id td{border:.8pt solid #999;padding:6px 8px;text-align:left;font-size:10pt}
+ .pr-id th{background:#F2F2F0;width:14%;font-size:8.5pt;text-transform:uppercase;letter-spacing:.04em}
+ .pr-kpi{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:10px}
+ .pr-kpi div{border:.8pt solid #CCC;padding:7px 9px}.pr-kpi b{display:block;font-size:14pt;font-weight:900;letter-spacing:-.02em}
+ .pr-kpi span{display:block;font-size:8pt;color:#555}
+ .pr-grid{width:100%;border-collapse:collapse;margin-top:10px}
+ .pr-grid th,.pr-grid td{border-bottom:.6pt solid #CCC;padding:3.6px 5px;text-align:left;font-size:8.8pt}
+ .pr-grid thead th{border-bottom:1.2pt solid #111;font-size:7.8pt;text-transform:uppercase;letter-spacing:.04em}
+ .pr-grid td:first-child{font-family:var(--fm);font-weight:600}
+ .pr-grid tr.H td:last-child{color:#1B7A3D}.pr-grid tr.F td:last-child{color:#8A6A00}.pr-grid tr.N td:last-child{color:#999}
+ .pr-note{font-size:7.8pt;color:#555;margin-top:8px;line-height:1.45}
+ .pr-sign{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:12px}
+ .pr-sign div{border:.8pt solid #999;height:24mm;padding:6px 8px;display:flex;flex-direction:column}
+ .pr-sign span{font-size:8.5pt;font-weight:700;text-transform:uppercase;letter-spacing:.04em}
+ .pr-sign i{font-size:7.5pt;color:#777;margin-top:auto}
+ .pr-mx{width:100%;border-collapse:collapse;margin-top:10px}
+ .pr-mx th,.pr-mx td{border:.6pt solid #BBB;text-align:center;padding:3px 2px;font-size:8.5pt}
+ .pr-mx thead th{font-family:var(--fm);font-size:7.5pt;background:#F2F2F0}
+ .pr-mx thead th.c{color:#B0221B}
+ .pr-mx td:first-child,.pr-mx th:first-child{text-align:left;padding:3px 6px;width:22%}
+ .pr-mx td small{display:block;font-size:6.8pt;color:#777}
+ .pr-mx td.H{color:#1B7A3D;background:#E9F6EE}.pr-mx td.F{color:#8A6A00;background:#FFF8D6}
+ .pr-mx tfoot td{font-family:var(--fm);font-weight:700;background:#F2F2F0}
+ .pr-mx tbody tr{break-inside:avoid}
+}
 </style>
 </head>
 <body>
@@ -529,6 +666,7 @@ h2.sect{font-size:18px;font-weight:700;letter-spacing:-.02em;margin:0}
 </div>
 
 <div class="notes" id="notes"></div>
+<div class="net" data-i="off">HORS LIGNE / CONTENU DISPONIBLE</div>
 
 <header class="top">
   <div class="top-in">
@@ -652,6 +790,15 @@ h2.sect{font-size:18px;font-weight:700;letter-spacing:-.02em;margin:0}
   <div class="br-nav dk-nav"><button class="b" id="dk-b" onclick="dkPas(-1)">Fermer</button><button class="n" id="dk-n" onclick="dkPas(1)">Suivant</button></div>
 </div>
 
+<!-- ══ ESPACE SUPERVISEUR ══ -->
+<div class="brief spv" id="sup" role="dialog" aria-modal="true" aria-labelledby="sup-t">
+  <div class="br-top"><b id="sup-t">ESPACE SUPERVISEUR / POLYVALENCE</b><button class="br-x" onclick="closeSup()" aria-label="Fermer" data-i="x"></button></div>
+  <div class="br-body" id="sup-body"></div>
+</div>
+
+<!-- ══ IMPRESSION (attestation, fiche A4, matrice) ══ -->
+<div id="print" aria-hidden="true"></div>
+
 <nav class="bar">
   <button class="bb live" data-s="jour" onclick="show('jour')" data-i="home"><span>Aujourd'hui</span></button>
   <button class="bb" data-s="ref" onclick="show('ref')" data-i="grid"><span>Référentiel</span></button>
@@ -671,7 +818,8 @@ const DECK_BASE = "standards/";
 /* Supports de formation exportés en images, lus directement dans l'appli.
    Fichiers : slides/P01-1.webp, slides/P01-2.webp … slides/P18-8.webp
    Si un support change : réexporter ses images, ajuster son nombre de slides ci-dessous,
-   puis changer SLIDE_V pour forcer les téléphones à recharger les nouvelles images. */
+   puis changer SLIDE_V pour forcer les téléphones à recharger les nouvelles images
+   (et mettre à jour VERSION + la liste SLIDES dans sw.js, qui gère le hors ligne). */
 const SLIDE_BASE = "slides/";
 const SLIDE_V = "2610";
 const SLIDES = {P1:8,P2:8,P3:8,P4:8,P5:8,P6:8,P7:8,P8:8,P9:8,P10:8,P11:8,P12:8,P13:8,P14:8,P15:8,P16:8,P17:8,P18:8};
@@ -1041,7 +1189,11 @@ crown:'<path d="M3 7.5 6.5 14h11L21 7.5l-5 3.5L12 4 8 11z"/><path d="M6.5 18.5h1
 layers:'<path d="M12 3 3 8l9 5 9-5z"/><path d="M3 13.5 12 18.5l9-5"/>',
 screen:'<rect x="2.5" y="4" width="19" height="12.5"/><path d="M8 20.5h8M12 16.5v4"/>',
 expand:'<path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/>',
-dl:'<path d="M12 3.5v11.5M7 10l5 5 5-5"/><path d="M4.5 20.5h15"/>'};
+dl:'<path d="M12 3.5v11.5M7 10l5 5 5-5"/><path d="M4.5 20.5h15"/>',
+print:'<path d="M6.5 9V3.5h11V9"/><rect x="3" y="9" width="18" height="8"/><path d="M6.5 14h11v6.5h-11z"/>',
+sheet:'<rect x="3.5" y="3.5" width="17" height="17"/><path d="M3.5 9h17M3.5 14.5h17M9.5 9v11.5"/>',
+team:'<circle cx="8.5" cy="8" r="3.2"/><path d="M2.5 20c0-3.4 2.7-5.4 6-5.4s6 2 6 5.4"/><circle cx="17" cy="9" r="2.6"/><path d="M15.5 14.8c3.4-.4 6 1.4 6 4.7"/>',
+off:'<path d="M2.5 8.5a14 14 0 0 1 19 0M5.5 12a9.5 9.5 0 0 1 13 0M8.5 15.5a5 5 0 0 1 7 0"/><path d="M12 19.5v.01"/>'};
 const ic=(n,s)=>'<svg width="'+(s||20)+'" height="'+(s||20)+'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="square" stroke-linejoin="miter">'+(I[n]||'')+'</svg>';
 function paint(root){(root||document).querySelectorAll("[data-i]").forEach(e=>{
  const n=e.dataset.i;if(!I[n]||e.dataset.done)return;e.dataset.done="1";
@@ -1067,9 +1219,13 @@ const MARKS=[
  {id:"g3",i:"gauge",n:"Niveau 3",d:"Grade N3 atteint"},
  {id:"g6",i:"crown",n:"Niveau 6",d:"Grade N6 atteint"}];
 
-const BASE={xp:0,vu:0,bon:0,tests:0,run:0,marks:[],ouverts:[],valides:[],chk:{},rates:[],briefs:0,lus:[]};
+const BASE={xp:0,vu:0,bon:0,tests:0,run:0,marks:[],ouverts:[],valides:[],chk:{},rates:[],briefs:0,lus:[],
+ qs:{},best:{},dv:{},dl:{},who:{nom:"",prenom:"",mat:"",eq:""}};
 let S=charge(),ecran="jour",tri="tous",fiche=null,onglet=0;
 S.lus=(S.lus||[]).slice();
+["qs","best","dv","dl"].forEach(k=>{if(!S[k]||typeof S[k]!=="object")S[k]={}});
+S.who=Object.assign({nom:"",prenom:"",mat:"",eq:""},S.who||{});
+const auj=()=>new Date().toISOString().slice(0,10);
 function charge(){try{const r=localStorage.getItem("spp_v3");if(r)return Object.assign({},BASE,JSON.parse(r))}catch(e){}
  try{const o=localStorage.getItem("spp_v2");if(o){const p=JSON.parse(o);return Object.assign({},BASE,
   {xp:p.xp||0,vu:p.answered||0,bon:p.correct||0,tests:p.quizzes||0,run:p.streak||0,
@@ -1201,6 +1357,7 @@ function dessine(){
   +'<div class="pair"><button class="big key" onclick="run(\'un\',\''+s.id+'\')"><b>Se tester sur '+s.id+'</b><span>'+QB.filter(q=>q.s===s.id).length+' QUESTIONS</span></button>'
   +(SLIDES[s.id]?'<button class="big" onclick="openDeck(\''+s.id+'\')"><b>Support de formation</b><span>'+SLIDES[s.id]+' SLIDES</span></button>'
    :'<a class="big" href="'+DECK_BASE+s.file+'" target="_blank" rel="noopener"><b>Support de formation</b><span>POWERPOINT</span></a>')+'</div>'
+  +'<button class="go flat pr-btn" onclick="imprFiche(\''+s.id+'\')">'+ic("print",16)+'Imprimer la fiche A4 — affichage poste</button>'
   +'<div class="stepper">'
   +(av?'<button onclick="openFile(\''+av.id+'\')"><span>PRÉCÉDENT</span><b>'+av.id+" "+av.title+'</b></button>':'')
   +(ap?'<button onclick="openFile(\''+ap.id+'\')"><span>SUIVANT</span><b>'+ap.id+" "+ap.title+'</b></button>':'')
@@ -1233,7 +1390,7 @@ function coche(i,el){
  const id=fiche.id;if(!S.chk[id])S.chk[id]=[];
  S.chk[id][i]=!S.chk[id][i];garde();el.classList.toggle("done");barreChk();vib(9);
  if(fiche.check.every((_,j)=>S.chk[id][j])&&!S.valides.includes(id)){
-  S.valides.push(id);garde();xp(20);note("check","Standard validé",fiche.id+" "+fiche.title);
+  S.valides.push(id);S.dv[id]=auj();garde();xp(20);note("check","Standard validé",fiche.id+" "+fiche.title);
   marque("chk1");if(S.valides.length>=5)marque("chk5")}}
 function barreChk(){if(!fiche)return;
  const c=S.chk[fiche.id]||[],n=fiche.check.length,d=fiche.check.filter((_,i)=>c[i]).length,p=Math.round(d/n*100);
@@ -1333,6 +1490,7 @@ function rep(i){
  document.querySelectorAll("#opts .q-o").forEach((b,j)=>{b.onclick=null;
   b.classList.add(j===q.c?"hit":j===i?"miss":"mute")});
  S.vu++;
+ const st=S.qs[q.s]||(S.qs[q.s]={vu:0,bon:0});st.vu++;if(ok)st.bon++;
  if(ok){S.bon++;T.ok++;T.run++;xp(10);vib(18);
   if(T.run>S.run)S.run=T.run;
   if(T.run===5){marque("run5");xp(15)}
@@ -1352,7 +1510,9 @@ function rejouer(){if(T)run(T.mode,T.cible)}
 function stop(){T=null;hub()}
 function bilan(){
  const n=T.p.length,p=Math.round(T.ok/n*100);
- S.tests++;garde();
+ S.tests++;
+ if(T.mode==="un"&&T.cible&&p>(S.best[T.cible]==null?-1:S.best[T.cible]))S.best[T.cible]=p;
+ garde();
  let t,m;
  if(p===100){t="Sans faute";m="Zéro erreur sur "+n+" questions. Le standard est tenu.";marque("clean");etincelles();xp(25)}
  else if(p>=80){t="Bon niveau";m="Un ou deux points à consolider avant de refaire le test.";xp(10)}
@@ -1386,6 +1546,7 @@ function moi(){
   +'<div class="map">'+STD.map(s=>'<b class="'+(S.valides.includes(s.id)?"v":S.ouverts.includes(s.id)?"s":"")+'" onclick="openFile(\''+s.id+'\')">'+s.id+'</b>').join("")+'</div>'
   +'<div class="legend"><span><i style="background:#23272E"></i>Jamais ouvert</span>'
   +'<span><i style="background:var(--bleu)"></i>Lu</span><span><i style="background:var(--jaune)"></i>Checklist validée</span></div>'
+  +blocDossier()
   +'<div class="sect-bar"><h2 class="sect">Chiffres</h2></div>'
   +'<div class="tiles"><div class="tilecell"><b>'+m+' %</b><span>Maîtrise du référentiel</span></div>'
   +'<div class="tilecell"><b style="color:'+(t>=80?"var(--vert)":"var(--jaune)")+'">'+t+' %</b><span>Bonnes réponses</span></div>'
@@ -1394,10 +1555,193 @@ function moi(){
   +'<div class="sect-bar"><h2 class="sect">Marques</h2><span class="code">'+S.marks.length+"/"+MARKS.length+'</span></div>'
   +'<div class="marks">'+MARKS.map(x=>'<div class="mk '+(S.marks.includes(x.id)?"won":"")+'">'+ic(x.i,22)+'<b>'+x.n+'</b><span>'+x.d+'</span></div>').join("")+'</div>'
   +'<button class="go flat" onclick="raz()" style="margin-top:24px">Repartir de zéro</button>'
-  +'<div class="foot"><p>DONNÉES CONSERVÉES SUR CET APPAREIL UNIQUEMENT<br>AUCUN ENVOI / AUCUN SUIVI NOMINATIF</p></div>';
- jauge()}
+  +'<div class="foot"><p>DONNÉES CONSERVÉES SUR CET APPAREIL UNIQUEMENT<br>AUCUN ENVOI AUTOMATIQUE / EXPORT À LA DEMANDE</p></div>';
+ paint(document.getElementById("moi-box"));jauge()}
 function raz(){if(!confirm("Effacer toute votre progression : XP, marques, checklists ?"))return;
- S=JSON.parse(JSON.stringify(BASE));garde();moi();jour();note("cycle","Progression effacée","Tout repart de zéro")}
+ const w=S.who;S=JSON.parse(JSON.stringify(BASE));S.who=w;garde();moi();jour();note("cycle","Progression effacée","Tout repart de zéro")}
+
+/* ════════════════════════════════════════════════════════════
+   TRAÇABILITÉ FORMATION — attestation, export Excel, matrice équipe
+   Tout reste sur l'appareil : rien n'est envoyé nulle part.
+   ════════════════════════════════════════════════════════════ */
+const esc=t=>String(t==null?"":t).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const frDate=d=>d?d.split("-").reverse().join("/"):"";
+const CRIT_L={critical:"Critique",major:"Majeure",standard:"Courante"};
+const SEUIL=80;   /* % minimum au test du standard pour être habilité */
+const ST_L={H:"Habilité",F:"En formation",N:"Non formé"};
+
+/* statut d'habilitation d'un standard pour l'opérateur de cet appareil */
+function statut(id){
+ if(S.valides.includes(id)&&(S.best[id]||0)>=SEUIL)return"H";
+ if(S.ouverts.includes(id)||S.lus.includes(id)||(S.qs[id]&&S.qs[id].vu))return"F";
+ return"N"}
+function nomComplet(){return [S.who.prenom,(S.who.nom||"").toUpperCase()].filter(Boolean).join(" ")}
+function identite(){
+ if(S.who.nom.trim()&&S.who.prenom.trim())return true;
+ note("alert","Identité manquante","Renseignez nom et prénom dans « Mon dossier »");
+ const e=document.getElementById("w-nom");if(e){e.scrollIntoView({behavior:"smooth",block:"center"});e.focus()}
+ return false}
+function setWho(k,v){S.who[k]=v.trim();garde()}
+
+/* ── bloc « Mon dossier de formation » de l'écran Moi ── */
+function blocDossier(){
+ const h=STD.filter(s=>statut(s.id)==="H").length,
+  c=STD.filter(s=>s.crit==="critical"),ch=c.filter(s=>statut(s.id)==="H").length;
+ const f=(k,l,ph,ac)=>'<label class="fld"><span>'+l+'</span><input id="w-'+k+'" value="'+esc(S.who[k])+'" placeholder="'+ph+'" autocomplete="'+ac+'" onchange="setWho(\''+k+'\',this.value)"></label>';
+ return '<div class="sect-bar"><h2 class="sect">Mon dossier de formation</h2><span class="code">'+h+'/'+STD.length+' HABILITÉ</span></div>'
+  +'<div class="dossier">'
+  +'<div class="flds">'+f("prenom","Prénom","Prénom","given-name")+f("nom","Nom","Nom","family-name")
+  +f("mat","Matricule","ex. 104582","off")+f("eq","Équipe","Matin / A.-midi / Nuit","off")+'</div>'
+  +'<div class="hab"><div class="hab-b"><i style="width:'+Math.round(h/STD.length*100)+'%"></i></div>'
+  +'<p><b>'+h+'</b> standard'+(h>1?"s":"")+' habilité'+(h>1?"s":"")+' / <b style="color:'+(ch===c.length?"var(--vert)":"var(--rouge)")+'">'+ch+'/'+c.length+'</b> critiques</p>'
+  +'<span>Habilité = checklist validée + test du standard ≥ '+SEUIL+' %</span></div>'
+  +'<div class="docs">'
+  +'<button class="doc" onclick="imprAttestation()" data-i="print"><span><b>Attestation de formation</b><span>A4 À SIGNER / PDF</span></span></button>'
+  +'<button class="doc" onclick="exportCSV()" data-i="sheet"><span><b>Export Excel</b><span>FICHIER .CSV / 18 LIGNES</span></span></button>'
+  +'<button class="doc" onclick="openSup()" data-i="team"><span><b>Espace superviseur</b><span>MATRICE DE POLYVALENCE</span></span></button>'
+  +'</div></div>'}
+
+/* ── export CSV (séparateur ; + BOM : s'ouvre proprement dans Excel FR) ── */
+const COLS=["Nom","Prénom","Matricule","Équipe","Code","Standard","Catégorie","Criticité","Fiche ouverte","Support lu","Date support lu",
+ "Checklist validée","Date validation","Questions vues","Bonnes réponses","Taux %","Meilleur test %","Statut","Export le"];
+const cel=v=>{v=String(v==null?"":v);return /[;"\n\r]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v};
+function lignesCSV(){
+ const ex=frDate(auj());
+ return STD.map(s=>{const q=S.qs[s.id]||{vu:0,bon:0};
+  return [(S.who.nom||"").toUpperCase(),S.who.prenom,S.who.mat,S.who.eq,s.id,s.title,CATS[s.cat].l,CRIT_L[s.crit],
+   S.ouverts.includes(s.id)?"Oui":"Non",S.lus.includes(s.id)?"Oui":"Non",frDate(S.dl[s.id]),
+   S.valides.includes(s.id)?"Oui":"Non",frDate(S.dv[s.id]),q.vu,q.bon,q.vu?Math.round(q.bon/q.vu*100):"",
+   S.best[s.id]==null?"":S.best[s.id],ST_L[statut(s.id)],ex]})}
+function telecharge(nom,lignes){
+ const txt="\uFEFF"+lignes.map(l=>l.map(cel).join(";")).join("\r\n");
+ const b=new Blob([txt],{type:"text/csv;charset=utf-8"}),u=URL.createObjectURL(b),a=document.createElement("a");
+ a.href=u;a.download=nom;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),4000)}
+const slug=t=>plat(t).replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"");
+function exportCSV(){if(!identite())return;
+ telecharge("SPP_"+slug(S.who.nom+"-"+S.who.prenom).toUpperCase()+(S.who.mat?"_"+slug(S.who.mat):"")+"_"+auj()+".csv",[COLS].concat(lignesCSV()));
+ note("sheet","Export prêt","À transmettre au superviseur")}
+
+/* ── impression : un seul conteneur, rempli à la demande ── */
+function imprime(html,paysage){
+ const p=document.getElementById("print");p.innerHTML=html;p.classList.toggle("land",!!paysage);
+ document.body.classList.add("imprime");
+ const fin=()=>{document.body.classList.remove("imprime");p.innerHTML="";removeEventListener("afterprint",fin)};
+ addEventListener("afterprint",fin);
+ setTimeout(()=>{window.print();setTimeout(()=>{if(!matchMedia("print").matches)fin()},800)},60)}
+const enTete=(code,titre,droite)=>'<header class="pr-hd"><div class="pr-mk">P&amp;P</div><div class="pr-org"><b>REXEL France / CLR Champigneulles</b><span>Service Pick &amp; Pack / Site 5406</span></div>'
+ +'<div class="pr-ref"><b>'+code+'</b><span>'+droite+'</span></div></header><h1 class="pr-h1">'+titre+'</h1>';
+const piedPage=t=>'<footer class="pr-ft"><span>Document contrôlé / usage interne / '+t+'</span><span>Imprimé le '+new Date().toLocaleDateString("fr-FR")+'</span></footer>';
+
+function imprFiche(id){const s=par(id);if(!s)return;
+ imprime('<div class="pr-pg">'+enTete("STD-PP-"+s.id,s.title,"Rév. "+s.rev+" / "+CATS[s.cat].l+" / "+CRIT_L[s.crit])
+  +'<div class="pr-motto">« '+s.motto+' »<small>'+s.sub+'</small></div>'
+  +'<div class="pr-keys">'+s.keys.map((k,i)=>'<div><em>'+pad2(i+1)+'</em><b>'+k.t+'</b><p>'+k.d+'</p></div>').join("")+'</div>'
+  +'<div class="pr-2"><section><h2>Les gestes, dans l\'ordre</h2><ol>'+s.steps.map(t=>'<li>'+t+'</li>').join("")+'</ol></section>'
+  +'<section class="pr-no"><h2>Interdit</h2><ul>'+s.bans.map(b=>'<li>'+b+'</li>').join("")+'</ul>'
+  +'<h2>Risques</h2><ul class="pr-rk">'+s.risks.map(r=>'<li><b>'+r.t+'</b> '+r.l+'</li>').join("")+'</ul></section></div>'
+  +'<div class="pr-2"><section><h2>Autocontrôle</h2><ul class="pr-box">'+s.check.map(c=>'<li>'+c+'</li>').join("")+'</ul></section>'
+  +'<section><h2>Qui fait quoi</h2><table class="pr-t">'+s.resp.map(r=>'<tr><th>'+r.r+'</th><td>'+r.a+'</td></tr>').join("")+'</table></section></div>'
+  +piedPage("STD-PP-"+s.id)+'</div>')}
+
+function imprAttestation(){if(!identite())return;
+ const h=STD.filter(s=>statut(s.id)==="H"),c=STD.filter(s=>s.crit==="critical"),ch=c.filter(s=>statut(s.id)==="H").length,
+  t=S.vu?Math.round(S.bon/S.vu*100):0;
+ imprime('<div class="pr-pg">'+enTete("ATTESTATION","Attestation de formation aux standards","Référentiel STD-PP / rév. 2026")
+  +'<table class="pr-id"><tr><th>Opérateur</th><td>'+esc(nomComplet())+'</td><th>Matricule</th><td>'+esc(S.who.mat||"—")+'</td></tr>'
+  +'<tr><th>Équipe</th><td>'+esc(S.who.eq||"—")+'</td><th>Date</th><td>'+new Date().toLocaleDateString("fr-FR")+'</td></tr></table>'
+  +'<div class="pr-kpi"><div><b>'+h.length+'/'+STD.length+'</b><span>Standards habilités</span></div><div><b>'+ch+'/'+c.length+'</b><span>Standards critiques</span></div>'
+  +'<div><b>'+t+' %</b><span>Bonnes réponses ('+S.vu+' q.)</span></div><div><b>'+grade().n+'</b><span>Grade / '+S.xp+' XP</span></div></div>'
+  +'<table class="pr-grid"><thead><tr><th>Code</th><th>Standard</th><th>Criticité</th><th>Support lu</th><th>Checklist</th><th>Test</th><th>Statut</th></tr></thead><tbody>'
+  +STD.map(s=>{const st=statut(s.id);return '<tr class="'+st+'"><td>'+s.id+'</td><td>'+s.title+'</td><td>'+CRIT_L[s.crit]+'</td>'
+   +'<td>'+(S.lus.includes(s.id)?frDate(S.dl[s.id])||"Oui":"—")+'</td><td>'+(S.valides.includes(s.id)?frDate(S.dv[s.id])||"Oui":"—")+'</td>'
+   +'<td>'+(S.best[s.id]==null?"—":S.best[s.id]+" %")+'</td><td><b>'+ST_L[st]+'</b></td></tr>'}).join("")+'</tbody></table>'
+  +'<p class="pr-note">Habilité = checklist d\'autocontrôle validée et test du standard réussi à '+SEUIL+' % minimum. '
+  +'Le formateur confirme par observation au poste que les gestes sont appliqués.</p>'
+  +'<div class="pr-sign"><div><span>L\'opérateur</span><i>Lu et compris</i></div><div><span>Le formateur / pilote</span><i>Observation au poste</i></div><div><span>Le superviseur</span><i>Validation</i></div></div>'
+  +piedPage("Attestation "+esc(nomComplet()))+'</div>')}
+
+/* ════════ ESPACE SUPERVISEUR — matrice de polyvalence ════════ */
+let EQ=(()=>{try{return JSON.parse(localStorage.getItem("spp_team")||"[]")}catch(e){return[]}})();
+function gardeEq(){try{localStorage.setItem("spp_team",JSON.stringify(EQ))}catch(e){}}
+function lireCSV(t){
+ t=t.replace(/^\uFEFF/,"");const sep=t.split(/\r?\n/)[0].includes(";")?";":",",L=[];let r=[],v="",q=false;
+ for(let i=0;i<t.length;i++){const c=t[i];
+  if(q){if(c==='"'){if(t[i+1]==='"'){v+='"';i++}else q=false}else v+=c}
+  else if(c==='"')q=true;else if(c===sep){r.push(v);v=""}
+  else if(c==="\n"||c==="\r"){if(c==="\r"&&t[i+1]==="\n")i++;r.push(v);if(r.some(x=>x!==""))L.push(r);r=[];v=""}
+  else v+=c}
+ r.push(v);if(r.some(x=>x!==""))L.push(r);return L}
+function ajouteOp(o){
+ const k=(o.mat||(o.nom+"|"+o.prenom)).toLowerCase(),i=EQ.findIndex(x=>(x.mat||(x.nom+"|"+x.prenom)).toLowerCase()===k);
+ if(i>-1)EQ[i]=o;else EQ.push(o)}
+function importe(files){
+ let n=0,bad=0;const fs=[...files];
+ Promise.all(fs.map(f=>f.text().then(t=>{
+  const L=lireCSV(t),H=L[0]||[],ix=c=>H.indexOf(c);
+  if(ix("Code")<0||ix("Statut")<0){bad++;return}
+  const r=L.slice(1).filter(l=>l[ix("Code")]);if(!r.length){bad++;return}
+  const o={nom:r[0][ix("Nom")]||"",prenom:r[0][ix("Prénom")]||"",mat:r[0][ix("Matricule")]||"",eq:r[0][ix("Équipe")]||"",
+   le:r[0][ix("Export le")]||"",st:{},best:{}};
+  r.forEach(l=>{const s=l[ix("Statut")];o.st[l[ix("Code")]]=s===ST_L.H?"H":s===ST_L.F?"F":"N";
+   const b=l[ix("Meilleur test %")];if(b!=="")o.best[l[ix("Code")]]=+b});
+  ajouteOp(o);n++}).catch(()=>bad++))).then(()=>{gardeEq();dessineSup();
+  note(n?"team":"alert",n?n+" opérateur"+(n>1?"s":"")+" importé"+(n>1?"s":""):"Import impossible",bad?bad+" fichier(s) non reconnu(s)":"Matrice mise à jour")})}
+function ajouteMoi(){if(!identite())return;
+ const o={nom:(S.who.nom||"").toUpperCase(),prenom:S.who.prenom,mat:S.who.mat,eq:S.who.eq,le:frDate(auj()),st:{},best:{}};
+ STD.forEach(s=>{o.st[s.id]=statut(s.id);if(S.best[s.id]!=null)o.best[s.id]=S.best[s.id]});ajouteOp(o);gardeEq();dessineSup();
+ note("team","Ajouté à la matrice",nomComplet())}
+function retireOp(i){if(!confirm("Retirer "+EQ[i].prenom+" "+EQ[i].nom+" de la matrice ?"))return;EQ.splice(i,1);gardeEq();dessineSup()}
+function videEq(){if(!EQ.length||!confirm("Vider toute la matrice de cet appareil ?"))return;EQ=[];gardeEq();dessineSup()}
+let eqF="";
+function setEqF(v){eqF=v;dessineSup()}
+const pctH=o=>Math.round(STD.filter(s=>o.st[s.id]==="H").length/STD.length*100);
+function eqVue(){return EQ.map((o,i)=>({o,i})).filter(x=>!eqF||x.o.eq===eqF)
+ .sort((a,b)=>(a.o.nom+a.o.prenom).localeCompare(b.o.nom+b.o.prenom,"fr"))}
+
+function openSup(){document.getElementById("sup").classList.add("live");document.body.style.overflow="hidden";dessineSup();vib(12)}
+function closeSup(){document.getElementById("sup").classList.remove("live");document.body.style.overflow="";if(ecran==="moi")moi()}
+function dessineSup(){
+ const V=eqVue(),eqs=[...new Set(EQ.map(o=>o.eq).filter(Boolean))].sort(),n=V.length;
+ const cov=s=>V.filter(x=>x.o.st[s.id]==="H").length;
+ const alertes=STD.filter(s=>s.crit==="critical"&&n&&cov(s)<Math.min(2,n));
+ const glob=n?Math.round(V.reduce((a,x)=>a+pctH(x.o),0)/n):0;
+ document.getElementById("sup-body").innerHTML=
+  '<p class="spv-int">Chaque opérateur exporte son fichier depuis <b>Moi › Export Excel</b>. Importez ici les fichiers reçus : la matrice se construit et reste sur cet appareil.</p>'
+  +'<div class="spv-act"><label class="go">'+ic("dl",16)+'Importer des fichiers .csv<input type="file" accept=".csv,text/csv" multiple hidden onchange="importe(this.files);this.value=\'\'"></label>'
+  +'<button class="go flat" onclick="ajouteMoi()">Ajouter les données de cet appareil</button></div>'
+  +(EQ.length?
+   (eqs.length>1?'<div class="tabs spv-tabs"><button class="tab-b '+(eqF?"":"live")+'" onclick="setEqF(\'\')">Toutes équipes</button>'
+     +eqs.map(e=>'<button class="tab-b '+(eqF===e?"live":"")+'" onclick="setEqF(\''+esc(e).replace(/'/g,"\\'")+'\')">'+esc(e)+'</button>').join("")+'</div>':'')
+   +'<div class="tiles spv-k"><div class="tilecell"><b>'+n+'</b><span>Opérateurs</span></div>'
+   +'<div class="tilecell"><b style="color:'+(glob>=80?"var(--vert)":glob>=50?"var(--jaune)":"var(--rouge)")+'">'+glob+' %</b><span>Polyvalence moyenne</span></div>'
+   +'<div class="tilecell"><b style="color:'+(alertes.length?"var(--rouge)":"var(--vert)")+'">'+alertes.length+'</b><span>Critiques sous-couverts</span></div></div>'
+   +(alertes.length?'<div class="spv-al">'+ic("alert",16)+'<p><b>Moins de 2 habilités :</b> '+alertes.map(s=>s.id+" "+s.title).join(" / ")+'</p></div>':'')
+   +'<div class="mx-w"><table class="mx"><thead><tr><th class="mx-n">Opérateur</th>'
+   +STD.map(s=>'<th class="'+(s.crit==="critical"?"c":"")+'" title="'+s.title+'">'+s.id+'</th>').join("")+'<th>%</th><th></th></tr></thead><tbody>'
+   +V.map(({o,i})=>'<tr><td class="mx-n"><b>'+esc(o.prenom)+' '+esc(o.nom)+'</b><span>'+esc([o.mat,o.eq,o.le].filter(Boolean).join(" / "))+'</span></td>'
+    +STD.map(s=>{const v=o.st[s.id]||"N";return '<td class="'+v+'" title="'+s.id+' : '+ST_L[v]+(o.best[s.id]!=null?" / test "+o.best[s.id]+" %":"")+'"></td>'}).join("")
+    +'<td class="mx-p">'+pctH(o)+'</td><td><button class="mx-x" onclick="retireOp('+i+')" aria-label="Retirer">'+ic("x",12)+'</button></td></tr>').join("")
+   +'</tbody><tfoot><tr><td class="mx-n"><b>Habilités</b></td>'+STD.map(s=>{const c=cov(s);return '<td class="'+(s.crit==="critical"&&c<Math.min(2,n)?"al":"")+'">'+c+'</td>'}).join("")+'<td></td><td></td></tr></tfoot></table></div>'
+   +'<div class="legend"><span><i style="background:var(--vert);border-radius:50%"></i>Habilité</span><span><i style="box-shadow:inset 0 0 0 2px var(--jaune);border-radius:50%"></i>En formation</span><span><i style="background:#23272E"></i>Non formé</span><span><i style="background:var(--rouge)"></i>Code rouge = critique</span></div>'
+   +'<div class="pair"><button class="big key" onclick="exportMatrice()"><b>Exporter la matrice</b><span>EXCEL .CSV</span></button>'
+   +'<button class="big" onclick="imprMatrice()"><b>Imprimer la matrice</b><span>A4 PAYSAGE / PDF</span></button></div>'
+   +'<button class="go flat" onclick="videEq()" style="margin-top:14px">Vider la matrice</button>'
+  :'<div class="void"><b>Aucun opérateur</b><p>Importez les exports .csv de l\'équipe pour construire la matrice de polyvalence.</p></div>')
+  +'<div class="foot"><p>DONNÉES CONSERVÉES SUR CET APPAREIL UNIQUEMENT</p></div>';
+ paint(document.getElementById("sup"))}
+function exportMatrice(){const V=eqVue();
+ const H=["Nom","Prénom","Matricule","Équipe","Export le"].concat(STD.map(s=>s.id+" "+s.title),["Habilités","Polyvalence %"]);
+ const L=V.map(({o})=>[o.nom,o.prenom,o.mat,o.eq,o.le].concat(STD.map(s=>ST_L[o.st[s.id]||"N"]),[STD.filter(s=>o.st[s.id]==="H").length,pctH(o)]));
+ L.push(["TOTAL HABILITÉS","","","",""].concat(STD.map(s=>V.filter(x=>x.o.st[s.id]==="H").length),["",""]));
+ telecharge("SPP_Matrice_polyvalence"+(eqF?"_"+slug(eqF):"")+"_"+auj()+".csv",[H].concat(L));note("sheet","Matrice exportée",V.length+" opérateurs")}
+function imprMatrice(){const V=eqVue(),n=V.length;
+ imprime('<div class="pr-pg">'+enTete("MATRICE","Matrice de polyvalence — standards Pick &amp; Pack",(eqF?"Équipe "+esc(eqF)+" / ":"")+n+" opérateurs")
+  +'<table class="pr-mx"><thead><tr><th>Opérateur</th>'+STD.map(s=>'<th class="'+(s.crit==="critical"?"c":"")+'">'+s.id+'</th>').join("")+'<th>%</th></tr></thead><tbody>'
+  +V.map(({o})=>'<tr><td>'+esc(o.prenom)+' '+esc(o.nom)+'<small>'+esc([o.mat,o.eq].filter(Boolean).join(" / "))+'</small></td>'
+   +STD.map(s=>{const v=o.st[s.id]||"N";return '<td class="'+v+'">'+(v==="H"?"●":v==="F"?"○":"")+'</td>'}).join("")+'<td><b>'+pctH(o)+'</b></td></tr>').join("")
+  +'</tbody><tfoot><tr><td>Habilités</td>'+STD.map(s=>'<td>'+V.filter(x=>x.o.st[s.id]==="H").length+'</td>').join("")+'<td></td></tr></tfoot></table>'
+  +'<p class="pr-note">● Habilité (checklist validée + test ≥ '+SEUIL+' %) / ○ En formation / vide : non formé. Codes en rouge : standards critiques. '
+  +STD.map(s=>s.id+" "+s.title).join(" · ")+'</p>'+piedPage("Matrice de polyvalence")+'</div>',true)}
 
 /* ════════ SUPPORT DE FORMATION ════════ */
 const pad2=n=>String(n).padStart(2,"0");
@@ -1457,7 +1801,7 @@ function dkMaj(){if(!DK)return;
  go.textContent=fin?(DK.brief?"Retour au brief":"Se tester sur "+s.id):"Suivant";
  go.classList.toggle("fin",fin&&!DK.brief);
  if(fin)dkEl("deck").classList.remove("calm");
- if(fin&&!S.lus.includes(s.id)){S.lus.push(s.id);garde();xp(5);note("book","Support lu jusqu'au bout",s.id+" "+s.title)}}
+ if(fin&&!S.lus.includes(s.id)){S.lus.push(s.id);S.dl[s.id]=auj();garde();xp(5);note("book","Support lu jusqu'au bout",s.id+" "+s.title)}}
 
 function dkAller(i,doux){if(!DK)return;
  i=Math.max(0,Math.min(i,DK.n-1));dkDezoom();DK.cur=i;dkCalme();
@@ -1519,10 +1863,17 @@ document.addEventListener("fullscreenchange",()=>{
 
 /* ── démarrage ── */
 tabs();sift();jour();hub();paint();jauge();
+
+/* ── hors ligne : l'appli et les supports restent consultables sans réseau ── */
+function reseau(){document.body.classList.toggle("horsligne",!navigator.onLine)}
+addEventListener("online",()=>{reseau();note("check","Connexion rétablie","")});addEventListener("offline",reseau);reseau();
+if("serviceWorker" in navigator&&/^https?:$/.test(location.protocol))
+ addEventListener("load",()=>navigator.serviceWorker.register("sw.js").catch(()=>{}));
 document.addEventListener("keydown",e=>{
  if(DK){if(e.key==="Escape")closeDeck();else if(e.key==="ArrowRight")dkPas(1);else if(e.key==="ArrowLeft"&&DK.cur>0)dkPas(-1);return}
  if(e.key!=="Escape")return;
- if(document.getElementById("brief").classList.contains("live"))closeBrief();else closeFile()});
+ if(document.getElementById("sup").classList.contains("live"))closeSup();
+ else if(document.getElementById("brief").classList.contains("live"))closeBrief();else closeFile()});
 </script>
 </body>
 </html>

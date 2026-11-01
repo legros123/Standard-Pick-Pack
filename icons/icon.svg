@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" fill="#0B0C0E"/>
+  <rect x="96" y="96" width="320" height="320" rx="14" fill="#FFD400"/>
+  <text x="256" y="292" text-anchor="middle" font-family="IBM Plex Mono, Menlo, monospace" font-weight="700" font-size="112" fill="#0B0C0E" letter-spacing="-6">P&amp;P</text>
+  <g transform="translate(96 352)"><clipPath id="c"><rect width="320" height="28"/></clipPath>
+   <g clip-path="url(#c)" fill="#0B0C0E">
+    <path d="M0 28 28 0h20L20 28zM56 28 84 0h20L76 28zM112 28 140 0h20l-28 28zM168 28 196 0h20l-28 28zM224 28 252 0h20l-28 28zM280 28 308 0h20l-28 28z"/>
+   </g></g>
+</svg>
