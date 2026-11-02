@@ -1,0 +1,135 @@
+<div style="display:none;font-size:1px;line-height:1px;max-height:0;max-width:0;opacity:0;overflow:hidden;mso-hide:all;">{{PREHEADER}}</div>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#EEF2F7" style="background-color:#EEF2F7;">
+<tr><td align="center" style="padding:16px 8px 24px 8px;">
+<table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="width:100%;max-width:600px;font-family:'Segoe UI',Roboto,Arial,sans-serif;color:#0F172A;">
+
+<!-- EN-TETE -->
+<tr><td bgcolor="#0B1F3A" style="background-color:#0B1F3A;padding:20px 22px 18px 22px;border-radius:14px 14px 0 0;">
+<div style="font-size:11px;letter-spacing:2px;color:#8FB3FF;font-weight:bold;">POINT DU JOUR &#183; PR&#201;PARATION</div>
+<div style="font-size:24px;line-height:30px;font-weight:bold;color:#FFFFFF;padding-top:4px;">{{JOUR}}</div>
+<div style="font-size:13px;color:#C7D2E3;padding-top:2px;">CLR Champigneulles &#183; {{RELEVE}}</div>
+</td></tr>
+<tr><td bgcolor="#13294B" style="background-color:#13294B;padding:12px 22px;border-radius:0 0 14px 14px;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr>
+<td style="font-size:12px;color:#C7D2E3;letter-spacing:1px;">PROD. GLOBALE</td>
+<td align="right" style="white-space:nowrap;"><span style="font-size:20px;font-weight:bold;color:#FFFFFF;">{{GL_PROD}}</span><span style="font-size:12px;color:#C7D2E3;"> lignes/ETP</span>&nbsp;&nbsp;<span style="display:inline-block;background-color:{{GL_BG}};color:{{GL_COL}};font-size:12px;font-weight:bold;padding:3px 9px;border-radius:10px;">{{GL_BADGE}}</span></td>
+</tr></table>
+</td></tr>
+<!--IF:WARN-->
+<tr><td style="padding:10px 0 0 0;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td bgcolor="#FEE2E2" style="background-color:#FEE2E2;border-left:4px solid #B91C1C;padding:10px 14px;font-size:13px;color:#B91C1C;font-weight:bold;border-radius:8px;">{{WARN_TXT}}</td></tr></table></td></tr>
+<!--END:WARN-->
+
+<!-- 1. SYNTHESE -->
+<tr><td style="padding:22px 4px 8px 4px;font-size:12px;letter-spacing:1.5px;color:#475569;font-weight:bold;">1 &#183; SYNTH&#200;SE DU JOUR</td></tr>
+<tr><td bgcolor="#FFFFFF" style="background-color:#FFFFFF;border:1px solid #DCE3EC;border-radius:12px;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+<tr>
+<td width="50%" valign="top" style="padding:14px 16px;border-right:1px solid #EEF2F7;border-bottom:1px solid #EEF2F7;">
+<div style="font-size:11px;letter-spacing:1px;color:#64748B;font-weight:bold;">ETP TOTAL</div>
+<div style="font-size:30px;line-height:36px;font-weight:bold;color:#0F172A;">{{TOT_ETP}}</div>
+<div style="font-size:12px;color:#64748B;">{{TOT_ETP_SUB}}</div></td>
+<td width="50%" valign="top" style="padding:14px 16px;border-bottom:1px solid #EEF2F7;">
+<div style="font-size:11px;letter-spacing:1px;color:#64748B;font-weight:bold;">HEURES SUPP</div>
+<div style="font-size:30px;line-height:36px;font-weight:bold;color:{{TOT_HS_COL}};">{{TOT_HS}}</div>
+<div style="font-size:12px;color:#64748B;">{{TOT_HS_SUB}}</div></td>
+</tr>
+<tr>
+<td width="50%" valign="top" style="padding:14px 16px;border-right:1px solid #EEF2F7;">
+<div style="font-size:11px;letter-spacing:1px;color:#64748B;font-weight:bold;">LIGNES TOTALES</div>
+<div style="font-size:30px;line-height:36px;font-weight:bold;color:#0F172A;">{{TOT_LIG}}</div>
+<div style="font-size:12px;color:#64748B;">{{TOT_LIG_SUB}}</div></td>
+<td width="50%" valign="top" style="padding:14px 16px;">
+<div style="font-size:11px;letter-spacing:1px;color:#64748B;font-weight:bold;">&#201;TIQUETTES</div>
+<div style="font-size:30px;line-height:36px;font-weight:bold;color:#0F172A;">{{ETIQ}}</div>
+<div style="font-size:12px;color:#64748B;">{{ETIQ_SUB}}</div></td>
+</tr>
+</table>
+</td></tr>
+
+<!-- lignes bloquees -->
+<tr><td style="padding:10px 0 0 0;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr>
+<td bgcolor="#FFFFFF" style="background-color:#FFFFFF;border:1px solid #DCE3EC;border-left:5px solid {{BLOQ_COL}};border-radius:12px;padding:12px 16px;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr>
+<td valign="middle"><div style="font-size:11px;letter-spacing:1px;color:#64748B;font-weight:bold;">LIGNES BLOQU&#201;ES DU JOUR</div>
+<div style="font-size:12px;color:#64748B;">{{BLOQ_SUB}}</div></td>
+<td align="right" valign="middle" style="font-size:30px;line-height:36px;font-weight:bold;color:{{BLOQ_COL}};white-space:nowrap;">{{BLOQ}}</td>
+</tr></table>
+</td></tr></table>
+</td></tr>
+
+<!-- SMC -->
+<tr><td style="padding:10px 0 0 0;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td bgcolor="#FFFFFF" style="background-color:#FFFFFF;border:1px solid #DCE3EC;border-radius:12px;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+<tr><td colspan="3" style="padding:12px 16px 0 16px;font-size:11px;letter-spacing:1px;color:#0F172A;font-weight:bold;">SMC DU JOUR</td></tr>
+<tr>
+<td width="34%" valign="top" style="padding:6px 8px 14px 16px;">
+<div style="font-size:11px;color:#64748B;">Lignes SMC</div>
+<div style="font-size:24px;line-height:30px;font-weight:bold;color:#0F172A;">{{SMC}}</div>
+<div style="font-size:12px;color:#64748B;">&nbsp;</div></td>
+<td width="33%" valign="top" style="padding:6px 8px 14px 8px;border-left:1px solid #EEF2F7;">
+<div style="font-size:11px;color:#64748B;">Pass&#233;es</div>
+<div style="font-size:24px;line-height:30px;font-weight:bold;color:#15803D;">{{SMC_PASS}}</div>
+<div style="font-size:12px;color:#64748B;">{{SMC_PASS_PCT}}</div></td>
+<td width="33%" valign="top" style="padding:6px 16px 14px 8px;border-left:1px solid #EEF2F7;">
+<div style="font-size:11px;color:#64748B;">Bloqu&#233;es</div>
+<div style="font-size:24px;line-height:30px;font-weight:bold;color:{{SMC_BLOQ_COL}};">{{SMC_BLOQ}}</div>
+<div style="font-size:12px;color:#64748B;">{{SMC_BLOQ_PCT}}</div></td>
+</tr>
+</table>
+</td></tr></table>
+</td></tr>
+
+<!-- 2. SERVICES -->
+<tr><td style="padding:22px 4px 8px 4px;font-size:12px;letter-spacing:1.5px;color:#475569;font-weight:bold;">2 &#183; D&#201;TAIL PAR SERVICE</td></tr>
+{{CARTE_PP}}
+{{CARTE_HG}}
+{{CARTE_CA}}
+
+<!-- 3. PROJECTION -->
+<tr><td style="padding:22px 4px 8px 4px;font-size:12px;letter-spacing:1.5px;color:#475569;font-weight:bold;">3 &#183; PROJECTION &#183; {{D2_TITRE}}</td></tr>
+<tr><td bgcolor="#FFFFFF" style="background-color:#FFFFFF;border:1px solid #DCE3EC;border-radius:12px;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+<tr>
+<td width="34%" valign="top" style="padding:14px 8px 12px 16px;">
+<div style="font-size:10px;letter-spacing:0.5px;color:#64748B;font-weight:bold;white-space:nowrap;">ETP PR&#201;VUS</div>
+<div style="font-size:26px;line-height:32px;font-weight:bold;color:#0F172A;">{{PREV_ETP}}</div>
+<div style="font-size:11px;color:#64748B;">planning</div></td>
+<td width="33%" valign="top" style="padding:14px 8px 12px 8px;border-left:1px solid #EEF2F7;">
+<div style="font-size:10px;letter-spacing:0.5px;color:#64748B;font-weight:bold;white-space:nowrap;">LIGNES PR&#201;VUES</div>
+<div style="font-size:26px;line-height:32px;font-weight:bold;color:#0F172A;">{{PREV_LIG}}</div>
+<div style="font-size:11px;color:#64748B;">{{PREV_LIG_SUB}}</div></td>
+<td width="33%" valign="top" style="padding:14px 16px 12px 8px;border-left:1px solid #EEF2F7;">
+<div style="font-size:10px;letter-spacing:0.5px;color:#64748B;font-weight:bold;white-space:nowrap;">&#201;CART</div>
+<div style="font-size:26px;line-height:32px;font-weight:bold;color:{{PREV_COL}};">{{PREV_ECART}}</div>
+<div style="font-size:11px;color:#64748B;">ETP</div></td>
+</tr>
+<tr><td colspan="3" style="padding:0 12px 12px 12px;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td bgcolor="{{PREV_BG}}" style="background-color:{{PREV_BG}};border-radius:8px;padding:10px 12px;">
+<div style="font-size:14px;font-weight:bold;color:{{PREV_COL}};">{{PREV_VERDICT}}</div>
+<div style="font-size:12px;color:#475569;padding-top:2px;">{{PREV_DETAIL}}</div>
+</td></tr></table>
+</td></tr>
+<!--IF:OUV_ON-->
+<tr><td colspan="3" style="padding:0 16px 14px 16px;font-size:12px;color:#475569;"><b style="color:#0F172A;">Ouverture</b> &#183; {{OUV_TXT}}</td></tr>
+<!--END:OUV_ON-->
+</table>
+</td></tr>
+
+<!-- 4. INFIRMERIE -->
+<tr><td style="padding:22px 4px 8px 4px;font-size:12px;letter-spacing:1.5px;color:#475569;font-weight:bold;">4 &#183; INFIRMERIE</td></tr>
+<tr><td bgcolor="#FFFFFF" style="background-color:#FFFFFF;border:1px solid #DCE3EC;border-left:5px solid {{INF_COL}};border-radius:12px;padding:12px 16px;">
+<div style="font-size:15px;font-weight:bold;color:{{INF_COL}};">{{INF_TITRE}}</div>
+<!--IF:INF1--><div style="font-size:13px;color:#0F172A;padding-top:8px;border-top:1px solid #EEF2F7;margin-top:8px;"><b>{{INF1_TETE}}</b><br><span style="color:#475569;">{{INF1_DESC}}</span></div><!--END:INF1-->
+<!--IF:INF2--><div style="font-size:13px;color:#0F172A;padding-top:8px;border-top:1px solid #EEF2F7;margin-top:8px;"><b>{{INF2_TETE}}</b><br><span style="color:#475569;">{{INF2_DESC}}</span></div><!--END:INF2-->
+<!--IF:INF3--><div style="font-size:13px;color:#0F172A;padding-top:8px;border-top:1px solid #EEF2F7;margin-top:8px;"><b>{{INF3_TETE}}</b><br><span style="color:#475569;">{{INF3_DESC}}</span></div><!--END:INF3-->
+<!--IF:INF4--><div style="font-size:13px;color:#0F172A;padding-top:8px;border-top:1px solid #EEF2F7;margin-top:8px;"><b>{{INF4_TETE}}</b><br><span style="color:#475569;">{{INF4_DESC}}</span></div><!--END:INF4-->
+</td></tr>
+
+<!-- PIED -->
+<tr><td style="padding:18px 6px 0 6px;font-size:11px;line-height:16px;color:#94A3B8;">{{PIED}}</td></tr>
+
+</table>
+</td></tr>
+</table>
