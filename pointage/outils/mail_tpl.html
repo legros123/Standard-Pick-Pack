@@ -127,6 +127,26 @@
 <!--IF:INF4--><div style="font-size:13px;color:#0F172A;padding-top:8px;border-top:1px solid #EEF2F7;margin-top:8px;"><b>{{INF4_TETE}}</b><br><span style="color:#475569;">{{INF4_DESC}}</span></div><!--END:INF4-->
 </td></tr>
 
+<!-- 5. VENTILATION -->
+<tr><td style="padding:22px 4px 8px 4px;font-size:12px;letter-spacing:1.5px;color:#475569;font-weight:bold;">5 &#183; VENTILATION DES HEURES</td></tr>
+<tr><td bgcolor="#FFFFFF" style="background-color:#FFFFFF;border:1px solid #DCE3EC;border-radius:12px;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+<tr><td style="padding:12px 4px 6px 16px;font-size:10px;letter-spacing:1px;color:#64748B;font-weight:bold;">SERVICE</td><td align="right" style="padding:12px 4px 6px 4px;font-size:10px;letter-spacing:1px;color:#64748B;font-weight:bold;">RE&#199;U</td><td align="right" style="padding:12px 4px 6px 4px;font-size:10px;letter-spacing:1px;color:#64748B;font-weight:bold;">PR&#202;T&#201;</td><td align="right" style="padding:12px 16px 6px 4px;font-size:10px;letter-spacing:1px;color:#64748B;font-weight:bold;">SOLDE</td></tr>
+<tr><td style="padding:7px 4px 7px 16px;border-top:1px solid #EEF2F7;font-size:13px;font-weight:bold;color:#0F172A;"><span style="color:#2F6FED;">&#9632;</span> Pick &amp; Pack</td><td align="right" style="padding:7px 4px;border-top:1px solid #EEF2F7;font-size:13px;color:#15803D;white-space:nowrap;">{{PP_REC}}</td><td align="right" style="padding:7px 4px;border-top:1px solid #EEF2F7;font-size:13px;color:#B45309;white-space:nowrap;">{{PP_PRE}}</td><td align="right" style="padding:7px 16px 7px 4px;border-top:1px solid #EEF2F7;font-size:14px;font-weight:bold;color:{{PP_SOL_COL}};white-space:nowrap;">{{PP_SOL}}</td></tr>
+<tr><td style="padding:7px 4px 7px 16px;border-top:1px solid #EEF2F7;font-size:13px;font-weight:bold;color:#0F172A;"><span style="color:#7C3AED;">&#9632;</span> Hors gabarit</td><td align="right" style="padding:7px 4px;border-top:1px solid #EEF2F7;font-size:13px;color:#15803D;white-space:nowrap;">{{HG_REC}}</td><td align="right" style="padding:7px 4px;border-top:1px solid #EEF2F7;font-size:13px;color:#B45309;white-space:nowrap;">{{HG_PRE}}</td><td align="right" style="padding:7px 16px 7px 4px;border-top:1px solid #EEF2F7;font-size:14px;font-weight:bold;color:{{HG_SOL_COL}};white-space:nowrap;">{{HG_SOL}}</td></tr>
+<tr><td style="padding:7px 4px 7px 16px;border-top:1px solid #EEF2F7;font-size:13px;font-weight:bold;color:#0F172A;"><span style="color:#0D9488;">&#9632;</span> C&#226;ble</td><td align="right" style="padding:7px 4px;border-top:1px solid #EEF2F7;font-size:13px;color:#15803D;white-space:nowrap;">{{CA_REC}}</td><td align="right" style="padding:7px 4px;border-top:1px solid #EEF2F7;font-size:13px;color:#B45309;white-space:nowrap;">{{CA_PRE}}</td><td align="right" style="padding:7px 16px 7px 4px;border-top:1px solid #EEF2F7;font-size:14px;font-weight:bold;color:{{CA_SOL_COL}};white-space:nowrap;">{{CA_SOL}}</td></tr>
+<tr><td style="padding:7px 4px 7px 16px;border-top:1px solid #EEF2F7;font-size:13px;font-weight:bold;color:#0F172A;"><span style="color:#94A3B8;">&#9632;</span> Services ext&#233;rieurs<br><span style="font-size:11px;font-weight:normal;color:#64748B;">R&#233;ception &#183; R&#233;org &#183; Exp&#233;dition &#183; autres</span></td><td align="right" style="padding:7px 4px;border-top:1px solid #EEF2F7;font-size:13px;color:#15803D;white-space:nowrap;">{{EXT_REC}}</td><td align="right" style="padding:7px 4px;border-top:1px solid #EEF2F7;font-size:13px;color:#B45309;white-space:nowrap;">{{EXT_PRE}}</td><td align="right" style="padding:7px 16px 7px 4px;border-top:1px solid #EEF2F7;font-size:14px;font-weight:bold;color:{{EXT_SOL_COL}};white-space:nowrap;">{{EXT_SOL}}</td></tr>
+<!--IF:VENT_ON-->
+<tr><td colspan="4" style="padding:16px 16px 6px 16px;font-size:11px;letter-spacing:1px;color:#0F172A;font-weight:bold;">&#201;CHANGES DU JOUR &#183; {{VENT_NB}}</td></tr>
+[[VENTIL_LIGNES]]
+<!--END:VENT_ON-->
+<!--IF:VENT_NONE-->
+<tr><td colspan="4" style="padding:12px 16px;border-top:1px solid #EEF2F7;font-size:13px;color:#64748B;">Aucun &#233;change d'heures avec les autres services aujourd'hui.</td></tr>
+<!--END:VENT_NONE-->
+<tr><td colspan="4" style="height:8px;font-size:0;line-height:0;">&nbsp;</td></tr>
+</table>
+</td></tr>
+
 <!-- PIED -->
 <tr><td style="padding:18px 6px 0 6px;font-size:11px;line-height:16px;color:#94A3B8;">{{PIED}}</td></tr>
 

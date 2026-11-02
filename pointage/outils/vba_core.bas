@@ -8,7 +8,8 @@ Attribute VB_Name = "PointDuJour"
 '    - Compte rendu : synthèse (ETP total, heures supp, lignes totales,
 '      étiquettes), lignes bloquées, SMC (lignes, passées, bloquées), détail
 '      par service (+ dévidages câble), projection de demain (ETP prévus au
-'      planning, lignes prévues saisies, écart en ETP), infirmerie.
+'      planning, lignes prévues saisies, écart en ETP), infirmerie, puis la
+'      ventilation des heures avec les autres services (onglet MOUVEMENTS).
 '    - Boutons REMPLIR 7,4 h : PP / HG / CÂBLE / TOUT (cases vides seulement).
 '    - Bouton NOUVEAU JOUR : vide les saisies de la veille.
 '    - Plus besoin d'Edge ni des images : le module est 3 fois plus court.
@@ -147,7 +148,47 @@ Private Function CorpsMail() As String
         t = LCase$(Trim$(Txt(mp.Cells(r, 3).Value)))
         If Len(k) > 0 And t <> "if" Then h = Replace(h, "{{" & k & "}}", HtmlEscU(Txt(mp.Cells(r, 2).Value)))
     Next r
+    h = Replace(h, "[[VENTIL_LIGNES]]", LignesVentilation())   ' 3) échanges du jour (onglet MOUVEMENTS)
     CorpsMail = h
+End Function
+
+' Une ligne de mail par mouvement d'heures du jour du point (onglet MOUVEMENTS, ordre de saisie)
+Private Function LignesVentilation() As String
+    Dim ws As Worksheet, d As Long, r As Long, dern As Long, v As Variant, s As String, x As String
+    Dim qui As String, com As String, typ As String, col As String, bg As String, hTxt As String
+    Set ws = ThisWorkbook.Worksheets("MOUVEMENTS")
+    d = CLng(Rg("PDJ_DATE").Value)
+    dern = ws.Cells(ws.Rows.Count, 1).End(xlUp).Row
+    For r = 6 To dern
+        v = ws.Cells(r, 1).Value
+        If VarType(v) = vbDate Or VarType(v) = vbDouble Then
+            If Int(CDbl(v)) = d And Not IsEmpty(ws.Cells(r, 4).Value) Then
+                v = ws.Cells(r, 4).Value
+                If IsNumeric(v) Then hTxt = Format$(CDbl(v), "0.0") & " h" Else hTxt = Txt(v)
+                qui = Trim$(Txt(ws.Cells(r, 5).Value))
+                com = Trim$(Txt(ws.Cells(r, 6).Value))
+                If Len(qui) > 0 And Len(com) > 0 Then qui = qui & " " & ChrW(183) & " " & com Else qui = qui & com
+                typ = Trim$(Txt(ws.Cells(r, 8).Value))
+                Select Case typ
+                    Case "Prêt interne": col = "#1D4ED8": bg = "#DBEAFE"
+                    Case "Aide reçue": col = "#15803D": bg = "#DCFCE7"
+                    Case "Aide donnée": col = "#B45309": bg = "#FEF3C7"
+                    Case Else: col = "#B91C1C": bg = "#FEE2E2"
+                End Select
+                If Len(typ) = 0 Then typ = "à vérifier"
+                x = VentilModele()
+                x = Replace(x, "{DE}", HtmlEscU(Txt(ws.Cells(r, 2).Value)))
+                x = Replace(x, "{VERS}", HtmlEscU(Txt(ws.Cells(r, 3).Value)))
+                x = Replace(x, "{H}", HtmlEscU(hTxt))
+                x = Replace(x, "{QUI}", HtmlEscU(qui))
+                x = Replace(x, "{TYPE}", HtmlEscU(typ))
+                x = Replace(x, "{COL}", col)
+                x = Replace(x, "{BG}", bg)
+                s = s & x & vbLf
+            End If
+        End If
+    Next r
+    LignesVentilation = s
 End Function
 
 ' Garde (ou retire) le texte entre <!--IF:CLE--> et <!--END:CLE-->

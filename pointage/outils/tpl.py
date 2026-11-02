@@ -6,6 +6,22 @@ EXTRA = {
 }
 SERV = {"PP": ("PICK &amp; PACK", "#2F6FED"), "HG": ("HORS GABARIT", "#7C3AED"), "CA": ("C&#194;BLE", "#0D9488")}
 
+VENT_ROW = ('<tr><td colspan="4" style="padding:8px 16px;border-top:1px solid #EEF2F7;">'
+    '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr>'
+    '<td valign="top" style="font-size:13px;color:#0F172A;"><b>{DE} &#8594; {VERS}</b><br><span style="font-size:12px;color:#64748B;">{QUI}</span></td>'
+    '<td align="right" valign="top" style="white-space:nowrap;font-size:14px;font-weight:bold;color:#0F172A;padding-left:8px;">{H}<br>'
+    '<span style="display:inline-block;background-color:{BG};color:{COL};font-size:11px;font-weight:bold;padding:1px 8px;border-radius:9px;">{TYPE}</span></td>'
+    '</tr></table></td></tr>')
+VENT_COUL = {"Prêt interne": ("#1D4ED8", "#DBEAFE"), "Aide reçue": ("#15803D", "#DCFCE7"), "Aide donnée": ("#B45309", "#FEF3C7")}
+
+def esc_u(s):
+    return ''.join(c if ord(c) < 127 else '&#%d;' % ord(c) for c in esc(s))
+
+def vent_row(de, vers, h, qui, typ):
+    col, bg = VENT_COUL.get(typ, ("#B91C1C", "#FEE2E2"))
+    return (VENT_ROW.replace('{DE}', esc_u(de)).replace('{VERS}', esc_u(vers)).replace('{H}', esc_u(h))
+            .replace('{QUI}', esc_u(qui)).replace('{TYPE}', esc_u(typ or 'à vérifier')).replace('{COL}', col).replace('{BG}', bg))
+
 def template():
     main = open('mail_tpl.html', encoding='utf-8').read()
     carte = open('mail_carte.html', encoding='utf-8').read()

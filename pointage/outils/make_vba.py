@@ -34,6 +34,12 @@ def build_source():
             "'==============================================================================\n"
             "Private Function MailTemplate() As String\n    MailTemplate = " + ' & '.join(n + '()' for n in names) + "\nEnd Function\n\n"
             + '\n'.join(funcs))
+    vr = tpl.VENT_ROW
+    assert all(ord(ch) < 128 for ch in vr)
+    vent = ["Private Function VentilModele() As String", '    Dim s As String']
+    for ln in vba_str_lines(vr, 500):
+        vent.append('    s = s & "%s"' % ln.replace('"', '""'))
+    vent += ['    VentilModele = s', 'End Function', '']
     spec = ["Private Function SpecBoutons() As Variant",
             "    ' onglet|nom|texte|macro|zone|R|G|B"]
     items = []
@@ -44,7 +50,7 @@ def build_source():
     for i, it in enumerate(items):
         spec.append('    a(%d) = %s' % (i, it))
     spec += ['    SpecBoutons = a', 'End Function', '']
-    src = core + '\n' + old + '\n' + '\n'.join(spec) + '\n' + tplf
+    src = core + '\n' + old + '\n' + '\n'.join(vent) + '\n' + '\n'.join(spec) + '\n' + tplf
     src = src.replace('\r\n', '\n')
     src.encode('cp1252')   # doit passer
     for ln in src.split('\n'):

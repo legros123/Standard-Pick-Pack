@@ -8,7 +8,8 @@ Attribute VB_Name = "PointDuJour"
 '    - Compte rendu : synthèse (ETP total, heures supp, lignes totales,
 '      étiquettes), lignes bloquées, SMC (lignes, passées, bloquées), détail
 '      par service (+ dévidages câble), projection de demain (ETP prévus au
-'      planning, lignes prévues saisies, écart en ETP), infirmerie.
+'      planning, lignes prévues saisies, écart en ETP), infirmerie, puis la
+'      ventilation des heures avec les autres services (onglet MOUVEMENTS).
 '    - Boutons REMPLIR 7,4 h : PP / HG / CÂBLE / TOUT (cases vides seulement).
 '    - Bouton NOUVEAU JOUR : vide les saisies de la veille.
 '    - Plus besoin d'Edge ni des images : le module est 3 fois plus court.
@@ -147,7 +148,47 @@ Private Function CorpsMail() As String
         t = LCase$(Trim$(Txt(mp.Cells(r, 3).Value)))
         If Len(k) > 0 And t <> "if" Then h = Replace(h, "{{" & k & "}}", HtmlEscU(Txt(mp.Cells(r, 2).Value)))
     Next r
+    h = Replace(h, "[[VENTIL_LIGNES]]", LignesVentilation())   ' 3) échanges du jour (onglet MOUVEMENTS)
     CorpsMail = h
+End Function
+
+' Une ligne de mail par mouvement d'heures du jour du point (onglet MOUVEMENTS, ordre de saisie)
+Private Function LignesVentilation() As String
+    Dim ws As Worksheet, d As Long, r As Long, dern As Long, v As Variant, s As String, x As String
+    Dim qui As String, com As String, typ As String, col As String, bg As String, hTxt As String
+    Set ws = ThisWorkbook.Worksheets("MOUVEMENTS")
+    d = CLng(Rg("PDJ_DATE").Value)
+    dern = ws.Cells(ws.Rows.Count, 1).End(xlUp).Row
+    For r = 6 To dern
+        v = ws.Cells(r, 1).Value
+        If VarType(v) = vbDate Or VarType(v) = vbDouble Then
+            If Int(CDbl(v)) = d And Not IsEmpty(ws.Cells(r, 4).Value) Then
+                v = ws.Cells(r, 4).Value
+                If IsNumeric(v) Then hTxt = Format$(CDbl(v), "0.0") & " h" Else hTxt = Txt(v)
+                qui = Trim$(Txt(ws.Cells(r, 5).Value))
+                com = Trim$(Txt(ws.Cells(r, 6).Value))
+                If Len(qui) > 0 And Len(com) > 0 Then qui = qui & " " & ChrW(183) & " " & com Else qui = qui & com
+                typ = Trim$(Txt(ws.Cells(r, 8).Value))
+                Select Case typ
+                    Case "Prêt interne": col = "#1D4ED8": bg = "#DBEAFE"
+                    Case "Aide reçue": col = "#15803D": bg = "#DCFCE7"
+                    Case "Aide donnée": col = "#B45309": bg = "#FEF3C7"
+                    Case Else: col = "#B91C1C": bg = "#FEE2E2"
+                End Select
+                If Len(typ) = 0 Then typ = "à vérifier"
+                x = VentilModele()
+                x = Replace(x, "{DE}", HtmlEscU(Txt(ws.Cells(r, 2).Value)))
+                x = Replace(x, "{VERS}", HtmlEscU(Txt(ws.Cells(r, 3).Value)))
+                x = Replace(x, "{H}", HtmlEscU(hTxt))
+                x = Replace(x, "{QUI}", HtmlEscU(qui))
+                x = Replace(x, "{TYPE}", HtmlEscU(typ))
+                x = Replace(x, "{COL}", col)
+                x = Replace(x, "{BG}", bg)
+                s = s & x & vbLf
+            End If
+        End If
+    Next r
+    LignesVentilation = s
 End Function
 
 ' Garde (ou retire) le texte entre <!--IF:CLE--> et <!--END:CLE-->
@@ -1089,6 +1130,13 @@ Private Function UrlFichier(ByVal chemin As String) As String
     UrlFichier = "file:///" & Replace(Replace(chemin, "\", "/"), " ", "%20")
 End Function
 
+Private Function VentilModele() As String
+    Dim s As String
+    s = s & "<tr><td colspan=""4"" style=""padding:8px 16px;border-top:1px solid #EEF2F7;""><table role=""presentation"" width=""100%"" cellpadding=""0"" cellspacing=""0"" border=""0""><tr><td valign=""top"" style=""font-size:13px;color:#0F172A;""><b>{DE} &#8594; {VERS}</b><br><span style=""font-size:12px;color:#64748B;"">{QUI}</span></td><td align=""right"" valign=""top"" style=""white-space:nowrap;font-size:14px;font-weight:bold;color:#0F172A;padding-left:8px;"">{H}<br><span style=""display:inline-block;background-color:{BG};color:{"
+    s = s & "COL};font-size:11px;font-weight:bold;padding:1px 8px;border-radius:9px;"">{TYPE}</span></td></tr></table></td></tr>"
+    VentilModele = s
+End Function
+
 Private Function SpecBoutons() As Variant
     ' onglet|nom|texte|macro|zone|R|G|B
     Dim a(0 To 18) As String
@@ -1333,6 +1381,28 @@ Private Function MailTpl5() As String
     s = s & "<!--IF:INF2--><div style=""font-size:13px;color:#0F172A;padding-top:8px;border-top:1px solid #EEF2F7;margin-top:8px;""><b>{{INF2_TETE}}</b><br><span style=""color:#475569;"">{{INF2_DESC}}</span></div><!--END:INF2-->" & vbLf
     s = s & "<!--IF:INF3--><div style=""font-size:13px;color:#0F172A;padding-top:8px;border-top:1px solid #EEF2F7;margin-top:8px;""><b>{{INF3_TETE}}</b><br><span style=""color:#475569;"">{{INF3_DESC}}</span></div><!--END:INF3-->" & vbLf
     s = s & "<!--IF:INF4--><div style=""font-size:13px;color:#0F172A;padding-top:8px;border-top:1px solid #EEF2F7;margin-top:8px;""><b>{{INF4_TETE}}</b><br><span style=""color:#475569;"">{{INF4_DESC}}</span></div><!--END:INF4-->" & vbLf
+    s = s & "</td></tr>" & vbLf
+    s = s & "<tr><td style=""padding:22px 4px 8px 4px;font-size:12px;letter-spacing:1.5px;color:#475569;font-weight:bold;"">5 &#183; VENTILATION DES HEURES</td></tr>" & vbLf
+    s = s & "<tr><td bgcolor=""#FFFFFF"" style=""background-color:#FFFFFF;border:1px solid #DCE3EC;border-radius:12px;"">" & vbLf
+    s = s & "<table role=""presentation"" width=""100%"" cellpadding=""0"" cellspacing=""0"" border=""0"">" & vbLf
+    s = s & "<tr><td style=""padding:12px 4px 6px 16px;font-size:10px;letter-spacing:1px;color:#64748B;font-weight:bold;"">SERVICE</td><td align=""right"" style=""padding:12px 4px 6px 4px;font-size:10px;letter-spacing:1px;color:#64748B;font-weight:bold;"">RE&#199;U</td><td align=""right"" style=""padding:12px 4px 6px 4px;font-size:10px;letter-spacing:1px;color:#64748B;font-weight:bold;"">PR&#202;T&#201;</td><td align=""right"" style=""padding:12px 16px 6px 4px;font-size:10px;letter-spacing:1px;color:#64748B;font-weight:bold;"">SOLDE</td></tr>" & vbLf
+    s = s & "<tr><td style=""padding:7px 4px 7px 16px;border-top:1px solid #EEF2F7;font-size:13px;font-weight:bold;color:#0F172A;""><span style=""color:#2F6FED;"">&#9632;</span> Pick &amp; Pack</td><td align=""right"" style=""padding:7px 4px;border-top:1px solid #EEF2F7;font-size:13px;color:#15803D;white-space:nowrap;"">{{PP_REC}}</td><td align=""right"" style=""padding:7px 4px;border-top:1px solid #EEF2F7;font-size:13px;color:#B45309;white-space:nowrap;"">{{PP_PRE}}</td><td align=""right"" style=""padding:7px 16px 7px 4px;border-top:1px solid #EEF2F7;font-size:14px;font-weight:bold;color:{{PP_SOL_COL}};white-space:nowra" & vbLf
+    s = s & "p;"">{{PP_SOL}}</td></tr>" & vbLf
+    s = s & "<tr><td style=""padding:7px 4px 7px 16px;border-top:1px solid #EEF2F7;font-size:13px;font-weight:bold;color:#0F172A;""><span style=""color:#7C3AED;"">&#9632;</span> Hors gabarit</td><td align=""right"" style=""padding:7px 4px;border-top:1px solid #EEF2F7;font-size:13px;color:#15803D;white-space:nowrap;"">{{HG_REC}}</td><td align=""right"" style=""padding:7px 4px;border-top:1px solid #EEF2F7;font-size:13px;color:#B45309;white-space:nowrap;"">{{HG_PRE}}</td><td align=""right"" style=""padding:7px 16px 7px 4px;border-top:1px solid #EEF2F7;font-size:14px;font-weight:bold;color:{{HG_SOL_COL}};white-space:nowrap;""" & vbLf
+    s = s & ">{{HG_SOL}}</td></tr>" & vbLf
+    s = s & "<tr><td style=""padding:7px 4px 7px 16px;border-top:1px solid #EEF2F7;font-size:13px;font-weight:bold;color:#0F172A;""><span style=""color:#0D9488;"">&#9632;</span> C&#226;ble</td><td align=""right"" style=""padding:7px 4px;border-top:1px solid #EEF2F7;font-size:13px;color:#15803D;white-space:nowrap;"">{{CA_REC}}</td><td align=""right"" style=""padding:7px 4px;border-top:1px solid #EEF2F7;font-size:13px;color:#B45309;white-space:nowrap;"">{{CA_PRE}}</td><td align=""right"" style=""padding:7px 16px 7px 4px;border-top:1px solid #EEF2F7;font-size:14px;font-weight:bold;color:{{CA_SOL_COL}};white-space:nowrap;"">{" & vbLf
+    s = s & "{CA_SOL}}</td></tr>" & vbLf
+    s = s & "<tr><td style=""padding:7px 4px 7px 16px;border-top:1px solid #EEF2F7;font-size:13px;font-weight:bold;color:#0F172A;""><span style=""color:#94A3B8;"">&#9632;</span> Services ext&#233;rieurs<br><span style=""font-size:11px;font-weight:normal;color:#64748B;"">R&#233;ception &#183; R&#233;org &#183; Exp&#233;dition &#183; autres</span></td><td align=""right"" style=""padding:7px 4px;border-top:1px solid #EEF2F7;font-size:13px;color:#15803D;white-space:nowrap;"">{{EXT_REC}}</td><td align=""right"" style=""padding:7px 4px;border-top:1px solid #EEF2F7;font-size:13px;color:#B45309;white-space:nowrap;"">{{EXT_PRE}}" & vbLf
+    s = s & "</td><td align=""right"" style=""padding:7px 16px 7px 4px;border-top:1px solid #EEF2F7;font-size:14px;font-weight:bold;color:{{EXT_SOL_COL}};white-space:nowrap;"">{{EXT_SOL}}</td></tr>" & vbLf
+    s = s & "<!--IF:VENT_ON-->" & vbLf
+    s = s & "<tr><td colspan=""4"" style=""padding:16px 16px 6px 16px;font-size:11px;letter-spacing:1px;color:#0F172A;font-weight:bold;"">&#201;CHANGES DU JOUR &#183; {{VENT_NB}}</td></tr>" & vbLf
+    s = s & "[[VENTIL_LIGNES]]" & vbLf
+    s = s & "<!--END:VENT_ON-->" & vbLf
+    s = s & "<!--IF:VENT_NONE-->" & vbLf
+    s = s & "<tr><td colspan=""4"" style=""padding:12px 16px;border-top:1px solid #EEF2F7;font-size:13px;color:#64748B;"">Aucun &#233;change d'heures avec les autres services aujourd'hui.</td></tr>" & vbLf
+    s = s & "<!--END:VENT_NONE-->" & vbLf
+    s = s & "<tr><td colspan=""4"" style=""height:8px;font-size:0;line-height:0;"">&nbsp;</td></tr>" & vbLf
+    s = s & "</table>" & vbLf
     s = s & "</td></tr>" & vbLf
     s = s & "<tr><td style=""padding:18px 6px 0 6px;font-size:11px;line-height:16px;color:#94A3B8;"">{{PIED}}</td></tr>" & vbLf
     s = s & "</table>" & vbLf

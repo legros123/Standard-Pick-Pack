@@ -11,6 +11,7 @@ Le mail est en **HTML pur**, sans image ni animation : il se lit sur téléphone
 3. **Détail par service** (P&P, HG, Câble) : productivité et objectif, ETP, lignes, heures supp, fin de poste, fin du convoyeur pour le P&P, **dévidages** pour le Câble.
 4. **Projection de demain** : ETP prévus (planning, case vide = 7,4 h), lignes prévues (saisie, avec le repère LOGYS affiché), ETP nécessaires, **écart en ETP** (+ marge / − renfort), et la ligne d'ouverture.
 5. **Infirmerie** : OUI/NON et jusqu'à 4 soins (heure, service, nature, AT). Aucun nom n'apparaît, car ce sont des données de santé.
+6. **Ventilation des heures** : bilan reçu / prêté / solde pour P&P, HG, Câble et les services extérieurs (Réception, Réorg, Expédition…), puis chaque échange du jour lu dans MOUVEMENTS (de → vers, heures, qui, motif, type : prêt interne, aide reçue, aide donnée ou ligne à vérifier).
 
 ## L'accueil (onglet *Point Du Jour*)
 

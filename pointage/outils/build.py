@@ -448,6 +448,9 @@ HELP = [
     ("PREV_VERDICT", '=IF(NOT(ISNUMBER(PREV_LIG_IN)),"Lignes prévues à saisir pour calculer l\'écart",IF(GL_PE=0,"Planning de demain vide",IF(PREV_ECART>=0,"Effectif suffisant  ·  marge de "&FIXED(PREV_ECART,1)&" ETP","Renfort nécessaire  ·  "&FIXED(-PREV_ECART,1)&" ETP  (≈ "&FIXED(-PREV_ECART*PAR_ETP_H,1)&" h)")))'),
     ("PREV_ETP_DET", '="PP "&FIXED(PP_PE,1)&" · HG "&FIXED(HG_PE,1)&" · Câble "&FIXED(CA_PE,1)&IF(GL_PH>PP_PH+HG_PH+CA_PH," · récep. "&FIXED((GL_PH-PP_PH-HG_PH-CA_PH)/PAR_ETP_H,1),"")'),
     ("PREV_DETAIL", '=IF(ISNUMBER(PREV_LIG_IN),FIXED(PREV_LIG_IN,0)&" lignes ÷ "&FIXED(GL_OBJ,0)&" lignes/ETP = "&FIXED(PREV_BESOIN,1)&" ETP nécessaires  ·  prévus "&FIXED(GL_PE,1)&" ("&PREV_ETP_DET&")","ETP prévus : "&PREV_ETP_DET)'),
+    ("EXT_REC", '=SUMIFS(MOUVEMENTS!$D$6:$D$1005,MOUVEMENTS!$A$6:$A$1005,PDJ_DATE,MOUVEMENTS!$H$6:$H$1005,"Aide reçue")'),
+    ("EXT_DON", '=SUMIFS(MOUVEMENTS!$D$6:$D$1005,MOUVEMENTS!$A$6:$A$1005,PDJ_DATE,MOUVEMENTS!$H$6:$H$1005,"Aide donnée")'),
+    ("VENT_NB", '=COUNTIFS(MOUVEMENTS!$A$6:$A$1005,PDJ_DATE,MOUVEMENTS!$D$6:$D$1005,"<>")'),
     ("INF_NB", '=SUMPRODUCT(--((LEN(INF_HEURE&"")+LEN(INF_SERV&"")+LEN(INF_DESC&""))>0))'),
     ("INF_ETAT", '=IF(INF_NB>0,"some",IF(UPPER(TRIM(INF_OUINON&""))="NON","none",IF(UPPER(TRIM(INF_OUINON&""))="OUI","manque","na")))'),
     ("INF_TITRE", '=IF(INF_ETAT="some",INF_NB&IF(INF_NB>1," soins"," soin")&" à l\'infirmerie aujourd\'hui",IF(INF_ETAT="none","✓  Aucun soin à l\'infirmerie aujourd\'hui",IF(INF_ETAT="manque","⚠ Soins déclarés : détail à saisir dessous","Infirmerie : non renseigné")))'),
@@ -574,6 +577,19 @@ for i in range(1, 5):
         ("INF%d_DESC" % i, '=IF(TRIM(%sE%d&"")="","nature du soin non précisée",TRIM(%sE%d&""))' % (Q, r, Q, r), "txt"),
     ]
 MM += [("PIED", "=PIED_TXT", "txt")]
+for k, rec, pre in (("PP", "PP_ENT", "-PP_SOR"), ("HG", "HG_ENT", "-HG_SOR"), ("CA", "CA_ENT", "-CA_SOR"), ("EXT", "EXT_REC", "EXT_DON")):
+    sol = "(%s)-(%s)" % (rec, pre)
+    MM += [
+        ("%s_REC" % k, '=IF(ABS(%s)<0.001,"—","+"&FIXED(%s,1)&" h")' % (rec, rec), "txt"),
+        ("%s_PRE" % k, '=IF(ABS(%s)<0.001,"—","−"&FIXED(%s,1)&" h")' % (pre, pre), "txt"),
+        ("%s_SOL" % k, '=IF(ABS(%s)<0.001,FIXED(0,1)&" h",IF(%s>0,"+","−")&FIXED(ABS(%s),1)&" h")' % (sol, sol, sol), "txt"),
+        ("%s_SOL_COL" % k, '=IF(ABS(%s)<0.001,"#64748B",IF(%s>0,"#15803D","#B45309"))' % (sol, sol), "txt"),
+    ]
+MM += [
+    ("VENT_ON", "=VENT_NB>0", "if"),
+    ("VENT_NONE", "=VENT_NB=0", "if"),
+    ("VENT_NB", '=VENT_NB&IF(VENT_NB>1," échanges"," échange")', "txt"),
+]
 for i, (k, f_, t) in enumerate(MM):
     r = 3 + i
     calc.cell(r, 5, k)
@@ -700,6 +716,14 @@ if EXEMPLE:
     for a, v in vals.items():
         ws[a] = v
     ws["L2"] = datetime.date(2026, 10, 30)
+    mvx = wb["MOUVEMENTS"]
+    rr = 6
+    while mvx.cell(rr, 1).value is not None:
+        rr += 1
+    for j, row_ in enumerate(((datetime.datetime(2026, 10, 30), "Réception", "PP", 3.5, "Jérôme R.", "Renfort fin de vague"),
+                              (datetime.datetime(2026, 10, 30), "HG", "Expédition", 2, "Patrice", "Chargement camion"))):
+        for k_, v_ in enumerate(row_, start=1):
+            mvx.cell(rr + j, k_).value = v_
 
 wb.calculation.fullCalcOnLoad = True
 wb.save(OUT)
