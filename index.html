@@ -1519,6 +1519,9 @@ document.addEventListener("fullscreenchange",()=>{
 
 /* ── démarrage ── */
 tabs();sift();jour();hub();paint();jauge();
+/* lien direct vers un standard : index.html#P9 (utilisé par le bilan mensuel) */
+(function(){const h=decodeURIComponent(location.hash.slice(1)).toUpperCase().replace(/^P0*/,"P");
+ if(/^P\d{1,2}$/.test(h)&&par(h)){show("ref");openFile(h)}})();
 document.addEventListener("keydown",e=>{
  if(DK){if(e.key==="Escape")closeDeck();else if(e.key==="ArrowRight")dkPas(1);else if(e.key==="ArrowLeft"&&DK.cur>0)dkPas(-1);return}
  if(e.key!=="Escape")return;

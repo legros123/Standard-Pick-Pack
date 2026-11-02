@@ -1,0 +1,5 @@
+# sorties du bilan mensuel : données personnelles, ne jamais versionner
+bilan/
+*.xlsx
+*.xlsm
+__pycache__/
