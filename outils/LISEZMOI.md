@@ -37,3 +37,5 @@ dès l'ouverture.
 Réglages (seuils, poids, URL du site) en tête de `bilan_mensuel.py`.
 
 **Aucun classement n'est affiché** (ni sur les pages, ni sur les cartes, ni dans la synthèse) : chacun se compare à la moyenne de l'équipe via sa carte joueur et son hexagone. OVR = 45 + 2,5 × note /20 (10/20 = 70) · bronze < 65 · argent 65-77 · or 78-84 · icône ≥ 85.
+
+**Pages perso** : `NNN_nom.html` (une par opérateur, données intégrées) — le QR du recto pointe vers `https://legros123.github.io/Suivi-P-P-/<Mois>/NNN_nom.html`. Fonctionne sur tous les téléphones et lecteurs QR. Pour un nouveau mois : copier le dossier `bilan/<Mois>/` produit par le script à la racine de Suivi-P-P-. Seuil carte : 15 h de picking réel (heures − hors pick).
