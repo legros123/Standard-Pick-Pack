@@ -5,32 +5,29 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Pick & Pack Live</title>
 <!--
-  PP LIVE v7 « HUD » — écran Flip zone pick.
-  Nouveautés v7 :
-    · Trajectoire : courbe de reste à faire minute par minute jusqu'à la fin estimée (pauses, fin de poste, retard).
-    · Simulation renfort : « +1 préparateur → fin à … », effectif nécessaire si critique, préparateur détachable si stable.
-    · Stock lancé : heure d'épuisement estimée de la vague (pauses déduites).
-    · Équipe : matrice des matricules (en tournée / disponible / absent), lisible sans la couleur.
-    · Habillage HUD : cadres d'angle, grille de fond, chiffres télémétrie, horloge à la seconde.
-  FLIP-FIT : la page remplit tout l'écran reçu, du 16:9 au très large (3,2:1).
+  PP LIVE v8 « ORBITE » — écran Flip zone pick, mise en page entièrement repensée.
+    · Gauche  : PIPELINE du flux du jour (À lancer → Lancées → En cours → Faites), la charge descend vers « faites ».
+    · Centre  : CADRAN DE POSTE. L'anneau = le poste (début en bas à gauche, fin + 1h30 de dépassement possible en bas à droite) :
+                temps écoulé, travail projeté jusqu'à la fin estimée, pauses, aiguille « maintenant », repère fin de poste,
+                repère +1 préparateur. Au cœur : statut et heure de fin estimée. Sous le cadran : trajectoire du reste à faire.
+    · Droite  : ÉQUIPE (matrice des matricules) et QUALITÉ (jauges linéaires rejets / décelées + vigilance).
+    · Bas     : HISTORIQUE toujours visible (productivité, avérées, rejets, décelées).
+  FLIP-FIT : hauteur fixe 1080, la largeur suit l'écran (16:9 → 3,2:1) ; les colonnes latérales et l'historique s'élargissent.
   Lit data.js (même dossier), écrit par Excel toutes les minutes. Sans data.js : données de démonstration.
-  Raccourcis : double-clic ou touche F = plein écran · ?demo=1 force la démo · en démo, toucher « Fin estimée » change de scénario.
+  Raccourcis : double-clic ou touche F = plein écran · ?demo=1 force la démo · en démo, toucher le cadran change de scénario.
   Contrat data.js (inchangé depuis v6) :
   window.PP_DATA = {
-    genere:  "2026-10-22T17:31:05",                       // heure d'export Excel
+    genere:  "2026-10-22T17:31:05",
     jour:    { date:"2026-10-22", debut:"13:06", fin:"21:00", pauses:[["15:00","15:15"],["17:45","18:15"]] },
-    params:  { heures_pointees:7.4, cadence_defaut:50, fin_prevision:"18:20" },   // fin_prevision facultatif (18:20 par défaut)
-             //  Reste à lancer = prévision du jour − lignes déjà lancées dans LOGYS (faites + en cours + lancées).
-             //  À partir de fin_prevision, la prévision est annulée : seul le lancé réel compte.
+    params:  { heures_pointees:7.4, cadence_defaut:50, fin_prevision:"18:20" },
     seuils:  { avance_stable:10, retard_critique:0, rej_orange:120, rej_rouge:140, dec_orange:15, dec_rouge:20,
                vig_orange:3, vig_rouge:5, obj_lignes_op:620, obj_ppm_averee:220 },
-    saisie:  { prevu:8500 },          // prévision du jour. À défaut : somme de v1 + a2 + a3 (ancien format, heures ignorées)
+    saisie:  { prevu:8500 },
     equipe:  [ { mat:"149", role:"Picking", present:true, sorti:null, revenu:null, coef:1, cadence:77.3 }, ... ],
     tours:   [ { n:"TO04870165", k:"C", st:"DETAIL", l:103, t:0, a:0, op:"159", deb:"2026-10-22T16:41:00" }, ... ],
-             //  k : L = lancée, C = en cours, F = faite aujourd'hui · deb = prise réelle (journal), null si inconnue
     rejets:  71,
     decelees:[ { mat:"149", n:3 }, ... ],
-    hist:    [ { d:"2026-09-24", prod:598, ppm:205, rej:131 }, ... ],   // 30 derniers jours travaillés, le dernier = la veille
+    hist:    [ { d:"2026-09-24", prod:598, ppm:205, rej:131 }, ... ],
     mois:    { nom:"Octobre", prod:588, ppm:196 },
     dec_mois:[ { d:"2026-10-01", n:14 }, ... ]
   };
@@ -40,247 +37,215 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
 <style>
 :root{
-  --bg:#04060C;
-  --edge:rgba(150,175,255,.12); --edge2:rgba(150,175,255,.22);
-  --text:#EEF3FF; --muted:#9AA6BF; --dim:#5D6884; --faint:rgba(255,255,255,.07);
-  /* flux (validé daltonisme) : faites · en cours · lancées */
+  --bg:#03050A;
+  --line:rgba(150,175,255,.14); --line2:rgba(150,175,255,.26);
+  --text:#EEF3FF; --muted:#9AA6BF; --dim:#5D6884;
   --done:#7C87A8; --cyan:#3DDBF5; --blue:#5B8CFF; --violet:#A78BFA;
-  /* statuts réservés */
   --ok:#34D399; --warn:#FBBF24; --bad:#FB5A6E;
   --stat:#5B8CFF;
-  --r:20px;
   --f:"Inter Tight","Segoe UI Variable Display","Segoe UI",system-ui,Arial,sans-serif;
   --mono:"JetBrains Mono","Cascadia Mono",Consolas,ui-monospace,monospace;
 }
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{height:100%;overflow:hidden;background:var(--bg)}
 body{color:var(--text);font-family:var(--f);-webkit-font-smoothing:antialiased;position:relative}
-
-/* ---------- fond : grille + lumière d'ambiance qui suit le statut ---------- */
-#bg{position:fixed;inset:0;pointer-events:none;z-index:0;overflow:hidden}
-#bg .grid{position:absolute;inset:-2px;
-  background-image:linear-gradient(rgba(120,150,255,.06) 1px,transparent 1px),linear-gradient(90deg,rgba(120,150,255,.06) 1px,transparent 1px);
-  background-size:56px 56px;
-  -webkit-mask-image:radial-gradient(ellipse 80% 70% at 50% 40%,#000 30%,transparent 100%);mask-image:radial-gradient(ellipse 80% 70% at 50% 40%,#000 30%,transparent 100%)}
-#bg .glow{position:absolute;border-radius:50%;filter:blur(130px);transition:background 1.2s}
-#bg .g1{width:70vw;height:70vw;left:-24vw;top:-40vw;background:color-mix(in srgb,var(--stat) 34%,transparent);opacity:.55}
-#bg .g2{width:60vw;height:60vw;right:-20vw;bottom:-38vw;background:color-mix(in srgb,var(--violet) 26%,transparent);opacity:.45}
-#bg .scan{position:absolute;left:0;right:0;height:22vh;top:-22vh;
-  background:linear-gradient(180deg,transparent,rgba(120,170,255,.045) 70%,rgba(140,190,255,.09) 99%,transparent);
-  animation:scan 11s linear infinite}
-@keyframes scan{to{transform:translateY(130vh)}}
-
 .num{font-variant-numeric:tabular-nums;font-feature-settings:"tnum" 1,"ss01" 1;letter-spacing:-.045em}
-.mono{font-family:var(--mono);letter-spacing:0}
+
+/* ---------- décor : halo statut, sol en perspective qui défile, liseré statut ---------- */
+#bg{position:fixed;inset:0;pointer-events:none;z-index:0;overflow:hidden}
+#bg .halo{position:absolute;left:50%;top:44%;width:80vh;height:80vh;transform:translate(-50%,-50%);border-radius:50%;
+  background:radial-gradient(closest-side,color-mix(in srgb,var(--stat) 26%,transparent),transparent 70%);transition:background 1.2s}
+#bg .side{position:absolute;width:60vw;height:60vw;border-radius:50%;filter:blur(140px);opacity:.35}
+#bg .s1{left:-30vw;top:-30vw;background:color-mix(in srgb,var(--blue) 40%,transparent)}
+#bg .s2{right:-30vw;bottom:-36vw;background:color-mix(in srgb,var(--violet) 40%,transparent)}
+#bg .floor{position:absolute;left:-50%;right:-50%;bottom:-6vh;height:48vh;transform:perspective(520px) rotateX(64deg);transform-origin:50% 100%;
+  background-image:linear-gradient(color-mix(in srgb,var(--stat) 30%,transparent) 1.5px,transparent 1.5px),linear-gradient(90deg,color-mix(in srgb,var(--stat) 22%,transparent) 1.5px,transparent 1.5px);
+  background-size:80px 80px;animation:floor 6s linear infinite;
+  -webkit-mask-image:linear-gradient(180deg,transparent,#000 60%);mask-image:linear-gradient(180deg,transparent,#000 60%);opacity:.45}
+@keyframes floor{to{background-position:0 80px}}
+#bg .rail{position:absolute;left:0;right:0;top:0;height:3px;background:linear-gradient(90deg,transparent,var(--stat) 20%,var(--stat) 80%,transparent);
+  box-shadow:0 0 24px var(--stat),0 0 60px var(--stat);transition:background 1.2s}
 
 #stage{position:absolute;left:50%;top:50%;width:1920px;height:1080px;transform-origin:center center;z-index:1;
-  display:grid;grid-template-columns:minmax(0,1fr) 440px;grid-template-rows:76px minmax(0,1fr);gap:20px;padding:24px 32px 28px}
-#stage.large{grid-template-columns:minmax(0,1fr) 900px}
-#stage.large #reel{display:grid;grid-template-columns:1fr 1fr;column-gap:20px}
+  display:grid;grid-template-columns:minmax(500px,1fr) 780px minmax(500px,1fr);grid-template-rows:62px minmax(0,1fr) 190px;
+  column-gap:30px;row-gap:16px;padding:22px 32px 22px}
 
-/* ---------- barre du haut ---------- */
-header{grid-column:1 / 3;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:24px;white-space:nowrap}
-.brand{display:flex;align-items:center;gap:18px}
-.mark{width:58px;height:58px;border-radius:16px;display:grid;place-items:center;position:relative;
-  background:conic-gradient(from 210deg,#5B8CFF,#A78BFA,#3DDBF5,#5B8CFF);box-shadow:0 10px 40px -8px rgba(91,140,255,.7)}
-.mark::after{content:"";position:absolute;inset:3px;border-radius:13px;background:#0A0E1A}
-.mark svg{position:relative;z-index:1}
-.brand .t{display:flex;flex-direction:column;gap:4px}
-.brand h1{font-size:38px;font-weight:700;letter-spacing:-.03em;line-height:1}
-.brand h1 em{font-style:normal;color:var(--muted);font-weight:500}
-.brand .site{font:500 14px/1 var(--mono);color:var(--dim);letter-spacing:.22em;text-transform:uppercase}
-.pill{display:inline-flex;align-items:center;gap:10px;height:44px;padding:0 18px;border-radius:12px;font-size:20px;font-weight:500;
-  color:var(--muted);background:rgba(255,255,255,.035);border:1px solid var(--edge)}
-.pill b{color:var(--text);font-weight:700}
-.dot{width:10px;height:10px;border-radius:50%;background:var(--c,var(--ok));box-shadow:0 0 0 4px color-mix(in srgb,var(--c,var(--ok)) 22%,transparent);flex:none}
+/* ---------- typographie commune ---------- */
+.lab{font:600 16px/1.2 var(--mono);letter-spacing:.2em;text-transform:uppercase;color:var(--muted);white-space:nowrap}
+.lab i{font-style:normal;color:var(--dim)}
+.mono{font-family:var(--mono);letter-spacing:0}
+.tag{display:inline-flex;align-items:center;gap:10px;height:40px;padding:0 16px;border-radius:8px;font-size:19px;font-weight:700;white-space:nowrap;
+  color:var(--c);background:color-mix(in srgb,var(--c) 13%,transparent);border:1px solid color-mix(in srgb,var(--c) 42%,transparent)}
+.tag svg{flex:none}
+.ok{--c:var(--ok)} .warn{--c:var(--warn)} .bad{--c:var(--bad)} .neutre{--c:var(--dim)} .info{--c:var(--blue)} .cyan{--c:var(--cyan)} .muted{--c:var(--muted)}
+.dot{width:10px;height:10px;border-radius:50%;background:var(--c,var(--ok));flex:none;box-shadow:0 0 0 4px color-mix(in srgb,var(--c,var(--ok)) 22%,transparent)}
+@keyframes live{0%{box-shadow:0 0 0 0 color-mix(in srgb,var(--c,var(--ok)) 60%,transparent)}80%,100%{box-shadow:0 0 0 12px transparent}}
+/* titre de zone : ligne fine + losange */
+.zh{display:flex;align-items:center;gap:14px;padding-bottom:12px;border-bottom:1px solid var(--line);position:relative}
+.zh::before{content:"";width:9px;height:9px;transform:rotate(45deg);background:var(--c,var(--blue));box-shadow:0 0 12px var(--c,var(--blue));flex:none}
+.zh::after{content:"";position:absolute;left:0;bottom:-1px;width:64px;height:2px;background:var(--c,var(--blue));box-shadow:0 0 10px var(--c,var(--blue))}
+.zh .x{margin-left:auto;font-size:20px;color:var(--muted)}
+.zh .x b{color:var(--text)}
+
+/* ---------- en-tête ---------- */
+header{grid-column:1 / -1;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:24px;white-space:nowrap}
+.brand{display:flex;align-items:center;gap:16px}
+.mark{width:52px;height:52px;display:grid;place-items:center;position:relative}
+.mark svg{position:absolute;inset:0}
+.brand h1{font-size:34px;font-weight:800;letter-spacing:-.03em;line-height:1}
+.brand h1 em{font-style:normal;font-weight:500;color:var(--muted)}
+.brand .site{display:block;font:500 13px/1 var(--mono);color:var(--dim);letter-spacing:.24em;margin-top:6px}
+.pill{display:inline-flex;align-items:center;gap:10px;height:40px;padding:0 16px;border-radius:8px;font-size:18px;font-weight:500;color:var(--muted);border:1px solid var(--line)}
+.pill b{color:var(--text)}
 #fresh .dot{animation:live 2.2s ease-out infinite}
 #fresh.warn{--c:var(--warn);color:var(--warn)} #fresh.bad{--c:var(--bad);color:var(--bad)}
 #fresh.warn .dot,#fresh.bad .dot{animation:none}
-@keyframes live{0%{box-shadow:0 0 0 0 color-mix(in srgb,var(--c,var(--ok)) 60%,transparent)}80%,100%{box-shadow:0 0 0 12px transparent}}
-#demo{display:none;--c:var(--warn);color:#1A1405;background:var(--warn);border-color:var(--warn);font-weight:700}
-#demo .dot{background:#1A1405;box-shadow:none}
-.center{display:flex;gap:12px;justify-content:center;align-items:center}
-#pause{display:none;--c:var(--warn);background:color-mix(in srgb,var(--warn) 16%,transparent);border-color:color-mix(in srgb,var(--warn) 50%,transparent);color:var(--warn)}
+#demo{display:none;--c:#1A1405;color:#1A1405;background:var(--warn);border-color:var(--warn);font-weight:700}
+#demo .dot{box-shadow:none}
+.center{display:flex;gap:12px;align-items:center}
+#pause{display:none;--c:var(--warn);color:var(--warn);border-color:color-mix(in srgb,var(--warn) 50%,transparent);background:color-mix(in srgb,var(--warn) 12%,transparent)}
 #pause b{color:var(--warn)}
-/* barre de poste : début → fin, position actuelle */
-#shift{display:flex;align-items:center;gap:12px;height:44px;padding:0 18px;border-radius:12px;background:rgba(255,255,255,.035);border:1px solid var(--edge)}
-#shift .rail{position:relative;width:260px;height:8px;border-radius:4px;background:rgba(255,255,255,.08);overflow:hidden}
-#shift .rail i{position:absolute;left:0;top:0;bottom:0;border-radius:4px;background:linear-gradient(90deg,color-mix(in srgb,var(--stat) 40%,transparent),var(--stat));transition:width 1s}
-#shift .rail u{position:absolute;top:0;bottom:0;background:rgba(4,6,12,.85)}
-#shift span{font:500 16px/1 var(--mono);color:var(--muted)}
-#shift b{font:700 18px/1 var(--mono);color:var(--text)}
-.when{display:flex;align-items:center;justify-content:flex-end;gap:22px}
-#date{font-size:24px;color:var(--muted);font-weight:500;text-align:right;line-height:1.15}
-#clock{font-size:66px;font-weight:700;line-height:1;letter-spacing:-.05em}
-#clock small{font:600 26px/1 var(--mono);color:var(--dim);margin-left:4px;letter-spacing:0;vertical-align:28px}
+#shift{display:flex;align-items:center;gap:12px;font:500 16px/1 var(--mono);color:var(--muted)}
+#shift .rail{position:relative;width:300px;height:6px;border-radius:3px;background:rgba(255,255,255,.08);overflow:hidden}
+#shift .rail i{position:absolute;left:0;top:0;bottom:0;background:linear-gradient(90deg,transparent,var(--stat));transition:width 1s}
+#shift .rail u{position:absolute;top:0;bottom:0;background:var(--bg)}
+#shift b{font:700 17px/1 var(--mono);color:var(--text)}
+.when{display:flex;align-items:center;justify-content:flex-end;gap:20px}
+#date{font-size:22px;color:var(--muted);font-weight:500;text-align:right;line-height:1.15}
+#clock{font-size:62px;font-weight:700;line-height:1}
+#clock small{font:600 24px/1 var(--mono);color:var(--dim);margin-left:4px;vertical-align:26px;letter-spacing:0}
 
-/* ---------- grille ---------- */
-#main{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));grid-template-rows:452px minmax(0,1fr) 84px;gap:20px;min-height:0}
-#lances{grid-column:span 6} #fin{grid-column:span 6}
-#encours{grid-column:span 3} #team{grid-column:span 3} #grej{grid-column:span 3} #gdec{grid-column:span 3}
-#vig{grid-column:1 / -1}
-
-/* ---------- carte HUD ---------- */
-.card{position:relative;background:linear-gradient(180deg,rgba(130,160,255,.06),rgba(130,160,255,.015) 60%);border:1px solid var(--edge);
-  border-radius:var(--r);padding:24px 28px;overflow:hidden;min-width:0;display:flex;flex-direction:column;
-  -webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);
-  box-shadow:inset 0 1px 0 rgba(255,255,255,.06),0 30px 60px -30px rgba(0,0,0,.7)}
-/* cadres d'angle, couleur du statut */
-.card::before{content:"";position:absolute;inset:9px;pointer-events:none;z-index:2;opacity:.85;
-  --h:color-mix(in srgb,var(--c,var(--blue)) 75%,transparent);
-  background:
-    linear-gradient(var(--h),var(--h)) top left/20px 2px no-repeat,linear-gradient(var(--h),var(--h)) top left/2px 20px no-repeat,
-    linear-gradient(var(--h),var(--h)) top right/20px 2px no-repeat,linear-gradient(var(--h),var(--h)) top right/2px 20px no-repeat,
-    linear-gradient(var(--h),var(--h)) bottom left/20px 2px no-repeat,linear-gradient(var(--h),var(--h)) bottom left/2px 20px no-repeat,
-    linear-gradient(var(--h),var(--h)) bottom right/20px 2px no-repeat,linear-gradient(var(--h),var(--h)) bottom right/2px 20px no-repeat;
-  transition:opacity .8s}
-.card::after{content:"";position:absolute;width:440px;height:440px;right:-170px;top:-210px;border-radius:50%;pointer-events:none;
-  background:radial-gradient(closest-side,color-mix(in srgb,var(--c,transparent) 24%,transparent),transparent);transition:background .8s}
-.card > *{position:relative;z-index:1}
-.ok{--c:var(--ok)} .warn{--c:var(--warn)} .bad{--c:var(--bad)} .neutre{--c:var(--dim)} .info{--c:var(--blue)} .cyan{--c:var(--cyan)}
-.eyebrow{display:flex;align-items:center;justify-content:space-between;gap:16px;white-space:nowrap}
-.lab{font:600 17px/1.2 var(--mono);letter-spacing:.16em;text-transform:uppercase;color:var(--muted)}
-.lab::before{content:"";display:inline-block;width:8px;height:8px;margin-right:12px;vertical-align:2px;background:var(--c,var(--blue));box-shadow:0 0 10px var(--c,var(--blue));transform:rotate(45deg)}
-.tag{display:inline-flex;align-items:center;gap:10px;height:42px;padding:0 18px;border-radius:10px;font-size:22px;font-weight:700;letter-spacing:.06em;
-  color:var(--c);background:color-mix(in srgb,var(--c) 14%,transparent);border:1px solid color-mix(in srgb,var(--c) 40%,transparent)}
-.tag .dot{box-shadow:0 0 12px var(--c)}
-.bad .tag .dot{animation:live 1.6s ease-out infinite}
-
-/* ---------- lancées ---------- */
-#prev{font-size:21px;color:var(--muted);font-weight:500;letter-spacing:0}
-#prev b{color:var(--text)}
-.hero{display:flex;flex-direction:column;gap:16px;margin-top:8px}
-#nLances{font-size:188px;font-weight:700;line-height:.86;text-shadow:0 0 60px rgba(91,140,255,.28)}
-.hero .side{display:flex;align-items:center;gap:16px;min-width:0;white-space:nowrap;flex-wrap:wrap}
-.sub{font-size:26px;color:var(--text);font-weight:500}
-.sub b{font-weight:700}
-#couv{align-self:flex-start;white-space:nowrap}
+/* ---------- colonne gauche : pipeline ---------- */
+#flux{display:flex;flex-direction:column;min-height:0;--c:var(--blue)}
+.pipe{position:relative;flex:1;display:flex;flex-direction:column;padding:18px 0 0 54px;min-height:0}
+/* câble : particules qui descendent vers « faites » */
+.wire{position:absolute;left:17px;top:40px;bottom:46px;width:4px;border-radius:2px;
+  background:linear-gradient(180deg,rgba(255,255,255,.18),var(--blue) 35%,var(--cyan) 65%,var(--done))}
+.wire::after{content:"";position:absolute;inset:0;border-radius:2px;
+  background:repeating-linear-gradient(180deg,transparent 0 22px,rgba(255,255,255,.95) 22px 28px);
+  -webkit-mask-image:linear-gradient(180deg,transparent,#000 15%,#000 85%,transparent);mask-image:linear-gradient(180deg,transparent,#000 15%,#000 85%,transparent);
+  animation:flow 1.6s linear infinite;filter:drop-shadow(0 0 4px #fff)}
+@keyframes flow{to{background-position:0 28px}}
+.st{position:relative;flex:1;display:flex;flex-direction:column;justify-content:center;min-height:0;padding:6px 0;border-bottom:1px dashed var(--line)}
+.st:last-child{border-bottom:0}
+.st .node{position:absolute;left:-46px;top:50%;width:26px;height:26px;margin-top:-13px;border-radius:50%;background:var(--bg);border:3px solid var(--n);box-shadow:0 0 16px var(--n)}
+.st .node::after{content:"";position:absolute;inset:5px;border-radius:50%;background:var(--n)}
+.st .row{display:flex;align-items:baseline;justify-content:space-between;gap:12px}
+.st .big{font-size:78px;font-weight:700;line-height:.95}
+.st .sub{font-size:19px;color:var(--muted);white-space:nowrap;margin-top:4px}
+.st .sub b{color:var(--text)}
+.st .meter{height:6px;border-radius:3px;background:rgba(255,255,255,.06);margin-top:10px;overflow:hidden}
+.st .meter i{display:block;height:100%;border-radius:3px;background:var(--n);box-shadow:0 0 12px var(--n);transition:width 1s}
+#stR{--n:rgba(220,228,245,.55)} #stR .meter i{background:repeating-linear-gradient(-45deg,rgba(255,255,255,.2) 0 4px,rgba(255,255,255,.5) 4px 7px);box-shadow:none}
+#stL{--n:var(--blue);flex:1.45} #stL .big{font-size:132px;text-shadow:0 0 60px rgba(91,140,255,.35)}
+#stC{--n:var(--cyan)} #stC .big{color:var(--cyan);text-shadow:0 0 40px rgba(61,219,245,.3)}
+#stF{--n:var(--done)}
+#stR .big{color:#C9D2E6}
+#couv{margin-top:10px;align-self:flex-start;height:38px;font-size:18px}
 #couv:empty{display:none}
-#couv.tag{height:40px;font-size:20px;letter-spacing:0}
-#couv.neutral{--c:var(--muted)}
-#day{margin-top:auto}
-#day .bar{display:flex;gap:4px;height:26px;padding:3px;border-radius:10px;background:rgba(255,255,255,.04);border:1px solid var(--edge)}
-#day .bar i{display:block;height:100%;border-radius:6px;min-width:0;transition:flex-grow 1s ease}
-.s-f{background:var(--done)}
-.s-c{background:var(--cyan);box-shadow:0 0 18px -2px rgba(61,219,245,.6)}
-.s-l{background:var(--blue);box-shadow:0 0 18px -2px rgba(91,140,255,.6)}
-.s-r{background:repeating-linear-gradient(-45deg,rgba(255,255,255,.07) 0 6px,rgba(255,255,255,.18) 6px 10px)}
-#day .leg{display:flex;gap:13px;margin-top:14px;font-size:17px;color:var(--muted);white-space:nowrap;align-items:center}
-#day .leg span{display:flex;align-items:center;gap:8px}
-#day .leg i{width:12px;height:12px;border-radius:3px;display:block}
-#day .leg b{color:var(--text);font-weight:700}
-#day .leg .pct{margin-left:auto;font-size:24px;color:var(--text);font-weight:700}
-#day .leg .pct small{font:500 15px/1 var(--mono);color:var(--muted);margin-right:8px;letter-spacing:.1em}
+#pctF{font-size:46px;font-weight:700;color:var(--text)}
+#pctF small{font:500 15px/1 var(--mono);color:var(--muted);margin-left:6px;letter-spacing:.1em}
 
-/* ---------- fin estimée + trajectoire ---------- */
-#fin .top{display:flex;align-items:flex-end;gap:26px;margin-top:10px}
-#finp{font-size:116px;white-space:nowrap;font-weight:700;line-height:.9;
-  background:linear-gradient(180deg,#fff 0%,var(--c) 120%);-webkit-background-clip:text;background-clip:text;color:transparent;
-  filter:drop-shadow(0 0 28px color-mix(in srgb,var(--c) 35%,transparent))}
-#finp .h{font-size:.5em;letter-spacing:0;opacity:.75}
-#fin .meta{display:flex;flex-direction:column;gap:6px;padding-bottom:8px;min-width:0}
-#finsub{font-size:21px;color:var(--muted)}
-#finsub b,#finsub span,#manque b{white-space:nowrap}
-#finsub b{color:var(--text)}
-#retard{color:var(--bad);font-weight:700}
-#manque{font-size:21px;color:var(--muted)}
-#manque:empty{display:none}
-#manque b{color:var(--text)} #manque b.r{color:var(--bad)}
-#traj{position:relative;flex:1;min-height:0;margin-top:12px}
-#traj svg{position:absolute;inset:0;display:block;overflow:visible}
-#fin .foot{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-top:10px;white-space:nowrap;min-height:40px}
-#fin .leg2{display:flex;gap:14px;font:500 14px/1 var(--mono);color:var(--muted);white-space:nowrap}
-#fin .leg2 span{display:flex;align-items:center;gap:8px}
-#fin .leg2 i{display:block;width:18px;height:0;border-top:3px solid var(--c)}
-#fin .leg2 i.d{border-top:3px dashed #C9D2E6}
-#reco{height:40px;font-size:19px;min-width:0;letter-spacing:0;max-width:100%;overflow:hidden;text-overflow:ellipsis}
-#reco:empty{display:none}
-#reco svg{flex:none}
-
-/* ---------- en cours ---------- */
-#nEnCours{font-size:124px;font-weight:700;line-height:.9;margin-top:auto;color:var(--cyan);text-shadow:0 0 50px rgba(61,219,245,.35)}
-#encours .sub{margin-top:12px;font-size:21px;color:var(--muted);white-space:nowrap}
-#encours .sub b{color:var(--text)}
-#encours .age{margin-top:8px;font:500 16px/1.3 var(--mono);color:var(--dim)}
-#encours .age b{color:var(--muted)}
-
-/* ---------- équipe : matrice ---------- */
-#team .kp{display:flex;gap:12px;margin-top:12px;align-items:flex-end}
-#team .kp div{display:flex;flex-direction:column}
-#team .kp > div > span{font:500 14px/1.2 var(--mono);color:var(--muted);letter-spacing:.08em;text-transform:uppercase}
-#team .kp b{font-size:44px;font-weight:700;line-height:1.02}
-#team .kp div:last-child b{font-size:34px;line-height:1.2}
-#team .kp b small{font-size:18px;color:var(--muted);font-weight:500;margin-left:4px;letter-spacing:0}
-#matrix{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:5px;margin-top:auto}
-#matrix i{font:700 14px/26px var(--mono);font-style:normal;text-align:center;height:28px;border-radius:6px;color:var(--muted);
-  border:1px solid var(--edge2);background:rgba(255,255,255,.02);white-space:nowrap;overflow:hidden}
-#matrix i.t{color:#06212A;background:var(--cyan);border-color:var(--cyan);box-shadow:0 0 12px -2px rgba(61,219,245,.7)}
-#matrix i.p{color:var(--text);border-color:color-mix(in srgb,var(--blue) 70%,transparent);background:color-mix(in srgb,var(--blue) 14%,transparent)}
-#matrix i.o{color:var(--dim);border-style:dashed;border-color:rgba(255,255,255,.12);text-decoration:line-through;text-decoration-color:rgba(255,255,255,.25)}
-#matrix i.more{border:0;background:none;color:var(--muted)}
-#team .mleg{display:flex;gap:14px;margin-top:10px;font:500 14px/1 var(--mono);color:var(--dim);white-space:nowrap}
-#team .mleg span{display:flex;align-items:center;gap:6px}
-#team .mleg i{width:12px;height:12px;border-radius:3px;display:block}
-
-/* ---------- jauges anneau ---------- */
-.gauge .ring{position:relative;flex:1;min-height:0;display:grid;place-items:center;margin-top:10px}
-.gauge svg{display:block;overflow:visible}
-.gauge .val{position:absolute;left:0;right:0;top:50%;transform:translateY(-58%);text-align:center}
-.gauge .val b{display:block;font-size:70px;font-weight:700;line-height:1;color:var(--text)}
-.gauge .val small{display:block;font:500 15px/1 var(--mono);color:var(--muted);margin-top:6px;letter-spacing:.12em;text-transform:uppercase}
-.gauge .cap{text-align:center;font-size:20px;color:var(--muted);margin-top:-6px}
-.gauge .cap b{color:var(--c);font-weight:700}
+/* ---------- centre : cadran ---------- */
+#fin{display:flex;flex-direction:column;min-height:0;cursor:default}
+#dialbox{position:relative;flex:1;min-height:0}
+#dial{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
+.spin{transform-box:fill-box;transform-origin:center;animation:spin 60s linear infinite}
+.spin.r{animation-duration:90s;animation-direction:reverse}
+@keyframes spin{to{transform:rotate(360deg)}}
 .arcv{transition:stroke-dasharray 1s cubic-bezier(.3,.7,.2,1)}
+#core{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);text-align:center;display:flex;flex-direction:column;align-items:center;gap:6px;pointer-events:none}
+#pill{height:38px;font-size:19px;letter-spacing:.14em}
+#pill .dot{box-shadow:0 0 12px var(--c)}
+.bad #pill .dot{animation:live 1.6s ease-out infinite}
+#core .lab{font-size:14px;margin-top:6px}
+#finp{font-size:112px;font-weight:700;line-height:.9;white-space:nowrap;
+  background:linear-gradient(180deg,#fff 10%,var(--c) 130%);-webkit-background-clip:text;background-clip:text;color:transparent;
+  filter:drop-shadow(0 0 30px color-mix(in srgb,var(--c) 40%,transparent))}
+#finp .h{font-size:.48em;letter-spacing:0;opacity:.75}
+#finsub{font-size:22px;font-weight:600;color:var(--muted);white-space:nowrap}
+#finsub .r{color:var(--bad)} #finsub .g{color:var(--text)}
+#traj{position:relative;height:128px;margin-top:4px}
+#traj svg{position:absolute;inset:0;display:block;overflow:visible}
+#fin .foot{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-top:10px;min-height:40px;white-space:nowrap}
+#manque{font-size:20px;color:var(--muted)}
+#manque b{color:var(--text)} #manque b.r{color:var(--bad)}
+#reco:empty{display:none}
 
-/* ---------- vigilance ---------- */
-#vig{flex-direction:row;align-items:center;gap:24px;padding:0 30px}
-#vig::after{width:300px;height:300px;right:auto;left:-120px;top:-110px}
-#chips{display:flex;gap:12px;overflow:hidden;flex:1;align-items:center}
-.chip{display:inline-flex;align-items:center;gap:12px;height:50px;padding:0 20px 0 16px;border-radius:12px;white-space:nowrap;
-  background:color-mix(in srgb,var(--c) 14%,transparent);border:1px solid color-mix(in srgb,var(--c) 45%,transparent)}
-.chip b{font:700 26px/1 var(--mono)}
-.chip span{font-size:20px;color:var(--muted);font-weight:500}
+/* ---------- droite : équipe + qualité ---------- */
+#right{display:flex;flex-direction:column;gap:22px;min-height:0}
+#team{--c:var(--blue)}
+#team .kp{display:flex;gap:28px;margin-top:14px;align-items:flex-end}
+#team .kp div{display:flex;flex-direction:column}
+#team .kp div > span{font:500 13px/1.2 var(--mono);color:var(--muted);letter-spacing:.14em;text-transform:uppercase}
+#team .kp b{font-size:54px;font-weight:700;line-height:1}
+#team .kp b small{font-size:18px;color:var(--muted);font-weight:500;margin-left:4px;letter-spacing:0}
+#team .kp .k3{margin-left:auto;text-align:right} #team .kp .k3 b{font-size:40px}
+#matrix{display:grid;grid-template-columns:repeat(auto-fill,minmax(54px,1fr));gap:6px;margin-top:16px}
+#matrix i{font:700 15px/28px var(--mono);font-style:normal;text-align:center;height:30px;color:var(--muted);
+  border:1px solid var(--line2);clip-path:polygon(6px 0,100% 0,100% calc(100% - 6px),calc(100% - 6px) 100%,0 100%,0 6px);white-space:nowrap;overflow:hidden}
+#matrix i.t{color:#06212A;background:var(--cyan);border-color:var(--cyan)}
+#matrix i.p{color:var(--text);border-color:color-mix(in srgb,var(--blue) 70%,transparent);background:color-mix(in srgb,var(--blue) 16%,transparent)}
+#matrix i.o{color:var(--dim);border-style:dashed;border-color:rgba(255,255,255,.14);text-decoration:line-through;text-decoration-color:rgba(255,255,255,.3)}
+#matrix i.more{border:0;color:var(--muted)}
+#team .mleg{display:flex;gap:16px;margin-top:10px;font:500 14px/1 var(--mono);color:var(--dim)}
+#team .mleg span{display:flex;align-items:center;gap:6px}
+#team .mleg i{width:12px;height:12px;display:block}
+
+#qual{flex:1;display:flex;flex-direction:column;min-height:0}
+.lin{margin-top:16px}
+.lin .lt{display:flex;justify-content:space-between;align-items:baseline;gap:12px}
+.lin .lt .lab::before{content:"";display:inline-block;width:8px;height:8px;margin-right:10px;border-radius:50%;background:var(--c);box-shadow:0 0 8px var(--c);vertical-align:1px}
+.lin .cap{font-size:18px;color:var(--muted);white-space:nowrap}
+.lin .cap b{color:var(--c)}
+.lin .lr{display:grid;grid-template-columns:118px 1fr;align-items:center;gap:14px;margin-top:4px}
+.lin .v{font-size:66px;font-weight:700;line-height:1;color:var(--text)}
+.lin .lr svg{display:block;width:100%;height:58px;overflow:visible}
+.lin .cap svg{display:inline-block;vertical-align:-2px;margin-right:4px}
+#vigw{margin-top:auto;padding-top:14px;border-top:1px dashed var(--line)}
+#chips{display:flex;flex-wrap:wrap;gap:10px;margin-top:10px;max-height:104px;overflow:hidden}
+.chip{display:inline-flex;align-items:center;gap:10px;height:46px;padding:0 16px 0 12px;border-radius:8px;white-space:nowrap;color:var(--c);
+  background:color-mix(in srgb,var(--c) 13%,transparent);border:1px solid color-mix(in srgb,var(--c) 45%,transparent)}
+.chip b{font:700 24px/1 var(--mono);color:var(--text)}
+.chip span{font-size:18px;color:var(--muted)}
 .chip.bad{animation:pulse 2.4s ease-out infinite}
-.chip svg{flex:none}
-@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(251,90,110,.5)}70%,100%{box-shadow:0 0 0 14px rgba(251,90,110,0)}}
-.calm{font-size:23px;color:var(--muted)}
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(251,90,110,.5)}70%,100%{box-shadow:0 0 0 12px rgba(251,90,110,0)}}
+.calm{font-size:20px;color:var(--muted)}
 
-/* ---------- colonne historique ---------- */
-#side{position:relative;overflow:hidden;min-height:0;border-radius:var(--r)}
-#reel{display:flex;flex-direction:column;gap:20px;transition:transform 1.4s cubic-bezier(.65,0,.25,1)}
-#reel.jump{transition:none}
-.hcard{height:var(--ch,455px);flex:none;padding:22px 26px 20px}
-.hcard h2{font-size:29px;font-weight:700;letter-spacing:-.02em;line-height:1.1}
-.hcard .per{font:500 14px/1.3 var(--mono);color:var(--muted);margin-top:4px;letter-spacing:.06em;text-transform:uppercase}
-.hcard .kpis{display:flex;gap:30px;margin-top:14px}
-.hcard .kpi .lab{font-size:14px}
-.hcard .kpi .lab::before{display:none}
-.hcard .kpi .v{font-size:56px;font-weight:700;line-height:1.05}
-.hcard .kpi .v small{font-size:19px;color:var(--muted);font-weight:500;margin-left:6px;letter-spacing:0}
-.hcard .line{font-size:18px;color:var(--muted);margin-top:4px;line-height:1.3}
-.hcard svg{display:block;margin-top:auto;overflow:visible}
-#dots{position:absolute;left:50%;transform:translateX(-50%);bottom:10px;display:flex;gap:7px;z-index:3}
-#dots i{width:8px;height:8px;border-radius:99px;background:rgba(255,255,255,.2);transition:all .5s}
-#dots i.on{background:var(--text);width:24px}
+/* ---------- bas : historique toujours visible ---------- */
+#hist{grid-column:1 / -1;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:20px;min-height:0}
+.hc{position:relative;display:grid;grid-template-columns:178px minmax(0,1fr);gap:14px;padding:16px 18px 14px 20px;min-width:0;
+  background:linear-gradient(180deg,rgba(130,160,255,.07),rgba(130,160,255,.015));border:1px solid var(--line);
+  clip-path:polygon(16px 0,100% 0,100% calc(100% - 16px),calc(100% - 16px) 100%,0 100%,0 16px)}
+.hc::before{content:"";position:absolute;left:0;top:0;width:3px;height:100%;background:var(--c);box-shadow:0 0 14px var(--c)}
+.hc h2{font-size:22px;font-weight:700;letter-spacing:-.01em;line-height:1.1;white-space:nowrap}
+.hc .per{font:500 12px/1.3 var(--mono);color:var(--dim);letter-spacing:.1em;text-transform:uppercase;margin-top:3px;white-space:nowrap}
+.hc .k{margin-top:8px;display:flex;flex-direction:column;gap:4px}
+.hc .k div{display:flex;align-items:baseline;gap:10px}
+.hc .k span{font:500 12px/1 var(--mono);color:var(--muted);letter-spacing:.12em;text-transform:uppercase;width:66px;overflow:hidden;text-overflow:ellipsis}
+.hc .k b{font-size:40px;font-weight:700;line-height:1}
+.hc .k b small{font-size:15px;color:var(--muted);font-weight:500;margin-left:4px;letter-spacing:0}
+.hc .ch{position:relative;min-width:0}
+.hc .ch svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
+.hc .ln{position:absolute;left:0;right:0;bottom:-2px;font-size:14px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 
-#err{display:none;position:fixed;left:16px;bottom:16px;z-index:9;background:var(--bad);color:#fff;font:600 16px/1.3 var(--f);padding:10px 16px;border-radius:12px;max-width:60vw}
+#err{display:none;position:fixed;left:16px;bottom:16px;z-index:9;background:var(--bad);color:#fff;font:600 16px/1.3 var(--f);padding:10px 16px;border-radius:10px;max-width:60vw}
 
 @media (prefers-reduced-motion:reduce){
-  #reel,#day .bar i,.arcv,#shift .rail i{transition:none}
-  .chip.bad,#fresh .dot,.bad .tag .dot,#bg .scan{animation:none}
-  #bg .scan{display:none}
+  #bg .floor,.wire::after,.spin,.chip.bad,#fresh .dot,.bad #pill .dot{animation:none}
+  .arcv,.st .meter i,#shift .rail i{transition:none}
 }
 </style>
 </head>
 <body>
-<div id="bg" aria-hidden="true"><div class="grid"></div><div class="glow g1"></div><div class="glow g2"></div><div class="scan"></div></div>
+<div id="bg" aria-hidden="true"><div class="side s1"></div><div class="side s2"></div><div class="halo"></div><div class="floor"></div><div class="rail"></div></div>
 <div id="stage">
   <header>
     <div class="brand">
-      <div class="mark" aria-hidden="true"><svg width="28" height="28" viewBox="0 0 28 28" fill="none"><path d="M4 9l10-5 10 5v10l-10 5-10-5z" stroke="#fff" stroke-width="2.4" stroke-linejoin="round"/><path d="M4 9l10 5 10-5M14 14v10" stroke="#fff" stroke-width="2.4" stroke-linejoin="round" opacity=".6"/></svg></div>
-      <div class="t"><h1>Pick &amp; Pack <em>Live</em></h1><span class="site">Zone pick · flux temps réel</span></div>
+      <div class="mark" aria-hidden="true"><svg viewBox="0 0 52 52" fill="none"><circle cx="26" cy="26" r="24" stroke="url(#mk)" stroke-width="2.5" stroke-dasharray="110 12" stroke-linecap="round"/><path d="M14 20l12-6 12 6v12l-12 6-12-6z" stroke="#fff" stroke-width="2.4" stroke-linejoin="round"/><path d="M14 20l12 6 12-6M26 26v12" stroke="#fff" stroke-width="2.4" stroke-linejoin="round" opacity=".55"/><defs><linearGradient id="mk" x1="0" y1="0" x2="52" y2="52"><stop stop-color="#5B8CFF"/><stop offset=".5" stop-color="#A78BFA"/><stop offset="1" stop-color="#3DDBF5"/></linearGradient></defs></svg></div>
+      <div><h1>Pick &amp; Pack <em>Live</em></h1><span class="site">ZONE PICK · ORBITE</span></div>
       <span class="pill" id="fresh"><i class="dot"></i><span></span></span>
-      <span class="pill" id="demo"><i class="dot"></i>Démo · touche « Fin estimée »</span>
+      <span class="pill" id="demo"><i class="dot"></i>Démo · touche le cadran</span>
     </div>
     <div class="center">
       <span class="pill" id="pause"></span>
@@ -289,69 +254,72 @@ header{grid-column:1 / 3;display:grid;grid-template-columns:1fr auto 1fr;align-i
     <div class="when"><span id="date"></span><span id="clock" class="num"></span></div>
   </header>
 
-  <div id="main">
-    <section id="lances" class="card info">
-      <div class="eyebrow"><span class="lab">Lignes lancées à préparer</span><span id="prev"></span></div>
-      <div class="hero">
-        <div id="nLances" class="num"></div>
-        <div class="side"><div class="sub" id="tLances"></div><div id="couv"></div></div>
+  <!-- gauche : pipeline -->
+  <section id="flux">
+    <div class="zh"><span class="lab">Flux du jour</span><span class="x" id="prevu"></span></div>
+    <div class="pipe">
+      <div class="wire"></div>
+      <div class="st" id="stR"><i class="node"></i>
+        <div class="row"><span class="lab">À lancer <i>· prévision</i></span></div>
+        <div class="row"><b class="big num"></b><span class="sub"></span></div>
+        <div class="meter"><i></i></div>
       </div>
-      <div id="day">
-        <div class="bar"><i class="s-f"></i><i class="s-c"></i><i class="s-l"></i><i class="s-r"></i></div>
-        <div class="leg"></div>
+      <div class="st" id="stL"><i class="node"></i>
+        <div class="row"><span class="lab">Lancées à préparer</span><span class="sub"></span></div>
+        <b class="big num"></b>
+        <div class="meter"><i></i></div>
+        <div id="couv"></div>
       </div>
-    </section>
+      <div class="st" id="stC"><i class="node"></i>
+        <div class="row"><span class="lab">En cours</span></div>
+        <div class="row"><b class="big num"></b><span class="sub"></span></div>
+        <div class="meter"><i></i></div>
+      </div>
+      <div class="st" id="stF"><i class="node"></i>
+        <div class="row"><span class="lab">Faites</span></div>
+        <div class="row"><b class="big num"></b><span id="pctF" class="num"></span></div>
+        <div class="meter"><i></i></div>
+      </div>
+    </div>
+  </section>
 
-    <section id="fin" class="card">
-      <div class="eyebrow"><span class="lab">Fin estimée · trajectoire</span><span class="tag" id="pill"><i class="dot"></i><span></span></span></div>
-      <div class="top">
+  <!-- centre : cadran -->
+  <section id="fin">
+    <div id="dialbox">
+      <svg id="dial" viewBox="0 0 680 680" role="img" aria-label="Cadran du poste : temps écoulé, travail projeté, fin estimée"></svg>
+      <div id="core">
+        <span class="tag" id="pill"><i class="dot"></i><span></span></span>
+        <span class="lab">Fin estimée</span>
         <div id="finp" class="num"></div>
-        <div class="meta"><div id="finsub"></div><div id="manque"></div></div>
+        <div id="finsub"></div>
       </div>
-      <div id="traj"><svg role="img" aria-label="Lignes restantes jusqu’à la fin estimée"></svg></div>
-      <div class="foot">
-        <span id="reco"></span>
-        <div class="leg2"><span><i></i>actuel</span><span id="legR"><i class="d"></i>+1 prép.</span></div>
-      </div>
-    </section>
+    </div>
+    <div id="traj"><svg role="img" aria-label="Lignes restantes jusqu’à la fin estimée"></svg></div>
+    <div class="foot"><span id="reco"></span><span id="manque"></span></div>
+  </section>
 
-    <section id="encours" class="card cyan">
-      <span class="lab">En cours</span>
-      <div id="nEnCours" class="num"></div>
-      <div class="sub" id="tEnCours"></div>
-      <div class="age" id="aEnCours"></div>
-    </section>
-
-    <section id="team" class="card info">
-      <span class="lab">Équipe</span>
+  <!-- droite : équipe + qualité -->
+  <div id="right">
+    <section id="team">
+      <div class="zh"><span class="lab">Équipe</span></div>
       <div class="kp">
         <div><span>Présents</span><b class="num" id="kPres"></b></div>
-        <div><span>Tournée</span><b class="num" id="kTour"></b></div>
-        <div><span>Capacité</span><b class="num"><span id="kCapa"></span><small>l/h</small></b></div>
+        <div><span>En tournée</span><b class="num" id="kTour"></b></div>
+        <div class="k3"><span>Capacité</span><b class="num"><span id="kCapa"></span><small>l/h</small></b></div>
       </div>
       <div id="matrix"></div>
-      <div class="mleg"><span><i style="background:var(--cyan)"></i>en tournée</span><span><i style="border:1px solid var(--blue);background:rgba(91,140,255,.14)"></i>dispo</span><span><i style="border:1px dashed rgba(255,255,255,.3)"></i>absent</span></div>
+      <div class="mleg"><span><i style="background:var(--cyan)"></i>en tournée</span><span><i style="border:1px solid var(--blue);background:rgba(91,140,255,.16)"></i>disponible</span><span><i style="border:1px dashed rgba(255,255,255,.35)"></i>absent</span></div>
     </section>
-
-    <section id="grej" class="card gauge">
-      <span class="lab">Rejets du jour</span>
-      <div class="ring"><svg width="232" height="198" viewBox="0 0 270 230"></svg><div class="val"><b class="num"></b><small></small></div></div>
-      <div class="cap"></div>
-    </section>
-
-    <section id="gdec" class="card gauge">
-      <span class="lab">Décelées du jour</span>
-      <div class="ring"><svg width="232" height="198" viewBox="0 0 270 230"></svg><div class="val"><b class="num"></b><small></small></div></div>
-      <div class="cap"></div>
-    </section>
-
-    <section id="vig" class="card">
-      <span class="lab">Vigilance qualité</span>
-      <div id="chips"></div>
+    <section id="qual">
+      <div class="zh" id="qh"><span class="lab">Qualité du jour</span></div>
+      <div class="lin" id="grej"><div class="lt"><span class="lab">Rejets</span><span class="cap"></span></div><div class="lr"><b class="v num"></b><svg></svg></div></div>
+      <div class="lin" id="gdec"><div class="lt"><span class="lab">Décelées</span><span class="cap"></span></div><div class="lr"><b class="v num"></b><svg></svg></div></div>
+      <div id="vigw"><span class="lab">Vigilance opérateurs</span><div id="chips"></div></div>
     </section>
   </div>
 
-  <aside id="side"><div id="reel"></div><div id="dots"></div></aside>
+  <!-- bas : historique -->
+  <div id="hist"></div>
 </div>
 <div id="err"></div>
 
@@ -666,18 +634,17 @@ var PP_DEMO = (function () {
   var MOIS = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
   var MONO = '"JetBrains Mono","Cascadia Mono",Consolas,monospace';
   var forceDemo = /[?&]demo=1/.test(location.search);
-  var mode = 'attente', scen = 0, D = null, R = null;
+  var mode = 'attente', scen = 0, D = null, R = null, R1 = null;
 
   /* FLIP-FIT : hauteur fixe 1080, largeur = format de l'écran (16:9 mini, 3,2:1 maxi) */
-  var LARGE = false, COLS = 1;
+  var LARGE = false;
   function fit() {
     var w = window.innerWidth, h = window.innerHeight, st = $('stage');
     var W = Math.round(1080 * Math.min(Math.max(w / h, 16 / 9), 3.2));
     st.style.width = W + 'px';
     st.style.transform = 'translate(-50%,-50%) scale(' + Math.min(w / W, h / 1080) + ')';
-    LARGE = W >= 2500; COLS = LARGE ? 2 : 1;
-    st.classList.toggle('large', LARGE);
-    if (D) safeRender(true);
+    LARGE = W >= 2500;
+    if (D) safeRender();
   }
   window.addEventListener('resize', fit);
 
@@ -703,15 +670,13 @@ var PP_DEMO = (function () {
   function maintenant() { return (mode === 'demo' && D && D.maintenant) ? PP.parseDT(D.maintenant) : new Date(); }
   function pluriel(n, s, p) { return n + ' ' + (n > 1 ? p : s); }
   var COL = function (niv) { return css({ ok: '--ok', warn: '--warn', bad: '--bad', neutre: '--dim', info: '--blue' }[niv] || '--blue'); };
-  // icônes de statut : la couleur n'est jamais seule
   var ICO = {
     ok: '<svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M4 10.5l4 4 8-9" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>',
     warn: '<svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M10 3l8 14H2z" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"/><path d="M10 8v4" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/><circle cx="10" cy="14.6" r="1.2" fill="currentColor"/></svg>',
-    bad: '<svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true"><circle cx="10" cy="10" r="8" stroke="currentColor" stroke-width="2.2"/><path d="M10 5.5v5.5" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/><circle cx="10" cy="14.2" r="1.3" fill="currentColor"/></svg>',
-    info: '<svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M10 2v4M10 14v4M2 10h4M14 10h4" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/><circle cx="10" cy="10" r="2.6" stroke="currentColor" stroke-width="2.2"/></svg>'
+    bad: '<svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true"><circle cx="10" cy="10" r="8" stroke="currentColor" stroke-width="2.2"/><path d="M10 5.5v5.5" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/><circle cx="10" cy="14.2" r="1.3" fill="currentColor"/></svg>'
   };
+  ICO.neutre = ICO.ok;
 
-  /* compteur animé */
   var reduit = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
   function compte(node, v) {
     var from = node._v == null ? v : node._v; node._v = v;
@@ -725,7 +690,7 @@ var PP_DEMO = (function () {
     })(t0);
   }
 
-  /* ---------- barre du haut ---------- */
+  /* ---------- en-tête ---------- */
   var STAT = { STABLE: 'ok', TENDU: 'warn', CRITIQUE: 'bad', ATTENTE: 'neutre', FINI: 'info' };
   function horloge() {
     if (!D) return;
@@ -738,14 +703,11 @@ var PP_DEMO = (function () {
     $('date').innerHTML = j.charAt(0).toUpperCase() + j.slice(1) + '<br>' + now.getDate() + ' ' + MOIS[now.getMonth()];
     $('demo').style.display = mode === 'demo' ? 'inline-flex' : 'none';
     document.documentElement.style.setProperty('--stat', COL(STAT[R.statut]));
-
     var pz = null;
     R.pauses.forEach(function (p) { if (now >= p[0] && now < p[1]) pz = p; });
     var pe = $('pause');
     if (pz) { pe.style.display = 'inline-flex'; pe.innerHTML = '<i class="dot"></i>Pause jusqu’à <b class="num">' + hh(pz[1]) + '</b>'; }
     else pe.style.display = 'none';
-
-    // barre de poste
     var a = R.debut.getTime(), b = R.fin.getTime(), k = Math.min(1, Math.max(0, (now - a) / (b - a)));
     var rail = document.querySelector('#shift .rail');
     rail.querySelector('i').style.width = (100 * k).toFixed(1) + '%';
@@ -757,7 +719,6 @@ var PP_DEMO = (function () {
     });
     $('shA').textContent = hh(R.debut); $('shB').textContent = hh(R.fin);
     $('shT').textContent = now < R.debut ? 'prise ' + hh(R.debut) : (now < R.fin ? '−' + duree((R.fin - now) / 60000) : 'terminé');
-
     var f = $('fresh'), s = f.querySelector('span');
     if (mode === 'demo') { f.className = 'pill warn'; s.textContent = 'Données fictives'; return; }
     var g = PP.parseDT(D.genere), age = g ? (now - g) / 60000 : 99;
@@ -766,244 +727,277 @@ var PP_DEMO = (function () {
     else { f.className = 'pill bad'; s.textContent = 'Données de ' + hh(g) + ' · vérifier le PC Excel'; }
   }
 
-  /* ---------- lancées / en cours ---------- */
-  function renderLignes() {
-    compte($('nLances'), R.lances);
-    $('tLances').innerHTML = '<b class="num">' + R.nbLances + '</b> ' + (R.nbLances > 1 ? 'tournées en attente' : 'tournée en attente');
-    var c = $('couv'), ep = R.epuisement && R.statut !== 'FINI' ? ' · vide vers <b class="num">' + hh(R.epuisement) + '</b>' : '';
+  /* ---------- pipeline du flux ---------- */
+  function renderFlux() {
+    var tot = Math.max(1, R.faites + R.enCoursLogys + R.lances + R.resteALancer);
+    function st(id, v, sub) {
+      var e = $(id);
+      compte(e.querySelector('.big'), v);
+      var s = e.querySelector('.sub'); if (s) s.innerHTML = sub || '';
+      e.querySelector('.meter i').style.width = (100 * v / tot).toFixed(1) + '%';
+    }
+    var subR = R.reelSeul ? 'réel seul depuis ' + hh(R.finPrevision)
+      : (!R.totalPrevu ? 'aucune prévision saisie' : (R.resteALancer > 0 ? 'sur <b class="num">' + n0(R.totalPrevu) + '</b> prévues' : 'prévision atteinte ✓'));
+    st('stR', R.resteALancer, subR);
+    st('stL', R.lances, '<b class="num">' + R.nbLances + '</b> ' + (R.nbLances > 1 ? 'tournées en attente' : 'tournée en attente'));
+    st('stC', R.enCoursLogys, '<b class="num">' + R.nbEnCours + '</b> tournée' + (R.nbEnCours > 1 ? 's' : '') + (R.ageMoyen != null ? ' · moy. <b>' + duree(R.ageMoyen) + '</b>' : ''));
+    st('stF', R.faites, '');
+    $('pctF').innerHTML = Math.round(100 * R.faites / tot) + '<small>% DU JOUR</small>';
+    $('prevu').innerHTML = R.totalJour ? 'charge <b class="num">' + n0(R.totalJour) + '</b> l' : '';
+    var c = $('couv'), ep = R.epuisement ? ' · vide vers <b class="num">' + hh(R.epuisement) + '</b>' : '';
     if (R.couverture == null || R.statut === 'FINI') { c.className = ''; c.innerHTML = ''; }
     else if (R.couverture < 20) { c.className = 'tag bad'; c.innerHTML = ICO.bad + '<span>Moins de 20 min de travail · vague à lancer</span>'; }
     else if (R.couverture < 45) { c.className = 'tag warn'; c.innerHTML = ICO.warn + '<span>≈ ' + duree(R.couverture) + ' de travail' + ep + '</span>'; }
-    else { c.className = 'tag neutral'; c.innerHTML = '<span>≈ ' + duree(R.couverture) + ' de travail' + ep + '</span>'; }
-    var pv = $('prev');
-    if (R.reelSeul) pv.innerHTML = 'réel seul depuis ' + hh(R.finPrevision);
-    else if (!R.totalPrevu) pv.innerHTML = '';
-    else if (R.resteALancer > 0) pv.innerHTML = 'encore <b class="num">' + n0(R.resteALancer) + '</b> à lancer';
-    else pv.innerHTML = 'prévision atteinte ✓';
-
-    compte($('nEnCours'), R.enCoursLogys);
-    $('tEnCours').innerHTML = '<b class="num">' + R.nbEnCours + '</b> ' + (R.nbEnCours > 1 ? 'tournées en préparation' : 'tournée en préparation');
-    $('aEnCours').innerHTML = R.ageMoyen != null ? 'durée moy. en cours <b>' + duree(R.ageMoyen) + '</b>' : '';
-
-    var seg = [R.faites, R.enCoursLogys, R.lances, R.resteALancer];
-    var tot = seg.reduce(function (a, b) { return a + b; }, 0) || 1;
-    var bars = document.querySelectorAll('#day .bar i');
-    seg.forEach(function (v, i) { bars[i].style.flexGrow = v; bars[i].style.flexBasis = '0'; bars[i].style.display = v > 0 ? 'block' : 'none'; });
-    var items = [['Faites', R.faites, 'var(--done)'], ['En cours', R.enCoursLogys, 'var(--cyan)'], ['Lancées', R.lances, 'var(--blue)']];
-    if (R.resteALancer > 0) items.push(['À lancer', R.resteALancer, 'repeating-linear-gradient(-45deg,rgba(255,255,255,.12) 0 3px,rgba(255,255,255,.35) 3px 5px)']);
-    $('day').querySelector('.leg').innerHTML = items.map(function (x) {
-      return '<span><i style="background:' + x[2] + '"></i>' + x[0] + ' <b class="num">' + n0(x[1]) + '</b></span>';
-    }).join('') + '<span class="pct num" title="Part des lignes du jour déjà faites">' + Math.round(100 * R.faites / tot) + ' %</span>';
+    else { c.className = 'tag muted'; c.innerHTML = '<span>≈ ' + duree(R.couverture) + ' de travail' + ep + '</span>'; }
   }
 
-  /* ---------- équipe : matrice des matricules ---------- */
+  /* ---------- cadran de poste ---------- */
+  function pt(cx, cy, r, a) { a = a * Math.PI / 180; return [cx + r * Math.cos(a), cy + r * Math.sin(a)]; }
+  function arcD(cx, cy, r, a0, a1) {
+    if (a1 - a0 >= 359.9) a1 = a0 + 359.9;
+    var p = pt(cx, cy, r, a0), q = pt(cx, cy, r, a1);
+    return 'M' + p[0].toFixed(2) + ' ' + p[1].toFixed(2) + ' A' + r + ' ' + r + ' 0 ' + (a1 - a0 > 180 ? 1 : 0) + ' 1 ' + q[0].toFixed(2) + ' ' + q[1].toFixed(2);
+  }
+  function renderDial(actif) {
+    var svg = $('dial'); clear(svg);
+    var C = 340, RO = 262, S0 = 120, SW = 300, c = COL(STAT[R.statut]);
+    var a0 = R.debut.getTime(), finT = R.fin.getTime(), tEnd = finT + 90 * 60000, now = R.now.getTime();
+    var A = function (t) { return S0 + SW * Math.min(1, Math.max(0, (t - a0) / (tEnd - a0))); };
+    var defs = el('defs', {}, svg);
+    var hat = el('pattern', { id: 'dH', width: 6, height: 6, patternUnits: 'userSpaceOnUse', patternTransform: 'rotate(45)' }, defs);
+    el('rect', { width: 2.5, height: 6, fill: COL('bad'), opacity: .55 }, hat);
+    var rg = el('radialGradient', { id: 'dC' }, defs);
+    el('stop', { offset: '60%', 'stop-color': c, 'stop-opacity': .0 }, rg); el('stop', { offset: '100%', 'stop-color': c, 'stop-opacity': .14 }, rg);
+
+    // disque intérieur + anneaux décoratifs tournants
+    el('circle', { cx: C, cy: C, r: 214, fill: 'url(#dC)' }, svg);
+    el('circle', { cx: C, cy: C, r: 196, fill: 'none', stroke: 'rgba(150,175,255,.18)', 'stroke-width': 1 }, svg);
+    el('circle', { cx: C, cy: C, r: 188, fill: 'none', stroke: c, 'stroke-opacity': .35, 'stroke-width': 4, 'stroke-dasharray': '1.5 10.5', class: 'spin' }, svg);
+    el('circle', { cx: C, cy: C, r: 312, fill: 'none', stroke: 'rgba(150,175,255,.12)', 'stroke-width': 1, 'stroke-dasharray': '40 8 4 8', class: 'spin r' }, svg);
+
+    // zone de dépassement après la fin de poste
+    el('path', { d: arcD(C, C, RO, A(finT), S0 + SW), stroke: 'url(#dH)', 'stroke-width': 30, fill: 'none' }, svg);
+    // rail
+    el('path', { d: arcD(C, C, RO, S0, S0 + SW), stroke: 'rgba(255,255,255,.07)', 'stroke-width': 30, fill: 'none' }, svg);
+    // écoulé
+    if (now > a0) el('path', { d: arcD(C, C, RO, S0, A(now)), stroke: 'rgba(225,232,250,.32)', 'stroke-width': 30, fill: 'none' }, svg);
+    // travail projeté
+    if (actif && now < tEnd) {
+      var fe = R.finPrevue ? R.finPrevue.getTime() : tEnd;
+      if (fe > now) {
+        var pr = el('path', { d: arcD(C, C, RO, A(now), Math.max(A(fe), A(now) + .5)), stroke: c, 'stroke-width': 30, fill: 'none', style: 'filter:drop-shadow(0 0 14px ' + c + ')' }, svg);
+        tip(pr, 'Travail restant jusqu’à ' + (R.finPrevue ? hh(R.finPrevue) : 'au-delà'));
+      }
+    }
+    // pauses
+    R.pauses.forEach(function (p) {
+      var x = A(p[0].getTime()), y = A(p[1].getTime());
+      el('path', { d: arcD(C, C, RO, x, Math.max(y, x + .8)), stroke: '#03050A', 'stroke-width': 34, fill: 'none' }, svg);
+      el('path', { d: arcD(C, C, RO, x, Math.max(y, x + .8)), stroke: 'rgba(255,255,255,.45)', 'stroke-width': 2, fill: 'none' }, svg);
+    });
+    // graduations : quart d'heure + heures
+    var q = new Date(a0); q.setMinutes(Math.ceil(q.getMinutes() / 15) * 15, 0, 0);
+    for (; q.getTime() <= tEnd; q = new Date(q.getTime() + 15 * 60000)) {
+      var ang = A(q.getTime()), heure = q.getMinutes() === 0;
+      var i1 = pt(C, C, RO + 20, ang), i2 = pt(C, C, RO + (heure ? 32 : 25), ang);
+      el('line', { x1: i1[0], y1: i1[1], x2: i2[0], y2: i2[1], stroke: 'rgba(255,255,255,' + (heure ? .5 : .18) + ')', 'stroke-width': heure ? 2.5 : 1.5 }, svg);
+      if (heure && Math.abs(ang - A(finT)) > 7 && Math.abs(ang - S0) > 7) {
+        var lp = pt(C, C, RO + 52, ang);
+        txt(svg, lp[0], lp[1] + 6, q.getHours() + 'h', { 'text-anchor': 'middle', fill: q.getTime() > finT ? '#7a4a55' : '#9AA6BF', 'font-size': 18 });
+      }
+    }
+    // début
+    var dp = pt(C, C, RO + 52, S0);
+    txt(svg, dp[0] - 6, dp[1] + 8, hh(R.debut), { 'text-anchor': 'end', fill: '#9AA6BF', 'font-size': 18 });
+    // fin de poste
+    var fa = A(finT), f1 = pt(C, C, RO - 22, fa), f2 = pt(C, C, RO + 34, fa), fl = pt(C, C, RO + 58, fa);
+    el('line', { x1: f1[0], y1: f1[1], x2: f2[0], y2: f2[1], stroke: '#EEF3FF', 'stroke-width': 4, 'stroke-linecap': 'round' }, svg);
+    txt(svg, fl[0] + 4, fl[1] + 8, 'FIN ' + hh(R.fin), { 'text-anchor': 'start', fill: '#EEF3FF', 'font-weight': 700, 'font-size': 19 });
+    var ep = pt(C, C, RO + 52, S0 + SW);
+    txt(svg, ep[0] + 6, ep[1] + 8, '+1h30', { 'text-anchor': 'start', fill: '#7a4a55', 'font-size': 16 });
+    // +1 préparateur
+    if (actif && R1 && R1.finPrevue && R1.finPrevue.getTime() < tEnd) {
+      var rp = pt(C, C, RO, A(R1.finPrevue.getTime()));
+      tip(el('circle', { cx: rp[0], cy: rp[1], r: 8, fill: '#03050A', stroke: '#C9D2E6', 'stroke-width': 2.5, 'stroke-dasharray': '3 3' }, svg), 'Avec +1 préparateur : ' + hh(R1.finPrevue));
+    }
+    // aiguille « maintenant »
+    if (now > a0 && now < tEnd) {
+      var na = A(now), n1 = pt(C, C, 200, na), n2 = pt(C, C, RO + 18, na), nd = pt(C, C, RO, na);
+      el('line', { x1: n1[0], y1: n1[1], x2: n2[0], y2: n2[1], stroke: '#EEF3FF', 'stroke-width': 3, 'stroke-linecap': 'round', style: 'filter:drop-shadow(0 0 6px #fff)' }, svg);
+      el('circle', { cx: nd[0], cy: nd[1], r: 9, fill: '#EEF3FF' }, svg);
+    }
+    // fin estimée
+    if (actif && R.finPrevue) {
+      var fp = pt(C, C, RO, A(Math.min(R.finPrevue.getTime(), tEnd)));
+      el('circle', { cx: fp[0], cy: fp[1], r: 22, fill: c, opacity: .22 }, svg);
+      tip(el('circle', { cx: fp[0], cy: fp[1], r: 12, fill: '#03050A', stroke: c, 'stroke-width': 5 }, svg), 'Fin estimée ' + hh(R.finPrevue));
+    }
+    // anneau intérieur : part du jour déjà faite
+    var tot = Math.max(1, R.faites + R.enCoursLogys + R.lances + R.resteALancer), pf = 100 * R.faites / tot;
+    el('path', { d: arcD(C, C, 220, S0, S0 + SW), stroke: 'rgba(255,255,255,.06)', 'stroke-width': 8, fill: 'none', 'stroke-linecap': 'round' }, svg);
+    el('path', { d: arcD(C, C, 220, S0, S0 + SW * Math.max(.002, pf / 100)), stroke: css('--done'), 'stroke-width': 8, fill: 'none', 'stroke-linecap': 'round' }, svg);
+    var lb = pt(C, C, 220, S0 + SW * pf / 100);
+    if (pf > 4) el('circle', { cx: lb[0], cy: lb[1], r: 5, fill: '#EEF3FF' }, svg);
+    txt(svg, C, C + 218, Math.round(pf) + ' % FAIT', { 'text-anchor': 'middle', fill: '#9AA6BF', 'font-size': 16, 'letter-spacing': 3 });
+  }
+
+  /* ---------- cœur : statut + fin estimée ---------- */
+  var TXT = { STABLE: 'Stable', TENDU: 'Tendu', CRITIQUE: 'Critique', ATTENTE: 'En attente', FINI: 'Terminé' };
+  function renderFin() {
+    var actif = R.statut !== 'FINI' && R.statut !== 'ATTENTE';
+    R1 = actif ? PP.renfort(D, R.now, 1) : null;
+    $('fin').className = STAT[R.statut];
+    $('fin').style.cursor = mode === 'demo' ? 'pointer' : 'default';
+    $('pill').className = 'tag ' + STAT[R.statut];
+    $('pill').querySelector('span').textContent = TXT[R.statut].toUpperCase();
+    var m = $('manque'); m.innerHTML = '';
+    if (R.statut === 'ATTENTE') { $('finp').innerHTML = '—'; $('finsub').textContent = 'saisir la prévision'; }
+    else if (R.statut === 'FINI') { $('finp').innerHTML = n0(R.faites); $('finsub').textContent = 'lignes préparées'; }
+    else {
+      $('finp').innerHTML = R.finPrevue ? hhBig(R.finPrevue) : '+6<span class="h">h</span>';
+      $('finsub').innerHTML = R.ecart == null ? '' : (R.ecart > 0 ? '<span class="r">+' + duree(R.ecart) + ' de retard</span>'
+        : (R.ecart < 0 ? '<span class="g">' + duree(-R.ecart) + '</span> d’avance' : 'pile à l’heure'));
+      var manque = Math.max(0, R.restant - R.realisableAvantFin);
+      if (R.statut === 'CRITIQUE' && manque > 0) m.innerHTML = '≈ <b class="r num">' + n0(manque) + '</b> lignes non faites à ' + hh(R.fin);
+      else if (R.restant > 0) m.innerHTML = 'Reste <b class="num">' + n0(R.restant) + '</b> l à <b class="num">' + n0(R.capaNow) + '</b> l/h';
+    }
+    renderDial(actif);
+    renderReco(actif);
+    renderTraj(actif);
+  }
+  function renderReco(actif) {
+    var e = $('reco'); e.className = ''; e.innerHTML = '';
+    if (!actif) return;
+    if (R.statut === 'CRITIQUE') {
+      var k = 0;
+      for (var i = 1; i <= 8; i++) { var Rk = PP.renfort(D, R.now, i); if (Rk.finPrevue && Rk.finPrevue <= R.fin) { k = i; break; } }
+      e.className = 'tag bad';
+      e.innerHTML = ICO.bad + '<span>' + (k ? 'Renfort +' + k + ' préparateur' + (k > 1 ? 's' : '') + ' → fin ' + hh(R.fin) : 'Même +8 préparateurs ne suffisent pas') + '</span>';
+    } else if (R.statut === 'TENDU') {
+      e.className = 'tag warn';
+      e.innerHTML = ICO.warn + '<span>' + (R1 && R1.finPrevue ? '+1 préparateur → fin ' + hh(R1.finPrevue) + ' (−' + duree((R.finPrevue - R1.finPrevue) / 60000) + ')' : 'Marge nulle') + '</span>';
+    } else {
+      var Rm = PP.renfort(D, R.now, -1);
+      e.className = 'tag ok';
+      e.innerHTML = ICO.ok + '<span>' + (Rm.finPrevue && Rm.finPrevue < R.fin ? '−1 préparateur possible → fin ' + hh(Rm.finPrevue) : 'Marge ' + duree(R.ecart != null ? -R.ecart : 0)) + '</span>';
+    }
+  }
+
+  /* trajectoire : lignes restantes de maintenant à la fin estimée */
+  function renderTraj(actif) {
+    var box = $('traj'), svg = box.querySelector('svg'); clear(svg);
+    var W = box.clientWidth, H = box.clientHeight;
+    if (W < 50 || H < 50) return;
+    var c = COL(STAT[R.statut]), padL = 4, padR = 8, top = 22, bot = 24, base = H - bot;
+    if (!actif || !R.courbe || R.courbe.length < 2) {
+      txt(svg, W / 2, H / 2, R.statut === 'FINI' ? 'Poste terminé · ' + n0(R.faites) + ' lignes' : 'Trajectoire disponible dès la saisie de la prévision', { 'text-anchor': 'middle', fill: '#5D6884', 'font-size': 16 });
+      return;
+    }
+    var t0 = R.courbe[0].t.getTime(), tEnd = R.fin.getTime() + 20 * 60000;
+    tEnd = R.finPrevue ? Math.max(tEnd, R.finPrevue.getTime() + 12 * 60000) : Math.max(tEnd, R.fin.getTime() + 90 * 60000);
+    if (R1 && R1.finPrevue) tEnd = Math.max(tEnd, R1.finPrevue.getTime() + 8 * 60000);
+    var vmax = Math.max(1, R.courbe[0].r) * 1.08;
+    var X = function (t) { return padL + (W - padL - padR) * (Math.min(t, tEnd) - t0) / (tEnd - t0); };
+    var Y = function (v) { return top + (base - top) * (1 - v / vmax); };
+    var defs = el('defs', {}, svg);
+    var ga = el('linearGradient', { id: 'trA', x1: 0, x2: 0, y1: 0, y2: 1 }, defs);
+    el('stop', { offset: 0, 'stop-color': c, 'stop-opacity': .3 }, ga); el('stop', { offset: 1, 'stop-color': c, 'stop-opacity': 0 }, ga);
+    var hat = el('pattern', { id: 'trH', width: 8, height: 8, patternUnits: 'userSpaceOnUse', patternTransform: 'rotate(45)' }, defs);
+    el('rect', { width: 3, height: 8, fill: 'rgba(255,255,255,.07)' }, hat);
+    var hatB = el('pattern', { id: 'trB', width: 8, height: 8, patternUnits: 'userSpaceOnUse', patternTransform: 'rotate(-45)' }, defs);
+    el('rect', { width: 3, height: 8, fill: COL('bad'), opacity: .22 }, hatB);
+    el('line', { x1: padL, x2: W - padR, y1: base + .5, y2: base + .5, stroke: 'rgba(255,255,255,.16)' }, svg);
+    var fx = X(R.fin.getTime());
+    if (R.statut === 'CRITIQUE' && fx < W - padR) {
+      el('rect', { x: fx, y: top - 6, width: W - padR - fx, height: base - top + 6, fill: 'url(#trB)' }, svg);
+      txt(svg, fx + 10, top + 10, 'RETARD', { fill: COL('bad'), 'font-weight': 700, 'font-size': 13 });
+    }
+    R.pauses.forEach(function (p) {
+      if (p[1].getTime() <= t0) return;
+      var a = X(Math.max(p[0].getTime(), t0)), b = X(p[1].getTime());
+      if (b - a < 1) return;
+      el('rect', { x: a, y: top - 6, width: b - a, height: base - top + 6, fill: 'url(#trH)' }, svg);
+    });
+    var hr = new Date(t0); hr.setMinutes(0, 0, 0); hr.setHours(hr.getHours() + 1);
+    for (; hr.getTime() < tEnd; hr.setHours(hr.getHours() + 1)) {
+      var xh = X(hr.getTime());
+      if (xh < 30 || Math.abs(xh - fx) < 46) continue;
+      txt(svg, xh, H - 4, hr.getHours() + 'h', { 'text-anchor': 'middle', fill: '#5D6884', 'font-size': 14 });
+    }
+    function chemin(cb) { return cb.map(function (p, i) { return (i ? 'L' : 'M') + X(p.t.getTime()).toFixed(1) + ' ' + Y(p.r).toFixed(1); }).join(' '); }
+    if (R1 && R1.courbe && R1.finPrevue) tip(el('path', { d: chemin(R1.courbe), fill: 'none', stroke: '#C9D2E6', 'stroke-width': 2, 'stroke-dasharray': '5 6', opacity: .7 }, svg), 'Avec +1 préparateur : fin ' + hh(R1.finPrevue));
+    var d = chemin(R.courbe), last = R.courbe[R.courbe.length - 1];
+    el('path', { d: d + ' L' + X(last.t.getTime()).toFixed(1) + ' ' + base + ' L' + X(t0) + ' ' + base + ' Z', fill: 'url(#trA)' }, svg);
+    tip(el('path', { d: d, fill: 'none', stroke: c, 'stroke-width': 3, 'stroke-linejoin': 'round', style: 'filter:drop-shadow(0 0 6px ' + c + ')' }, svg), 'Reste ' + n0(R.restant) + ' lignes');
+    el('line', { x1: fx, x2: fx, y1: top - 8, y2: base + 6, stroke: '#EEF3FF', 'stroke-width': 2, 'stroke-dasharray': '3 5', opacity: .8 }, svg);
+    txt(svg, fx, H - 4, hh(R.fin), { 'text-anchor': 'middle', fill: '#EEF3FF', 'font-weight': 700, 'font-size': 14 });
+    txt(svg, X(t0) + 12, Y(R.courbe[0].r) + 5, n0(R.restant) + ' l', { fill: '#EEF3FF', 'font-weight': 700, 'font-size': 14 });
+    el('circle', { cx: X(t0), cy: Y(R.courbe[0].r), r: 5, fill: '#EEF3FF' }, svg);
+    if (R.finPrevue) el('circle', { cx: X(R.finPrevue.getTime()), cy: base, r: 7, fill: '#03050A', stroke: c, 'stroke-width': 3.5 }, svg);
+    // légende (2 séries)
+    txt(svg, W - padR, 10, '━ équipe actuelle   ┅ +1 préparateur', { 'text-anchor': 'end', fill: '#5D6884', 'font-size': 13 });
+  }
+
+  /* ---------- équipe ---------- */
   function renderEquipe() {
     compte($('kPres'), R.presents); compte($('kTour'), R.enTournee); compte($('kCapa'), R.capaNow);
     var enT = {};
     (D.tours || []).forEach(function (t) { if (t.k === 'C' && t.op) enT[t.op] = 1; });
     var rang = function (e) { return e.present === true ? (enT[e.mat] ? 0 : 1) : 2; };
     var list = (D.equipe || []).slice().sort(function (a, b) { return rang(a) - rang(b) || String(a.mat).localeCompare(String(b.mat)); });
-    var MAX = 30, html = list.slice(0, list.length > MAX ? MAX - 1 : MAX).map(function (e) {
-      var r = rang(e), cls = ['t', 'p', 'o'][r];
-      var etat = ['en tournée', 'disponible', e.sorti ? 'sorti à ' + e.sorti : (e.revenu ? 'revient à ' + e.revenu : 'absent')][r];
-      return '<i class="' + cls + '" title="' + e.mat + ' · ' + (e.role || '') + ' · ' + etat + '">' + e.mat + '</i>';
+    var MAX = LARGE ? 60 : 32;
+    var html = list.slice(0, list.length > MAX ? MAX - 1 : MAX).map(function (e) {
+      var r = rang(e), etat = ['en tournée', 'disponible', e.sorti ? 'sorti à ' + e.sorti : (e.revenu ? 'revient à ' + e.revenu : 'absent')][r];
+      return '<i class="' + ['t', 'p', 'o'][r] + '" title="' + e.mat + ' · ' + (e.role || '') + ' · ' + etat + '">' + e.mat + '</i>';
     }).join('');
     if (list.length > MAX) html += '<i class="more">+' + (list.length - MAX + 1) + '</i>';
     $('matrix').innerHTML = html;
   }
 
-  /* ---------- jauges anneau (270°) ---------- */
-  function pt(cx, cy, r, a) { a = a * Math.PI / 180; return [cx + r * Math.cos(a), cy + r * Math.sin(a)]; }
-  function arcD(cx, cy, r, a0, a1) {
-    var p = pt(cx, cy, r, a0), q = pt(cx, cy, r, a1);
-    return 'M' + p[0].toFixed(2) + ' ' + p[1].toFixed(2) + ' A' + r + ' ' + r + ' 0 ' + (a1 - a0 > 180 ? 1 : 0) + ' 1 ' + q[0].toFixed(2) + ' ' + q[1].toFixed(2);
-  }
-  function renderGauge(id, q, o, r) {
-    var tile = $(id), svg = tile.querySelector('svg');
-    tile.className = 'card gauge ' + q.niv;
-    var cx = 135, cy = 122, rad = 96, A0 = 135, SW = 270;
+  /* ---------- qualité : jauges linéaires ---------- */
+  function renderLin(id, q, o, r) {
+    var box = $(id), svg = box.querySelector('.lr svg'); clear(svg);
+    box.className = 'lin ' + q.niv;
+    var W = svg.clientWidth || 300, H = 58, y = 16, th = 16;
     var max = Math.max(Math.ceil(r * 1.45 / 10) * 10, (q.proj || q.n) * 1.1);
-    var A = function (v) { return A0 + SW * Math.min(Math.max(v, 0), max) / max; };
-    var prev = tile._pct || 0; clear(svg);
-    var defs = el('defs', {}, svg), gid = id + 'g';
-    var lg = el('linearGradient', { id: gid, x1: 0, y1: 1, x2: 1, y2: 0 }, defs);
-    el('stop', { offset: 0, 'stop-color': COL(q.niv), 'stop-opacity': .55 }, lg); el('stop', { offset: 1, 'stop-color': COL(q.niv) }, lg);
-    // graduations HUD
-    for (var g = 0; g <= 36; g++) {
-      var ag = A0 + SW * g / 36, a1 = pt(cx, cy, rad - 18, ag), a2 = pt(cx, cy, rad - (g % 6 ? 22 : 27), ag);
-      el('line', { x1: a1[0], y1: a1[1], x2: a2[0], y2: a2[1], stroke: 'rgba(255,255,255,' + (g % 6 ? .12 : .3) + ')', 'stroke-width': g % 6 ? 1.5 : 2.2 }, svg);
+    var X = function (v) { return W * Math.min(Math.max(v, 0), max) / max; };
+    el('rect', { x: 0, y: y, width: W, height: th, rx: 3, fill: 'rgba(255,255,255,.06)' }, svg);
+    // segments graduels (style « LED »)
+    var nSeg = Math.floor(W / 9), segW = W / nSeg;
+    for (var i = 0; i < nSeg; i++) {
+      var v0 = max * i / nSeg; if (v0 >= q.n) break;
+      el('rect', { x: i * segW + 1, y: y + 2, width: segW - 2.5, height: th - 4, rx: 1, fill: COL(v0 >= r ? 'bad' : (v0 >= o ? 'warn' : 'ok')), opacity: .9 }, svg);
     }
-    // rail
-    el('path', { d: arcD(cx, cy, rad, A0, A0 + SW), stroke: 'rgba(255,255,255,.07)', 'stroke-width': 18, fill: 'none', 'stroke-linecap': 'round' }, svg);
-    // zones de seuils (fin liseré extérieur)
+    // zones
     [[0, o, 'ok'], [o, r, 'warn'], [r, max, 'bad']].forEach(function (z) {
-      var a0 = A(z[0]) + (z[0] ? 1.5 : 0), a1 = A(z[1]) - (z[1] < max ? 1.5 : 0);
-      if (a1 > a0) el('path', { d: arcD(cx, cy, rad + 19, a0, a1), stroke: COL(z[2]), 'stroke-width': 4, fill: 'none', 'stroke-linecap': 'round', opacity: .8 }, svg);
+      el('rect', { x: X(z[0]) + (z[0] ? 2 : 0), y: y + th + 6, width: Math.max(0, X(z[1]) - X(z[0]) - (z[0] ? 2 : 0)), height: 3, rx: 1.5, fill: COL(z[2]), opacity: .7 }, svg);
     });
     [o, r].forEach(function (v) {
-      var p = pt(cx, cy, rad + 40, A(v));
-      txt(svg, p[0], p[1] + 6, String(v), { 'text-anchor': 'middle', 'font-size': 16, fill: '#9AA6BF' });
+      el('line', { x1: X(v), x2: X(v), y1: y - 4, y2: y + th + 9, stroke: 'rgba(255,255,255,.35)', 'stroke-width': 1.5 }, svg);
+      txt(svg, X(v), H, String(v), { 'text-anchor': 'middle', 'font-size': 14 });
     });
-    // valeur (arc animé)
-    var pct = 100 * (A(q.n) - A0) / SW;
-    var va = el('path', { d: arcD(cx, cy, rad, A0, A0 + SW), pathLength: 100, stroke: 'url(#' + gid + ')', 'stroke-width': 18, fill: 'none',
-      'stroke-linecap': 'round', class: 'arcv', 'stroke-dasharray': (q.n > 0 ? Math.max(prev, .01) : 0) + ' 100',
-      style: 'filter:drop-shadow(0 0 10px ' + COL(q.niv) + '88)' }, svg);
-    requestAnimationFrame(function () { requestAnimationFrame(function () { va.setAttribute('stroke-dasharray', (q.n > 0 ? Math.max(pct, .01) : 0) + ' 100'); }); });
-    tile._pct = pct;
-    // projection : repère blanc sur le liseré
     if (q.proj != null) {
-      var pp = pt(cx, cy, rad + 19, A(q.proj));
-      tip(el('circle', { cx: pp[0], cy: pp[1], r: 8, fill: '#EEF3FF', stroke: '#04060C', 'stroke-width': 3 }, svg), 'Projection fin de poste : ' + q.proj);
+      var px = X(q.proj);
+      tip(el('path', { d: 'M' + px + ' ' + (y - 2) + ' l-7 -10 h14 z', fill: '#EEF3FF' }, svg), 'Projection fin de poste : ' + q.proj);
     }
-    compte(tile.querySelector('.val b'), q.n);
-    tile.querySelector('.val small').textContent = 'aujourd’hui';
-    tile.querySelector('.cap').innerHTML = q.proj != null
-      ? '<b class="num">≈ ' + q.proj + '</b> à ' + hh(R.fin) + ' à ce rythme'
-      : 'projection après 300 lignes faites';
+    compte(box.querySelector('.v'), q.n);
+    box.querySelector('.cap').innerHTML = q.proj != null ? (q.niv !== 'ok' ? ICO[q.niv].replace('width="20" height="20"', 'width="16" height="16" style="vertical-align:-2px;color:var(--c)"') + ' ' : '') +
+      '▼ <b class="num">≈ ' + q.proj + '</b> à ' + hh(R.fin) : 'projection après 300 lignes';
   }
-
-  /* ---------- fin estimée ---------- */
-  var TXT = { STABLE: 'Stable', TENDU: 'Tendu', CRITIQUE: 'Critique', ATTENTE: 'En attente', FINI: 'Terminé' };
-  var R1 = null;
-  function renderFin() {
-    $('fin').className = 'card ' + STAT[R.statut];
-    $('fin').style.cursor = mode === 'demo' ? 'pointer' : 'default';
-    $('pill').querySelector('span').textContent = TXT[R.statut].toUpperCase();
-    var m = $('manque'); m.innerHTML = '';
-    var actif = R.statut !== 'FINI' && R.statut !== 'ATTENTE';
-    R1 = actif ? PP.renfort(D, R.now, 1) : null;
-    if (R.statut === 'ATTENTE') { $('finp').innerHTML = '—'; $('finsub').textContent = 'Saisis les lignes prévues pour l’estimation'; }
-    else if (R.statut === 'FINI') { $('finp').innerHTML = n0(R.faites); $('finsub').textContent = 'lignes préparées aujourd’hui'; }
-    else {
-      $('finp').innerHTML = R.finPrevue ? hhBig(R.finPrevue) : '+6<span class="h">h</span>';
-      $('finsub').innerHTML = 'Fin de poste <b class="num">' + hh(R.fin) + '</b>' +
-        (R.ecart != null && R.ecart > 0 ? ' · <span id="retard">+' + duree(R.ecart) + '</span>'
-          : (R.ecart != null && R.ecart < 0 ? ' · <b class="num">' + duree(-R.ecart) + '</b> d’avance' : ''));
-      var manque = Math.max(0, R.restant - R.realisableAvantFin);
-      if (R.statut === 'CRITIQUE' && manque > 0) m.innerHTML = '≈ <b class="r num">' + n0(manque) + '</b> lignes non faites à ' + hh(R.fin);
-      else if (R.restant > 0) m.innerHTML = 'Reste <b class="num">' + n0(R.restant) + '</b> lignes à <b class="num">' + n0(R.capaNow) + '</b> l/h';
-    }
-    renderReco(actif);
-    renderTraj(actif);
-  }
-
-  /* recommandation d'effectif issue de la simulation */
-  function renderReco(actif) {
-    var e = $('reco'); e.className = ''; e.innerHTML = '';
-    $('legR').style.display = actif && R1 && R1.finPrevue ? 'flex' : 'none';
-    if (!actif) return;
-    if (R.statut === 'CRITIQUE') {
-      var k = 0, Rk = null;
-      for (var i = 1; i <= 8; i++) { Rk = PP.renfort(D, R.now, i); if (Rk.finPrevue && Rk.finPrevue <= R.fin) { k = i; break; } }
-      e.className = 'tag bad';
-      e.innerHTML = ICO.bad + '<span>' + (k ? 'Renfort +' + k + ' préparateur' + (k > 1 ? 's' : '') + ' → fin ' + hh(R.fin)
-                                 : 'Même +8 préparateurs ne suffisent pas') + '</span>';
-    } else if (R.statut === 'TENDU') {
-      e.className = 'tag warn';
-      e.innerHTML = ICO.warn + '<span>' + (R1.finPrevue ? '+1 préparateur → fin ' + hh(R1.finPrevue) + ' (−' + duree((R.finPrevue - R1.finPrevue) / 60000) + ')' : 'Marge nulle') + '</span>';
-    } else {
-      var Rm = PP.renfort(D, R.now, -1);
-      var marge = R.ecart != null ? -R.ecart : 0;
-      if (Rm.finPrevue && Rm.finPrevue < R.fin) { e.className = 'tag ok'; e.innerHTML = ICO.ok + '<span>−1 préparateur possible → fin ' + hh(Rm.finPrevue) + '</span>'; }
-      else { e.className = 'tag ok'; e.innerHTML = ICO.ok + '<span>Marge ' + duree(marge) + '</span>'; }
-    }
-  }
-
-  /* trajectoire : lignes restantes de maintenant jusqu'à la fin estimée */
-  function renderTraj(actif) {
-    var box = $('traj'), svg = box.querySelector('svg'); clear(svg);
-    var W = box.clientWidth, H = box.clientHeight;
-    if (W < 50 || H < 50) return;
-    var c = COL(STAT[R.statut]);
-    var padL = 4, padR = 8, top = 26, bot = 26, base = H - bot;
-    if (!actif || !R.courbe || R.courbe.length < 2) {
-      txt(svg, W / 2, H / 2, R.statut === 'FINI' ? 'Poste terminé · ' + n0(R.faites) + ' lignes' : 'Trajectoire disponible dès la saisie de la prévision',
-        { 'text-anchor': 'middle', fill: '#5D6884', 'font-size': 17 });
-      return;
-    }
-    var t0 = R.courbe[0].t.getTime();
-    var tEnd = R.fin.getTime() + 20 * 60000;
-    if (R.finPrevue) tEnd = Math.max(tEnd, R.finPrevue.getTime() + 12 * 60000);
-    else tEnd = Math.max(tEnd, R.fin.getTime() + 90 * 60000);
-    if (R1 && R1.finPrevue) tEnd = Math.max(tEnd, R1.finPrevue.getTime() + 8 * 60000);
-    var vmax = Math.max(1, R.courbe[0].r) * 1.08;
-    var X = function (t) { return padL + (W - padL - padR) * (Math.min(t, tEnd) - t0) / (tEnd - t0); };
-    var Y = function (v) { return top + (base - top) * (1 - v / vmax); };
-
-    var defs = el('defs', {}, svg);
-    var ga = el('linearGradient', { id: 'trA', x1: 0, x2: 0, y1: 0, y2: 1 }, defs);
-    el('stop', { offset: 0, 'stop-color': c, 'stop-opacity': .32 }, ga); el('stop', { offset: 1, 'stop-color': c, 'stop-opacity': 0 }, ga);
-    var hat = el('pattern', { id: 'trH', width: 8, height: 8, patternUnits: 'userSpaceOnUse', patternTransform: 'rotate(45)' }, defs);
-    el('rect', { width: 3, height: 8, fill: 'rgba(255,255,255,.07)' }, hat);
-    var hatB = el('pattern', { id: 'trB', width: 8, height: 8, patternUnits: 'userSpaceOnUse', patternTransform: 'rotate(-45)' }, defs);
-    el('rect', { width: 3, height: 8, fill: COL('bad'), opacity: .22 }, hatB);
-
-    // grille récessive
-    [.5, 1].forEach(function (k) {
-      var y = Y(vmax / 1.08 * k);
-      el('line', { x1: padL, x2: W - padR, y1: y, y2: y, stroke: 'rgba(255,255,255,.06)', 'stroke-dasharray': '2 6' }, svg);
-    });
-    el('line', { x1: padL, x2: W - padR, y1: base + .5, y2: base + .5, stroke: 'rgba(255,255,255,.16)' }, svg);
-    // zone de retard après la fin de poste
-    var fx = X(R.fin.getTime());
-    if (R.statut === 'CRITIQUE' && fx < W - padR) {
-      el('rect', { x: fx, y: top - 6, width: W - padR - fx, height: base - top + 6, fill: 'url(#trB)' }, svg);
-      txt(svg, Math.min(W - padR - 4, fx + 10), top + 10, 'RETARD', { fill: COL('bad'), 'font-weight': 700, 'font-size': 14 });
-    }
-    // pauses
-    R.pauses.forEach(function (p) {
-      var a = X(Math.max(p[0].getTime(), t0)), b = X(p[1].getTime());
-      if (p[1].getTime() <= t0 || b - a < 1) return;
-      el('rect', { x: a, y: top - 6, width: b - a, height: base - top + 6, fill: 'url(#trH)' }, svg);
-      if (b - a > 34) txt(svg, (a + b) / 2, base - 8, 'pause', { 'text-anchor': 'middle', fill: '#5D6884', 'font-size': 13 });
-    });
-    // repères horaires
-    var hr = new Date(t0); hr.setMinutes(0, 0, 0); hr.setHours(hr.getHours() + 1);
-    for (; hr.getTime() < tEnd; hr.setHours(hr.getHours() + 1)) {
-      var xh = X(hr.getTime());
-      if (xh < 30 || Math.abs(xh - fx) < 46) continue;
-      el('line', { x1: xh, x2: xh, y1: base, y2: base + 5, stroke: 'rgba(255,255,255,.25)', 'stroke-width': 1.5 }, svg);
-      txt(svg, xh, H - 4, hr.getHours() + 'h', { 'text-anchor': 'middle', fill: '#5D6884', 'font-size': 14 });
-    }
-    // courbe +1 préparateur (pointillés)
-    function chemin(cb) { return cb.map(function (p, i) { return (i ? 'L' : 'M') + X(p.t.getTime()).toFixed(1) + ' ' + Y(p.r).toFixed(1); }).join(' '); }
-    if (R1 && R1.courbe && R1.finPrevue) {
-      var p1 = el('path', { d: chemin(R1.courbe), fill: 'none', stroke: '#C9D2E6', 'stroke-width': 2, 'stroke-dasharray': '5 6', opacity: .75 }, svg);
-      tip(p1, 'Avec +1 préparateur : fin ' + hh(R1.finPrevue));
-    }
-    // courbe actuelle : aire + trait
-    var d = chemin(R.courbe), last = R.courbe[R.courbe.length - 1];
-    el('path', { d: d + ' L' + X(last.t.getTime()).toFixed(1) + ' ' + base + ' L' + X(t0) + ' ' + base + ' Z', fill: 'url(#trA)' }, svg);
-    var ln = el('path', { d: d, fill: 'none', stroke: c, 'stroke-width': 3, 'stroke-linejoin': 'round', style: 'filter:drop-shadow(0 0 6px ' + c + ')' }, svg);
-    tip(ln, 'Reste ' + n0(R.restant) + ' lignes · fin estimée ' + (R.finPrevue ? hh(R.finPrevue) : 'au-delà de +6h'));
-    // fin de poste
-    el('line', { x1: fx, x2: fx, y1: top - 10, y2: base + 6, stroke: '#EEF3FF', 'stroke-width': 2, 'stroke-dasharray': '3 5', opacity: .8 }, svg);
-    txt(svg, fx, top - 12, hh(R.fin), { 'text-anchor': fx > W - 40 ? 'end' : 'middle', fill: '#EEF3FF', 'font-weight': 700, 'font-size': 15 });
-    // départ (maintenant) et étiquette du reste
-    el('circle', { cx: X(t0), cy: Y(R.courbe[0].r), r: 6, fill: '#EEF3FF' }, svg);
-    txt(svg, X(t0) + 12, Y(R.courbe[0].r) + 5, n0(R.restant) + ' l', { fill: '#EEF3FF', 'font-weight': 700, 'font-size': 15 });
-    // arrivée
-    if (R.finPrevue) {
-      var ex = X(R.finPrevue.getTime());
-      el('circle', { cx: ex, cy: base, r: 12, fill: c, opacity: .2 }, svg);
-      el('circle', { cx: ex, cy: base, r: 7, fill: '#04060C', stroke: c, 'stroke-width': 3.5 }, svg);
-    }
-  }
-
-  /* ---------- vigilance ---------- */
   function renderVig() {
-    var v = R.vigilance, box = $('chips'), tile = $('vig');
-    if (!v.length) { tile.className = 'card ok'; box.innerHTML = '<span class="calm">Aucun opérateur en vigilance aujourd’hui ✓</span>'; return; }
-    tile.className = 'card ' + (v.some(function (x) { return x.niv === 'bad'; }) ? 'bad' : 'warn');
-    var max = LARGE ? 10 : 7, h = v.slice(0, max).map(function (x) {
-      return '<div class="chip ' + x.niv + '" style="color:var(--' + x.niv + ')">' + ICO[x.niv] + '<b class="num" style="color:var(--text)">' + x.mat + '</b><span>' + pluriel(x.n, 'décelée', 'décelées') + '</span></div>';
+    var v = R.vigilance, box = $('chips');
+    var niv = !v.length ? 'ok' : (v.some(function (x) { return x.niv === 'bad'; }) ? 'bad' : 'warn');
+    var pire = [R.rejets.niv, R.decelees.niv, niv].indexOf('bad') >= 0 ? 'bad' : ([R.rejets.niv, R.decelees.niv, niv].indexOf('warn') >= 0 ? 'warn' : 'ok');
+    $('qual').className = pire;
+    if (!v.length) { box.innerHTML = '<span class="calm">Aucun opérateur en vigilance ✓</span>'; return; }
+    var max = LARGE ? 10 : 6, h = v.slice(0, max).map(function (x) {
+      return '<div class="chip ' + x.niv + '">' + ICO[x.niv] + '<b class="num">' + x.mat + '</b><span>' + pluriel(x.n, 'décelée', 'décelées') + '</span></div>';
     }).join('');
-    if (v.length > max) h += '<span class="calm">+ ' + (v.length - max) + ' autres</span>';
+    if (v.length > max) h += '<span class="calm">+ ' + (v.length - max) + '</span>';
     box.innerHTML = h;
   }
 
-  /* ---------- historique (colonne de droite) ---------- */
+  /* ---------- historique ---------- */
   function cartes() {
     var S = D.seuils, out = [], hist = D.hist || [], dm = D.dec_mois || [], mois = D.mois || {}, nm = mois.nom || 'Mois';
     function nivProd(v) { return v >= S.obj_lignes_op ? 'ok' : (v >= .9 * S.obj_lignes_op ? 'warn' : 'bad'); }
@@ -1013,133 +1007,86 @@ var PP_DEMO = (function () {
     if (hist.length) {
       var hp = hist[hist.length - 1];
       var okProd = hist.filter(function (x) { return x.prod >= S.obj_lignes_op; }).length;
-      out.push({ h: 'Productivité', per: 'Lignes / jour / opérateur · 30 j', unit: '',
+      out.push({ h: 'Productivité', per: 'lignes/j/op · 30 j', unit: '',
         k: [['Hier', hp.prod, nivProd(hp.prod)], [nm, mois.prod, nivProd(mois.prod)]],
-        line: 'Objectif ' + S.obj_lignes_op + ' atteint ' + okProd + ' jours sur ' + hist.length,
+        line: 'objectif atteint ' + okProd + ' j / ' + hist.length,
         data: hist.map(function (x) { return { d: x.d, v: x.prod, niv: nivProd(x.prod) }; }), obj: S.obj_lignes_op, zoom: true });
-      out.push({ h: 'Erreurs avérées', per: 'PPM · 30 j', unit: 'ppm',
+      out.push({ h: 'Erreurs avérées', per: 'ppm · 30 j', unit: 'ppm',
         k: [['Hier', hp.ppm, nivPpm(hp.ppm)], [nm, mois.ppm, nivPpm(mois.ppm)]],
-        line: hp.ppm > 0 ? 'Hier : 1 erreur toutes les ' + n0(1e6 / hp.ppm) + ' lignes · plafond ' + S.obj_ppm_averee : 'Hier : aucune erreur avérée ✓',
+        line: hp.ppm > 0 ? 'hier : 1 erreur / ' + n0(1e6 / hp.ppm) + ' lignes' : 'hier : aucune erreur ✓',
         data: hist.map(function (x) { return { d: x.d, v: x.ppm, niv: nivPpm(x.ppm) }; }), obj: S.obj_ppm_averee });
       if (hist.some(function (x) { return x.rej != null; })) {
         var hr = hist.filter(function (x) { return x.rej != null; }), moyR = hr.reduce(function (s, x) { return s + x.rej; }, 0) / hr.length;
-        out.push({ h: 'Rejets', per: 'Par jour · 30 j', unit: '',
-          k: [['Hier', hr[hr.length - 1].rej, nivRej(hr[hr.length - 1].rej)], ['Moyenne', Math.round(moyR), nivRej(moyR)]],
-          line: 'Vert sous ' + S.rej_orange + ' · rouge au-dessus de ' + S.rej_rouge,
+        out.push({ h: 'Rejets', per: 'par jour · 30 j', unit: '',
+          k: [['Hier', hr[hr.length - 1].rej, nivRej(hr[hr.length - 1].rej)], ['Moy.', Math.round(moyR), nivRej(moyR)]],
+          line: 'vert sous ' + S.rej_orange + ' · rouge > ' + S.rej_rouge,
           data: hr.map(function (x) { return { d: x.d, v: x.rej, niv: nivRej(x.rej) }; }), obj: S.rej_orange, zoom: true });
       }
     }
     if (dm.length) {
       var moy = dm.reduce(function (s, x) { return s + x.n; }, 0) / dm.length;
-      out.push({ h: 'Décelées', per: 'Par jour · mois en cours', unit: '',
-        k: [['Hier', dm[dm.length - 1].n, nivDec(dm[dm.length - 1].n)], ['Moyenne', Math.round(moy), nivDec(moy)]],
-        line: 'Orange dès ' + S.dec_orange + ' · rouge dès ' + S.dec_rouge,
+      out.push({ h: 'Décelées', per: 'par jour · mois', unit: '',
+        k: [['Hier', dm[dm.length - 1].n, nivDec(dm[dm.length - 1].n)], ['Moy.', Math.round(moy), nivDec(moy)]],
+        line: 'orange ≥ ' + S.dec_orange + ' · rouge ≥ ' + S.dec_rouge,
         data: dm.map(function (x) { return { d: x.d, v: x.n, niv: nivDec(x.n) }; }), obj: S.dec_orange });
     }
     return out;
   }
-  function carteHTML(c) {
-    return '<div class="card hcard ' + c.k[0][2] + '"><h2>' + c.h + '</h2><div class="per">' + c.per + '</div>' +
-      '<div class="kpis">' + c.k.map(function (k) {
-        return '<div class="kpi"><div class="lab">' + k[0] + '</div><div class="v num" style="color:var(--' + k[2] + ')">' +
-          (k[1] == null ? '—' : n0(k[1])) + (c.unit ? '<small>' + c.unit + '</small>' : '') + '</div></div>';
-      }).join('') + '</div><div class="line">' + c.line + '</div><svg width="380" height="150"></svg></div>';
+  function renderHist() {
+    var cs = cartes(), box = $('hist');
+    if (!cs.length) { box.innerHTML = '<div class="hc"><div><h2>Historique</h2><div class="per">indisponible dans data.js</div></div></div>'; return; }
+    box.style.gridTemplateColumns = 'repeat(' + cs.length + ',minmax(0,1fr))';
+    box.innerHTML = cs.map(function (c) {
+      return '<div class="hc ' + c.k[0][2] + '"><div><h2>' + c.h + '</h2><div class="per">' + c.per + '</div><div class="k">' +
+        c.k.map(function (k) { return '<div><span>' + k[0] + '</span><b class="num" style="color:var(--' + k[2] + ')">' + (k[1] == null ? '—' : n0(k[1])) + (c.unit ? '<small>' + c.unit + '</small>' : '') + '</b></div>'; }).join('') +
+        '</div></div><div class="ch"><svg></svg><div class="ln">' + c.line + '</div></div></div>';
+    }).join('');
+    box.querySelectorAll('.ch svg').forEach(function (svg, i) { chart(svg, cs[i]); });
   }
-  // histogramme : une barre par jour, couleur selon le seuil, objectif en pointillé
   function chart(svg, c) {
-    var W = 380, H = 150, top = 12, bot = 28, plotW = W - 58, data = c.data.slice(-30);
+    var W = svg.clientWidth || 260, H = (svg.clientHeight || 150) - 22, top = 6, bot = 18, plotW = W - 46, data = c.data.slice(-30);
     if (!data.length) return;
     var vals = data.map(function (x) { return x.v; });
     var vmax = Math.max(Math.max.apply(null, vals), c.obj), vmin = Math.min(Math.min.apply(null, vals), c.obj);
-    var pad = (vmax - vmin) * .15 || 1;
-    var hi = vmax + pad, lo = c.zoom ? Math.max(0, vmin - pad * 2) : 0;
-    var base = H - bot;
+    var pad = (vmax - vmin) * .15 || 1, hi = vmax + pad, lo = c.zoom ? Math.max(0, vmin - pad * 2) : 0, base = H - bot;
     var Y = function (v) { return top + (base - top) * (hi - v) / (hi - lo); };
-    var step = plotW / data.length, bw = Math.max(3, step - 2);
+    var step = plotW / data.length, bw = Math.max(2, step - 2);
     var dd = function (s) { var q = s.split('-'); return q[2] + '/' + q[1]; };
     data.forEach(function (x, i) {
       var y = Math.min(Y(x.v), base - 3), last = i === data.length - 1;
-      var b = el('rect', { x: i * step + (step - bw) / 2, y: y, width: bw, height: base - y, rx: Math.min(4, bw / 2),
-        fill: COL(x.niv), opacity: last ? 1 : .55, style: last ? 'filter:drop-shadow(0 0 8px ' + COL(x.niv) + ')' : '' }, svg);
-      tip(b, dd(x.d) + ' : ' + n0(x.v) + (c.unit ? ' ' + c.unit : ''));
+      tip(el('rect', { x: i * step + (step - bw) / 2, y: y, width: bw, height: base - y, rx: Math.min(3, bw / 2), fill: COL(x.niv), opacity: last ? 1 : .55,
+        style: last ? 'filter:drop-shadow(0 0 8px ' + COL(x.niv) + ')' : '' }, svg), dd(x.d) + ' : ' + n0(x.v) + (c.unit ? ' ' + c.unit : ''));
     });
     el('line', { x1: 0, x2: plotW, y1: base + .5, y2: base + .5, stroke: 'rgba(255,255,255,.12)' }, svg);
     var oy = Y(c.obj);
-    el('line', { x1: 0, x2: plotW + 6, y1: oy, y2: oy, stroke: '#EEF3FF', 'stroke-width': 2, 'stroke-dasharray': '2 6', 'stroke-linecap': 'round', opacity: .9 }, svg);
-    el('rect', { x: plotW + 8, y: oy - 15, width: 48, height: 30, rx: 8, fill: 'rgba(255,255,255,.1)' }, svg);
-    txt(svg, plotW + 32, oy + 6, String(Math.round(c.obj)), { 'text-anchor': 'middle', fill: '#EEF3FF', 'font-weight': 700, 'font-size': 16 });
-    txt(svg, 0, H - 4, dd(data[0].d), { fill: '#5D6884', 'font-size': 15 });
-    txt(svg, plotW, H - 4, dd(data[data.length - 1].d), { 'text-anchor': 'end', fill: '#5D6884', 'font-size': 15 });
-  }
-  var pos = 0, nCartes = 0, PAS = 475, reelTimer = null, ARRET = 9000;
-  function construireBandeau() {
-    var cs = cartes(), reel = $('reel'), side = $('side');
-    var ch = Math.floor((side.clientHeight - 20) / 2);
-    side.style.setProperty('--ch', ch + 'px'); PAS = ch + 20;
-    if (!cs.length) { nCartes = 0; $('dots').innerHTML = ''; reel.innerHTML = '<div class="card hcard"><h2>Historique</h2><div class="line">Indisponible dans data.js</div></div>'; return; }
-    var places = 2 * COLS, liste = cs;
-    nCartes = 0;
-    if (cs.length > places) {
-      var base = cs.length % COLS ? cs.concat(cs) : cs;
-      liste = base.concat(base.slice(0, places));
-      nCartes = base.length / COLS;
-    }
-    reel.innerHTML = liste.map(carteHTML).join('');
-    reel.querySelectorAll('svg').forEach(function (svg, i) { chart(svg, liste[i]); });
-    pos = nCartes ? pos % nCartes : 0;
-    reel.className = 'jump'; reel.style.transform = 'translateY(' + (-pos * PAS) + 'px)';
-    void reel.offsetHeight; reel.className = '';
-    $('dots').innerHTML = nCartes ? new Array(nCartes + 1).join('<i></i>') : '';
-    points();
-  }
-  function points() {
-    var d = $('dots').children;
-    for (var i = 0; i < d.length; i++) d[i].className = i === pos % nCartes ? 'on' : '';
-  }
-  function avancer() {
-    if (!nCartes) return;
-    var reel = $('reel'); pos++;
-    reel.style.transform = 'translateY(' + (-pos * PAS) + 'px)';
-    points();
-    if (pos === nCartes) setTimeout(function () {
-      reel.className = 'jump'; pos = 0; reel.style.transform = 'translateY(0)';
-      void reel.offsetHeight; reel.className = '';
-    }, 1500);
+    el('line', { x1: 0, x2: plotW + 4, y1: oy, y2: oy, stroke: '#EEF3FF', 'stroke-width': 1.5, 'stroke-dasharray': '2 5', opacity: .9 }, svg);
+    el('rect', { x: plotW + 6, y: oy - 12, width: 40, height: 24, rx: 4, fill: 'rgba(255,255,255,.1)' }, svg);
+    txt(svg, plotW + 26, oy + 5, String(Math.round(c.obj)), { 'text-anchor': 'middle', fill: '#EEF3FF', 'font-weight': 700, 'font-size': 14 });
+    txt(svg, 0, H - 2, dd(data[0].d), { fill: '#5D6884', 'font-size': 12 });
+    txt(svg, plotW, H - 2, dd(data[data.length - 1].d), { 'text-anchor': 'end', fill: '#5D6884', 'font-size': 12 });
   }
 
   /* ---------- rendu ---------- */
-  function render(bandeau) {
+  function render() {
     if (!D) return;
     var now = maintenant();
     R = PP.calculer(D, now);
-    renderHeader(now); renderLignes(); renderEquipe();
-    renderGauge('grej', R.rejets, D.seuils.rej_orange, D.seuils.rej_rouge);
-    renderGauge('gdec', R.decelees, D.seuils.dec_orange, D.seuils.dec_rouge);
-    renderFin(); renderVig();
-    if (bandeau) construireBandeau();
+    renderHeader(now); renderFlux(); renderEquipe();
+    renderLin('grej', R.rejets, D.seuils.rej_orange, D.seuils.rej_rouge);
+    renderLin('gdec', R.decelees, D.seuils.dec_orange, D.seuils.dec_rouge);
+    renderFin(); renderVig(); renderHist();
   }
-  // un data.js incomplet ne laisse jamais l'écran noir : on garde le dernier affichage et on le signale
-  function safeRender(bandeau) {
-    try { render(bandeau); $('err').style.display = 'none'; }
+  function safeRender() {
+    try { render(); $('err').style.display = 'none'; }
     catch (e) { var x = $('err'); x.textContent = 'Erreur d’affichage : ' + e.message + ' — vérifier data.js'; x.style.display = 'block'; if (window.console) console.error(e); }
   }
-  function demarrerBandeau() { if (reelTimer) clearInterval(reelTimer); reelTimer = setInterval(avancer, ARRET); }
-
-  function chargerDemo() {
-    mode = 'demo'; D = PP_DEMO.get(PP_DEMO.scenarios[scen]);
-    safeRender(true); demarrerBandeau();
-  }
-  var derniereDate = null;
+  function chargerDemo() { mode = 'demo'; D = PP_DEMO.get(PP_DEMO.scenarios[scen]); safeRender(); }
   function rechargerData() {
     var s = document.createElement('script');
     s.src = 'data.js?t=' + Date.now();
     s.onload = function () {
-      if (window.PP_DATA && window.PP_DATA.jour) {
-        var premier = mode !== 'live';
-        mode = 'live'; D = window.PP_DATA;
-        var nouveauJour = D.jour.date !== derniereDate; derniereDate = D.jour.date;
-        safeRender(premier || nouveauJour); if (premier) demarrerBandeau();
-      } else if (mode === 'attente') chargerDemo();
+      if (window.PP_DATA && window.PP_DATA.jour) { mode = 'live'; D = window.PP_DATA; safeRender(); }
+      else if (mode === 'attente') chargerDemo();
       s.remove();
     };
     s.onerror = function () { s.remove(); if (mode === 'attente') chargerDemo(); };
@@ -1148,10 +1095,8 @@ var PP_DEMO = (function () {
   $('fin').addEventListener('click', function () {
     if (mode !== 'demo') return;
     scen = (scen + 1) % PP_DEMO.scenarios.length;
-    D = PP_DEMO.get(PP_DEMO.scenarios[scen]); safeRender(false);
+    D = PP_DEMO.get(PP_DEMO.scenarios[scen]); safeRender();
   });
-
-  /* plein écran : double-clic ou touche F */
   function pleinEcran() {
     var d = document, e = d.documentElement;
     if (d.fullscreenElement || d.webkitFullscreenElement) (d.exitFullscreen || d.webkitExitFullscreen).call(d);
@@ -1164,13 +1109,12 @@ var PP_DEMO = (function () {
     document.body.style.cursor = ''; clearTimeout(curT);
     curT = setTimeout(function () { document.body.style.cursor = 'none'; }, 3000);
   });
-  // la police arrive après le premier affichage : on retrace les éléments mesurés
-  if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { if (D) safeRender(true); });
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { if (D) safeRender(); });
 
   fit();
   if (forceDemo) chargerDemo();
   else { rechargerData(); setInterval(rechargerData, 30000); }
-  setInterval(function () { if (D) safeRender(false); }, 20000);
+  setInterval(function () { if (D) safeRender(); }, 20000);
   setInterval(horloge, 1000);
 })();
 </script>
