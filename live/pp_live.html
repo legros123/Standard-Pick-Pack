@@ -1,0 +1,1143 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#02040A">
+<title>Pick & Pack Live</title>
+<!--
+  PP LIVE v7 — écran Flip zone pick · refonte « centre de contrôle » (HUD).
+  Même moteur, mêmes calculs, même contrat data.js que la v6 : seule la mise en forme change.
+  FLIP-FIT : la page remplit tout l'écran reçu, du 16:9 au très large (3,2:1).
+  Lit data.js (même dossier), écrit par Excel toutes les minutes. Sans data.js : données de démonstration.
+  Raccourcis : double-clic ou touche F = plein écran · ?demo=1 force la démo · en démo, toucher « Fin estimée » change de scénario.
+  Contrat data.js (inchangé) :
+  window.PP_DATA = {
+    genere:  "2026-10-22T17:31:05",                       // heure d'export Excel
+    jour:    { date:"2026-10-22", debut:"13:06", fin:"21:00", pauses:[["15:00","15:15"],["17:45","18:15"]] },
+    params:  { heures_pointees:7.4, cadence_defaut:50, fin_prevision:"18:20" },   // fin_prevision facultatif (18:20 par défaut)
+             //  Reste à lancer = prévision du jour − lignes déjà lancées dans LOGYS (faites + en cours + lancées).
+             //  À partir de fin_prevision, la prévision est annulée : seul le lancé réel compte.
+    seuils:  { avance_stable:10, retard_critique:0, rej_orange:120, rej_rouge:140, dec_orange:15, dec_rouge:20,
+               vig_orange:3, vig_rouge:5, obj_lignes_op:620, obj_ppm_averee:220 },
+    saisie:  { prevu:8500 },          // prévision du jour. À défaut : somme de v1 + a2 + a3 (ancien format, heures ignorées)
+    equipe:  [ { mat:"149", role:"Picking", present:true, sorti:null, revenu:null, coef:1, cadence:77.3 }, ... ],
+    tours:   [ { n:"TO04870165", k:"C", st:"DETAIL", l:103, t:0, a:0, op:"159", deb:"2026-10-22T16:41:00" }, ... ],
+             //  k : L = lancée, C = en cours, F = faite aujourd'hui · deb = prise réelle (journal), null si inconnue
+    rejets:  71,
+    decelees:[ { mat:"149", n:3 }, ... ],
+    hist:    [ { d:"2026-09-24", prod:598, ppm:205, rej:131 }, ... ],   // 30 derniers jours travaillés, le dernier = la veille
+    mois:    { nom:"Octobre", prod:588, ppm:196 },
+    dec_mois:[ { d:"2026-10-01", n:14 }, ... ]
+  };
+-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Oxanium:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+<style>
+/* =====================================================================
+   HUD « CENTRE DE CONTRÔLE »
+   Fond spatial + grille, panneaux à coins coupés, crochets de visée,
+   chiffres en Oxanium, étiquettes en mono, segments lumineux partout.
+   La couleur d'ambiance (--stat) suit le statut de la journée.
+   ===================================================================== */
+:root{
+  --bg:#02040A;
+  --text:#EAF4FF; --muted:#8EA2C0; --dim:#56667F; --faint:rgba(140,190,255,.10);
+  --line:rgba(120,190,255,.16); --line2:rgba(120,190,255,.30);
+  --cyan:#22E4FF; --blue:#4F8DFF; --violet:#A07BFF; --done:#61719A;
+  --ok:#2CF5A6; --warn:#FFC531; --bad:#FF3D6C;
+  --stat:#22E4FF;
+  --cut:26px;
+  --f:"Oxanium","Segoe UI Variable Display","Segoe UI",system-ui,Arial,sans-serif;
+  --m:"JetBrains Mono","Cascadia Mono",Consolas,ui-monospace,monospace;
+  --dwell:9000ms;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden;background:var(--bg)}
+body{color:var(--text);font-family:var(--f);-webkit-font-smoothing:antialiased;position:relative}
+.num{font-variant-numeric:tabular-nums;font-feature-settings:"tnum" 1;letter-spacing:-.01em}
+
+/* ---------- ambiance : aura de statut, grille, balayage ---------- */
+#fx{position:fixed;inset:0;pointer-events:none;z-index:0;overflow:hidden}
+#fx i{position:absolute;display:block}
+#fx .a1,#fx .a2{border-radius:50%;filter:blur(130px);transition:background 1.4s}
+#fx .a1{width:72vw;height:72vw;left:-24vw;top:-44vw;background:color-mix(in srgb,var(--stat) 34%,transparent);opacity:.6}
+#fx .a2{width:62vw;height:62vw;right:-20vw;bottom:-40vw;background:color-mix(in srgb,var(--violet) 26%,transparent);opacity:.5}
+#fx .grid{inset:0;
+  background:
+    linear-gradient(rgba(90,170,255,.055) 1px,transparent 1px) 0 0/56px 56px,
+    linear-gradient(90deg,rgba(90,170,255,.055) 1px,transparent 1px) 0 0/56px 56px;
+  -webkit-mask:radial-gradient(ellipse 75% 70% at 50% 45%,#000 20%,transparent 85%);
+          mask:radial-gradient(ellipse 75% 70% at 50% 45%,#000 20%,transparent 85%)}
+#scan{position:fixed;inset:0;pointer-events:none;z-index:6;overflow:hidden;
+  background:repeating-linear-gradient(180deg,rgba(255,255,255,.018) 0 1px,transparent 1px 4px)}
+#scan::after{content:"";position:absolute;left:0;right:0;top:-30vh;height:26vh;
+  background:linear-gradient(180deg,transparent,rgba(34,228,255,.045) 60%,rgba(34,228,255,.09) 98%,transparent);
+  animation:sweep 11s linear infinite}
+@keyframes sweep{to{transform:translateY(160vh)}}
+
+#stage{position:absolute;left:50%;top:50%;width:1920px;height:1080px;transform-origin:center center;z-index:1;
+  display:grid;grid-template-columns:minmax(0,1fr) 440px;grid-template-rows:76px minmax(0,1fr);gap:22px;padding:24px 32px 28px}
+#stage.large{grid-template-columns:minmax(0,1fr) 900px}
+#stage.large #reel{display:grid;grid-template-columns:1fr 1fr;column-gap:20px}
+
+/* ---------- barre du haut ---------- */
+header{grid-column:1 / 3;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:24px;white-space:nowrap;position:relative}
+header::after{content:"";position:absolute;left:0;right:0;bottom:-12px;height:1px;transition:background 1.4s;
+  background:linear-gradient(90deg,transparent,color-mix(in srgb,var(--stat) 75%,transparent) 12%,color-mix(in srgb,var(--stat) 30%,transparent) 50%,color-mix(in srgb,var(--stat) 75%,transparent) 88%,transparent)}
+header::before{content:"";position:absolute;left:50%;bottom:-13px;width:240px;height:4px;transform:translateX(-50%);
+  background:var(--stat);clip-path:polygon(0 0,100% 0,calc(100% - 4px) 100%,4px 100%);transition:background 1.4s}
+.brand{display:flex;align-items:center;gap:18px}
+.mark{width:62px;height:62px;position:relative;display:grid;place-items:center;flex:none}
+.mark .o1,.mark .o2{position:absolute;border-radius:50%}
+.mark .o1{inset:0;border:2px dashed color-mix(in srgb,var(--cyan) 50%,transparent);animation:spin 18s linear infinite}
+.mark .o2{inset:7px;border:2px solid rgba(255,255,255,.10);border-top-color:var(--cyan);border-right-color:var(--cyan);animation:spin 3.6s linear infinite reverse}
+.mark svg{position:relative;filter:drop-shadow(0 0 8px rgba(34,228,255,.7))}
+@keyframes spin{to{transform:rotate(360deg)}}
+.bt h1{font:700 34px/1 var(--f);letter-spacing:.1em}
+.bt h1 span{color:var(--cyan);margin:0 .14em;text-shadow:0 0 18px rgba(34,228,255,.7)}
+.bt .sys{display:flex;align-items:center;gap:10px;font:500 14px/1 var(--m);letter-spacing:.3em;color:var(--muted);margin-top:9px;text-transform:uppercase}
+.bt .sys b{color:var(--cyan);font-weight:700}
+.rec{width:9px;height:9px;border-radius:50%;background:var(--cyan);box-shadow:0 0 10px var(--cyan);animation:blink 1.6s steps(2,jump-none) infinite}
+@keyframes blink{50%{opacity:.15}}
+.pill{display:inline-flex;align-items:center;gap:10px;height:44px;padding:0 20px 0 18px;font:500 18px/1 var(--m);letter-spacing:.03em;color:var(--muted);
+  background:linear-gradient(90deg,color-mix(in srgb,var(--c,#7FB6FF) 16%,transparent),rgba(120,190,255,.04));
+  clip-path:polygon(10px 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%,0 10px);
+  box-shadow:inset 3px 0 0 var(--c,rgba(120,190,255,.45))}
+.pill b{font:700 22px/1 var(--f);color:var(--text);letter-spacing:.02em}
+.dot{width:10px;height:10px;border-radius:50%;flex:none;background:var(--c,var(--ok));box-shadow:0 0 10px var(--c,var(--ok))}
+#fresh{--c:var(--ok)}
+#fresh .dot{animation:live 2.2s ease-out infinite}
+#fresh.warn{--c:var(--warn);color:var(--warn)} #fresh.bad{--c:var(--bad);color:var(--bad)}
+#fresh.warn .dot,#fresh.bad .dot{animation:none}
+@keyframes live{0%{box-shadow:0 0 0 0 color-mix(in srgb,var(--c,var(--ok)) 70%,transparent)}80%,100%{box-shadow:0 0 0 12px transparent}}
+#demo{display:none;--c:var(--warn);color:#160F00;background:var(--warn);box-shadow:none;font-weight:700}
+#demo .dot{background:#160F00;box-shadow:none}
+.center{display:flex;gap:12px;justify-content:center}
+#pause{display:none;--c:var(--warn);color:var(--warn)}
+#pause b{color:var(--warn)}
+#reste{--c:var(--cyan)}
+.when{display:flex;align-items:center;justify-content:flex-end;gap:22px}
+#date{font:500 16px/1.45 var(--m);letter-spacing:.2em;text-transform:uppercase;color:var(--muted);text-align:right}
+#clock{display:flex;align-items:flex-start;font:600 70px/1 var(--f);letter-spacing:.01em;text-shadow:0 0 30px rgba(34,228,255,.35)}
+#clock .col{transition:opacity .25s;margin:0 .02em}
+#ss{font:600 24px/1 var(--m);color:var(--cyan);margin:8px 0 0 10px;min-width:2.2ch;text-shadow:0 0 12px rgba(34,228,255,.7)}
+
+/* ---------- grille principale ---------- */
+#main{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));grid-template-rows:452px minmax(0,1fr) 84px;gap:20px;min-height:0}
+#lances{grid-column:span 7} #fin{grid-column:span 5}
+#encours{grid-column:span 3} #team{grid-column:span 3} #grej{grid-column:span 3} #gdec{grid-column:span 3}
+#vig{grid-column:1 / -1}
+
+/* ---------- panneau HUD : bord 1 px en dégradé, 2 coins coupés, 2 crochets ---------- */
+.card{position:relative;min-width:0;display:flex;flex-direction:column;padding:24px 28px;overflow:hidden;isolation:isolate;
+  background:linear-gradient(150deg,color-mix(in srgb,var(--c,#7FB6FF) 70%,transparent),rgba(120,190,255,.16) 22%,rgba(120,190,255,.07) 60%,color-mix(in srgb,var(--c,#7FB6FF) 35%,transparent));
+  clip-path:polygon(0 0,calc(100% - var(--cut)) 0,100% var(--cut),100% 100%,var(--cut) 100%,0 calc(100% - var(--cut)));
+  transition:background .8s}
+.card::before{content:"";position:absolute;inset:1px;z-index:-1;
+  clip-path:polygon(0 0,calc(100% - var(--cut) + .5px) 0,100% calc(var(--cut) - .5px),100% 100%,calc(var(--cut) - .5px) 100%,0 calc(100% - var(--cut) + .5px));
+  background:
+    radial-gradient(560px 400px at 100% 0%,color-mix(in srgb,var(--c,transparent) 24%,transparent),transparent 70%),
+    radial-gradient(rgba(160,210,255,.07) 1px,transparent 1.4px) 0 0/18px 18px,
+    linear-gradient(180deg,rgba(12,22,40,.94),rgba(5,10,20,.96))}
+.card::after{content:"";position:absolute;inset:9px;pointer-events:none;z-index:2;opacity:.95;transition:opacity .8s;
+  background:
+    linear-gradient(var(--c,var(--cyan)),var(--c,var(--cyan))) left top/24px 2px no-repeat,
+    linear-gradient(var(--c,var(--cyan)),var(--c,var(--cyan))) left top/2px 24px no-repeat,
+    linear-gradient(var(--c,var(--cyan)),var(--c,var(--cyan))) right bottom/24px 2px no-repeat,
+    linear-gradient(var(--c,var(--cyan)),var(--c,var(--cyan))) right bottom/2px 24px no-repeat}
+.card > *{position:relative;z-index:1}
+.ok{--c:var(--ok)} .warn{--c:var(--warn)} .bad{--c:var(--bad)} .neutre{--c:var(--dim)} .info{--c:var(--blue)} .cyan{--c:var(--cyan)}
+
+/* entrée en scène (une seule fois) */
+@keyframes boot{0%{opacity:0;transform:translateY(16px)}55%{opacity:1}100%{opacity:1;transform:none}}
+header,#main > .card,#side{animation:boot .8s cubic-bezier(.2,.8,.2,1) both;animation-delay:calc(var(--i,0) * 80ms)}
+
+.eyebrow{display:flex;align-items:center;gap:14px;white-space:nowrap;min-height:44px}
+.rule{flex:1;height:2px;min-width:20px;opacity:.9;
+  background:repeating-linear-gradient(90deg,var(--line2) 0 2px,transparent 2px 9px)}
+.lab{display:inline-flex;align-items:center;gap:12px;font:600 17px/1 var(--m);letter-spacing:.2em;text-transform:uppercase;color:var(--muted)}
+.lab em{font-style:normal;font-weight:700;letter-spacing:.04em;color:var(--c,var(--cyan));padding:5px 7px 4px;
+  background:color-mix(in srgb,var(--c,var(--cyan)) 15%,transparent);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--c,var(--cyan)) 45%,transparent)}
+.tag{display:inline-flex;align-items:center;gap:11px;height:44px;padding:0 20px;font:700 22px/1 var(--f);letter-spacing:.18em;
+  color:var(--c);background:linear-gradient(90deg,color-mix(in srgb,var(--c) 30%,transparent),color-mix(in srgb,var(--c) 10%,transparent));
+  clip-path:polygon(11px 0,100% 0,100% calc(100% - 11px),calc(100% - 11px) 100%,0 100%,0 11px)}
+.tag .dot{box-shadow:0 0 14px var(--c)}
+.bad .tag .dot,.tag.bad .dot{animation:live 1.6s ease-out infinite}
+
+/* ---------- 01 lancées ---------- */
+#prev{font:500 18px/1 var(--m);color:var(--muted);letter-spacing:.02em}
+#prev b{font:700 24px/1 var(--f);color:var(--text)}
+.hero{display:flex;flex-direction:column;gap:18px;margin-top:12px}
+#nLances{font-size:200px;font-weight:700;line-height:.86;
+  background:linear-gradient(180deg,#FFFFFF 15%,#C9DCFF 55%,var(--blue) 130%);-webkit-background-clip:text;background-clip:text;color:transparent;
+  filter:drop-shadow(0 0 34px rgba(79,141,255,.40))}
+.hero .side{display:flex;align-items:center;gap:18px;min-width:0;white-space:nowrap}
+.sub{font-size:27px;color:var(--text);font-weight:500}
+.sub b{font-weight:700}
+#couv{align-self:flex-start;white-space:nowrap}
+#couv:empty{display:none}
+#couv.tag{height:40px;font:600 19px/1 var(--m);letter-spacing:.02em}
+#couv.neutral{--c:var(--muted)}
+#day{margin-top:auto}
+#day .ruler{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px}
+#day .ruler span{font:600 14px/1 var(--m);color:var(--muted);letter-spacing:.2em;text-transform:uppercase}
+#day .ruler b{font:700 34px/1 var(--f);color:var(--text)}
+#day .ruler b small{font:500 14px/1 var(--m);color:var(--muted);margin-left:8px;letter-spacing:.14em;text-transform:uppercase}
+#cells{display:flex;gap:3px;height:36px}
+#cells i{flex:1;min-width:0;background:rgba(140,190,255,.07);transition:background-color .45s,box-shadow .45s}
+#cells i.f{background:var(--done)}
+#cells i.c{background:var(--cyan);box-shadow:0 0 12px -1px rgba(34,228,255,.75)}
+#cells i.l{background:var(--blue);box-shadow:0 0 12px -1px rgba(79,141,255,.75)}
+#cells i.r{background:repeating-linear-gradient(-45deg,rgba(255,255,255,.07) 0 3px,rgba(255,255,255,.17) 3px 5px)}
+#day .leg{display:flex;justify-content:space-between;gap:18px;margin-top:16px;white-space:nowrap;align-items:center;font:500 19px/1 var(--f);letter-spacing:.02em;color:var(--muted)}
+#day .leg span{display:flex;align-items:center;gap:9px}
+#day .leg i{width:12px;height:12px;display:block}
+#day .leg b{font:700 23px/1 var(--f);color:var(--text);letter-spacing:0;text-transform:none}
+
+/* ---------- 02 fin estimée ---------- */
+#fin{cursor:default}
+#finp{font-size:156px;font-weight:700;line-height:.9;margin-top:22px;
+  background:linear-gradient(180deg,#fff 25%,var(--c,#9ab) 115%);-webkit-background-clip:text;background-clip:text;color:transparent;
+  filter:drop-shadow(0 0 32px color-mix(in srgb,var(--c,#9ab) 50%,transparent))}
+#finp .h{font-size:.46em;opacity:.7;margin:0 .03em}
+#finsub{font-size:24px;color:var(--muted);margin-top:14px}
+#finsub b{color:var(--text)}
+#retard{color:var(--bad);font-weight:700}
+#manque{font-size:22px;margin-top:6px;color:var(--muted)}
+#manque:empty{display:none}
+#manque b{color:var(--text)} #manque b.r{color:var(--bad)}
+#track{display:block;margin-top:auto;overflow:visible}
+
+/* ---------- 03 en cours / 04 équipe ---------- */
+#pips{display:flex;flex-wrap:wrap;gap:6px;margin-top:20px;max-height:64px;overflow:hidden;align-items:center}
+#pips i{width:12px;height:26px;background:var(--cyan);box-shadow:0 0 10px rgba(34,228,255,.6);
+  clip-path:polygon(0 0,100% 0,100% 100%,0 100%);animation:pip 2.6s ease-in-out infinite;animation-delay:calc(var(--k) * -170ms)}
+#pips b{font:600 16px/1 var(--m);color:var(--cyan);margin-left:4px}
+@keyframes pip{0%,100%{opacity:.35}50%{opacity:1}}
+#nEnCours{font-size:132px;font-weight:700;line-height:.9;margin-top:auto;color:var(--cyan);text-shadow:0 0 44px rgba(34,228,255,.5)}
+#encours .sub{margin-top:14px;font-size:21px;color:var(--muted);white-space:nowrap}
+#encours .sub b{color:var(--text)}
+#team .rows{display:flex;flex-direction:column;margin-top:auto}
+#team .row{display:flex;align-items:baseline;justify-content:space-between;padding:12px 0;border-bottom:1px dashed var(--line)}
+#team .row:last-child{border-bottom:0;padding-bottom:0}
+#team .row span{font:500 16px/1 var(--m);letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+#team .row b{font-size:50px;font-weight:700;line-height:1}
+#team .row #kCapa{font:inherit;color:inherit;letter-spacing:inherit}
+#team .row small{font:500 17px/1 var(--m);color:var(--muted);margin-left:6px;letter-spacing:0}
+#roster{display:flex;gap:4px;height:12px;margin:-2px 0 6px}
+#roster i{flex:1;min-width:0;background:rgba(140,190,255,.10);transition:background-color .5s,box-shadow .5s}
+#roster i.on{background:var(--c);box-shadow:0 0 9px -1px var(--c)}
+#roster:empty{display:none}
+
+/* ---------- 05/06 jauges segmentées ---------- */
+.gauge .ring{position:relative;flex:1;min-height:0;display:grid;place-items:center;margin-top:10px}
+.gauge svg{display:block;overflow:visible}
+.gauge .val{position:absolute;left:0;right:0;top:50%;transform:translateY(-56%);text-align:center}
+.gauge .val b{display:block;font-size:76px;font-weight:700;line-height:1;color:var(--text);text-shadow:0 0 26px color-mix(in srgb,var(--c) 45%,transparent)}
+.gauge .val small{display:block;font:500 13px/1 var(--m);color:var(--muted);margin-top:8px;letter-spacing:.1em;text-transform:uppercase}
+.gauge .cap{text-align:center;font-size:21px;color:var(--muted);margin-top:-4px}
+.gauge .cap b{color:var(--c);font-weight:700}
+.seg{transition:stroke .35s,opacity .35s}
+.spin{transform-box:view-box;transform-origin:135px 124px;animation:spin 40s linear infinite}
+
+/* ---------- 07 vigilance ---------- */
+#vig{flex-direction:row;align-items:center;gap:22px;padding:0 30px;--cut:18px}
+#vig::after{inset:7px}
+#vig .rule{flex:0 0 60px}
+#chips{display:flex;gap:12px;overflow:hidden;flex:1;align-items:center}
+.chip{display:inline-flex;align-items:center;gap:12px;height:50px;padding:0 22px 0 18px;white-space:nowrap;
+  background:linear-gradient(90deg,color-mix(in srgb,var(--c) 26%,transparent),color-mix(in srgb,var(--c) 8%,transparent));
+  clip-path:polygon(12px 0,100% 0,100% calc(100% - 12px),calc(100% - 12px) 100%,0 100%,0 12px)}
+.chip b{font-size:29px;font-weight:700;letter-spacing:.02em}
+.chip span{font:500 16px/1 var(--m);color:var(--muted);letter-spacing:.06em;text-transform:uppercase}
+.chip.bad{animation:glow 2.4s ease-in-out infinite}
+@keyframes glow{0%,100%{filter:brightness(1)}50%{filter:brightness(1.45)}}
+.calm{font:500 18px/1 var(--m);color:var(--muted);letter-spacing:.08em;text-transform:uppercase}
+.calm b{color:var(--ok)}
+
+/* ---------- colonne historique ---------- */
+#side{position:relative;overflow:hidden;min-height:0;--i:6}
+#reel{display:flex;flex-direction:column;gap:20px;transition:transform 1.4s cubic-bezier(.65,0,.25,1)}
+#reel.jump{transition:none}
+.hcard{height:var(--ch,455px);flex:none;padding:24px 26px 22px}
+.hcard .hd{display:flex;align-items:center;gap:12px}
+.hcard h2{font-size:30px;font-weight:700;letter-spacing:.02em;line-height:1.1}
+.hcard .hd .rule{opacity:.6}
+.hcard .hd em{font:700 13px/1 var(--m);font-style:normal;color:var(--c);letter-spacing:.14em}
+.hcard .per{font:500 14px/1.2 var(--m);color:var(--muted);margin-top:8px;letter-spacing:.12em;text-transform:uppercase}
+.hcard .kpis{display:flex;gap:34px;margin-top:18px}
+.hcard .kpi .lab{font-size:14px;letter-spacing:.2em}
+.hcard .kpi .v{font-size:58px;font-weight:700;line-height:1.05;margin-top:6px;text-shadow:0 0 22px color-mix(in srgb,currentColor 40%,transparent)}
+.hcard .kpi .v small{font:500 17px/1 var(--m);color:var(--muted);margin-left:6px;letter-spacing:0;text-shadow:none}
+.hcard .line{font-size:19px;color:var(--muted);margin-top:8px;line-height:1.3}
+.hcard svg{display:block;margin-top:auto;overflow:visible}
+#dots{position:absolute;left:50%;transform:translateX(-50%);bottom:14px;display:flex;gap:6px;z-index:3}
+#dots i{position:relative;width:26px;height:4px;background:rgba(160,210,255,.18);overflow:hidden}
+#dots i.on::after{content:"";position:absolute;inset:0;background:var(--cyan);box-shadow:0 0 8px var(--cyan);transform-origin:left;animation:prog var(--dwell) linear forwards}
+@keyframes prog{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+
+#err{display:none;position:fixed;left:16px;bottom:16px;z-index:9;background:var(--bad);color:#fff;font:600 16px/1.3 var(--m);padding:10px 16px;max-width:60vw;
+  clip-path:polygon(8px 0,100% 0,100% calc(100% - 8px),calc(100% - 8px) 100%,0 100%,0 8px)}
+
+@media (prefers-reduced-motion:reduce){
+  #reel,#cells i,#roster i,.seg{transition:none}
+  header,#main > .card,#side,#scan::after,.mark .o1,.mark .o2,.rec,#pips i,.spin,.chip.bad,#fresh .dot,.tag .dot,#dots i.on::after{animation:none}
+}
+</style>
+</head>
+<body>
+<div id="fx" aria-hidden="true"><i class="a1"></i><i class="a2"></i><i class="grid"></i></div>
+<div id="stage">
+  <header>
+    <div class="brand">
+      <div class="mark" aria-hidden="true">
+        <i class="o1"></i><i class="o2"></i>
+        <svg width="28" height="28" viewBox="0 0 28 28" fill="none"><path d="M4 9l10-5 10 5v10l-10 5-10-5z" stroke="#EAF4FF" stroke-width="2.2" stroke-linejoin="round"/><path d="M4 9l10 5 10-5M14 14v10" stroke="#22E4FF" stroke-width="2.2" stroke-linejoin="round"/></svg>
+      </div>
+      <div class="bt">
+        <h1>PICK<span>&amp;</span>PACK</h1>
+        <div class="sys"><i class="rec"></i><b>Live</b>Zone pick · temps réel</div>
+      </div>
+      <span class="pill" id="fresh"><i class="dot"></i><span></span></span>
+      <span class="pill" id="demo"><i class="dot"></i>Démo · touche « Fin estimée »</span>
+    </div>
+    <div class="center">
+      <span class="pill" id="pause"></span>
+      <span class="pill" id="reste"></span>
+    </div>
+    <div class="when"><span id="date"></span><span id="clock" class="num"><span id="hm"></span><span id="ss"></span></span></div>
+  </header>
+
+  <div id="main">
+    <section id="lances" class="card info" style="--i:1">
+      <div class="eyebrow"><span class="lab"><em>01</em>Lignes lancées à préparer</span><i class="rule"></i><span id="prev"></span></div>
+      <div class="hero">
+        <div id="nLances" class="num"></div>
+        <div class="side"><div class="sub" id="tLances"></div><div id="couv"></div></div>
+      </div>
+      <div id="day">
+        <div class="ruler"><span>Avancement du jour</span><b class="num" id="pct"></b></div>
+        <div id="cells"></div>
+        <div class="leg"></div>
+      </div>
+    </section>
+
+    <section id="fin" class="card" style="--i:2">
+      <div class="eyebrow"><span class="lab"><em>02</em>Fin estimée</span><i class="rule"></i><span class="tag" id="pill"><i class="dot"></i><span></span></span></div>
+      <div id="finp" class="num"></div>
+      <div id="finsub"></div>
+      <div id="manque"></div>
+      <svg id="track" width="560" height="100"></svg>
+    </section>
+
+    <section id="encours" class="card cyan" style="--i:3">
+      <div class="eyebrow"><span class="lab"><em>03</em>En cours</span><i class="rule"></i></div>
+      <div id="pips"></div>
+      <div id="nEnCours" class="num"></div>
+      <div class="sub" id="tEnCours"></div>
+    </section>
+
+    <section id="team" class="card info" style="--i:4">
+      <div class="eyebrow"><span class="lab"><em>04</em>Équipe</span><i class="rule"></i></div>
+      <div class="rows">
+        <div class="row"><span>Présents</span><b class="num" id="kPres"></b></div>
+        <div class="row"><span>En tournée</span><b class="num" id="kTour"></b></div>
+        <div id="roster"></div>
+        <div class="row"><span>Capacité</span><b class="num"><span id="kCapa"></span><small>l/h</small></b></div>
+      </div>
+    </section>
+
+    <section id="grej" class="card gauge" style="--i:5">
+      <div class="eyebrow"><span class="lab"><em>05</em>Rejets du jour</span><i class="rule"></i></div>
+      <div class="ring"><svg width="232" height="198" viewBox="0 0 270 230"></svg><div class="val"><b class="num"></b><small></small></div></div>
+      <div class="cap"></div>
+    </section>
+
+    <section id="gdec" class="card gauge" style="--i:6">
+      <div class="eyebrow"><span class="lab"><em>06</em>Décelées du jour</span><i class="rule"></i></div>
+      <div class="ring"><svg width="232" height="198" viewBox="0 0 270 230"></svg><div class="val"><b class="num"></b><small></small></div></div>
+      <div class="cap"></div>
+    </section>
+
+    <section id="vig" class="card" style="--i:7">
+      <span class="lab"><em>07</em>Vigilance qualité</span><i class="rule"></i>
+      <div id="chips"></div>
+    </section>
+  </div>
+
+  <aside id="side"><div id="reel"></div><div id="dots"></div></aside>
+</div>
+<div id="scan" aria-hidden="true"></div>
+<div id="err"></div>
+
+<script>
+/* ===================== MOTEUR PP LIVE =====================
+   Entrée : objet PP_DATA (voir contrat en tête du HTML) + heure courante.
+   Sortie : tout ce que l'écran affiche, déjà calculé.               */
+var PP = (function () {
+  var MIN = 60000;
+
+  function jourDe(D) {
+    var p = D.jour.date.split('-').map(Number);
+    return function (hhmm) {
+      var q = String(hhmm).split(':').map(Number);
+      return new Date(p[0], p[1] - 1, p[2], q[0], q[1] || 0, 0, 0);
+    };
+  }
+  function parseDT(s) {
+    if (!s) return null;
+    var m = String(s).match(/(\d{4})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2})(?::(\d{2}))?/);
+    if (!m) return null;
+    return new Date(+m[1], +m[2] - 1, +m[3], +m[4], +m[5], +(m[6] || 0));
+  }
+  function enPause(t, pauses) {
+    for (var i = 0; i < pauses.length; i++) if (t >= pauses[i][0] && t < pauses[i][1]) return true;
+    return false;
+  }
+  // minutes travaillées entre a et b (pauses retirées)
+  function minutesTravail(a, b, pauses) {
+    if (!a || !b || b <= a) return 0;
+    var m = (b - a) / MIN;
+    pauses.forEach(function (p) {
+      var x = Math.max(a, p[0]), y = Math.min(b, p[1]);
+      if (y > x) m -= (y - x) / MIN;
+    });
+    return Math.max(0, m);
+  }
+
+  function calculer(D, now) {
+    var T = jourDe(D), S = D.seuils, P = D.params;
+    var debut = T(D.jour.debut), fin = T(D.jour.fin);
+    var pauses = (D.jour.pauses || []).map(function (p) { return [T(p[0]), T(p[1])]; });
+    var netMin = minutesTravail(debut, fin, pauses);
+    // la cadence du suivi op est calculée sur les heures pointées (pause de 15h incluse)
+    var corr = netMin > 0 ? (P.heures_pointees * 60) / netMin : 1;
+
+    // ---------- équipe ----------
+    var equipe = (D.equipe || []).map(function (e) {
+      var pres = e.present === true;
+      var sorti = e.sorti ? T(e.sorti) : null, revenu = e.revenu ? T(e.revenu) : null;
+      var de = null, a = null;
+      // au-delà de la fin de poste on prolonge la même équipe : sert à chiffrer le retard éventuel
+      var horizon = new Date(fin.getTime() + 6 * 60 * MIN);
+      if (pres) { de = now; a = (sorti && sorti > now) ? sorti : horizon; }
+      else if (revenu && revenu > now) { de = revenu; a = horizon; }
+      return { mat: e.mat, coef: +e.coef || 0, cad: +e.cadence || P.cadence_defaut,
+               present: pres, de: de, a: a, role: e.role };
+    });
+    var cadOp = {};
+    equipe.forEach(function (e) { cadOp[e.mat] = e.cad; });
+    var presents = equipe.filter(function (e) { return e.present; }).length;
+
+    // ---------- tournées ----------
+    var faites = 0, aPrendre = 0, enCoursBrut = 0, enCoursReste = 0, opsTournee = {}, nbLances = 0, nbEnCours = 0;
+    (D.tours || []).forEach(function (t) {
+      var l = +t.l || 0, a = +t.a || 0, done = +t.t || 0;
+      if (t.k === 'F') { faites += done > 0 ? done : Math.max(0, l - a); }
+      else if (t.k === 'L') { aPrendre += Math.max(0, l - a - done); nbLances++; }
+      else if (t.k === 'C') {
+        var reste = Math.max(0, l - a - done);
+        enCoursBrut += reste; nbEnCours++;
+        var deb = parseDT(t.deb), fait;
+        if (deb) {
+          var c = (cadOp[t.op] || P.cadence_defaut) * corr;
+          fait = Math.min(0.95 * reste, c * minutesTravail(deb, now, pauses) / 60);
+        } else fait = 0.5 * reste;
+        enCoursReste += reste - fait;
+        if (t.op) opsTournee[t.op] = 1;
+      }
+    });
+    var enTournee = Object.keys(opsTournee).length;
+
+    // ---------- prévision du jour ----------
+    // Reste à lancer = prévision − lignes déjà lancées dans LOGYS (faites + en cours + lancées).
+    // Ce reste compte dans la charge jusqu'à fin_prevision (18h20) ; ensuite seul le réel compte.
+    var sa = D.saisie || {};
+    var totalPrevu = sa.prevu != null && sa.prevu !== ''
+      ? (+sa.prevu || 0)
+      : (+sa.v1 || 0) + (+sa.a2 || 0) + (+sa.a3 || 0);
+    var finPrevision = T(P.fin_prevision || '18:20');
+    var reelSeul = now >= finPrevision;
+    var visible = faites + aPrendre + enCoursBrut;
+    var resteALancer = reelSeul ? 0 : Math.max(0, totalPrevu - visible);
+
+    var restant = aPrendre + enCoursReste + resteALancer;
+    var totalJour = faites + restant;
+
+    // ---------- simulation minute par minute ----------
+    function capaMinute(t) {
+      if (enPause(t, pauses)) return 0;
+      var c = 0;
+      equipe.forEach(function (e) { if (e.de && t >= e.de && t < e.a) c += e.coef * e.cad * corr / 60; });
+      return c;
+    }
+    var capaNow = 0;
+    equipe.forEach(function (e) { if (e.present && e.de && now < e.a) capaNow += e.coef * e.cad * corr; });
+
+    var t0 = new Date(Math.max(now, debut));
+    var pool = restant;
+    var t = new Date(t0), finPrevue = null, realisableAvantFin = 0, limite = new Date(fin.getTime() + 6 * 60 * MIN);
+    if (pool <= 0) finPrevue = t0;
+    while (!finPrevue && t < limite) {
+      var cap = capaMinute(t);
+      if (cap > 0) {
+        if (cap >= pool) {
+          if (t < fin) realisableAvantFin += pool;
+          finPrevue = new Date(t.getTime() + (pool / cap) * MIN);
+          break;
+        }
+        pool -= cap;
+        if (t < fin) realisableAvantFin += cap;
+      }
+      t = new Date(t.getTime() + MIN);
+    }
+
+    // ---------- statut ----------
+    var statut, ecart = null;
+    var termine = now >= fin;
+    if (termine) statut = 'FINI';
+    else if (totalPrevu === 0 && visible === 0) statut = 'ATTENTE';
+    else if (!finPrevue) statut = 'CRITIQUE';
+    else {
+      ecart = Math.round((finPrevue - fin) / MIN);         // > 0 : en retard
+      if (finPrevue < new Date(fin.getTime() - S.avance_stable * MIN)) statut = 'STABLE';
+      else if (finPrevue <= new Date(fin.getTime() + S.retard_critique * MIN)) statut = 'TENDU';
+      else statut = 'CRITIQUE';
+    }
+
+    // ---------- qualité ----------
+    function proj(n) { return faites >= 300 && totalJour > 0 ? Math.round(n * totalJour / faites) : null; }
+    function niveau(v, o, r, strictRouge) {
+      if (v == null) return 'neutre';
+      if (strictRouge ? v > r : v >= r) return 'bad';
+      if (v >= o) return 'warn';
+      return 'ok';
+    }
+    var rejets = +D.rejets || 0;
+    var dec = (D.decelees || []).map(function (x) { return { mat: x.mat, n: +x.n || 0 }; });
+    var decTotal = dec.reduce(function (s, x) { return s + x.n; }, 0);
+    var vigilance = dec.filter(function (x) { return x.n >= S.vig_orange; })
+      .sort(function (a, b) { return b.n - a.n; })
+      .map(function (x) { return { mat: x.mat, n: x.n, niv: x.n >= S.vig_rouge ? 'bad' : 'warn' }; });
+    var rejProj = proj(rejets), decProj = proj(decTotal);
+
+    return {
+      now: now, debut: debut, fin: fin, pauses: pauses, corr: corr,
+      statut: statut, finPrevue: finPrevue, ecart: ecart,
+      faites: Math.round(faites), enCours: Math.round(enCoursReste), aPrendre: Math.round(aPrendre),
+      resteALancer: Math.round(resteALancer), finPrevision: finPrevision,
+      restant: Math.round(restant), totalJour: Math.round(totalJour), totalPrevu: totalPrevu,
+      lanceJour: Math.round(visible), reelSeul: reelSeul,
+      realisableAvantFin: Math.round(realisableAvantFin),
+      presents: presents, enTournee: enTournee, capaNow: Math.round(capaNow),
+      lances: Math.round(aPrendre), nbLances: nbLances, enCoursLogys: Math.round(enCoursBrut), nbEnCours: nbEnCours,
+      couverture: capaNow > 0 ? Math.round(aPrendre / (capaNow / 60)) : null,   // minutes de travail dans le stock lancé
+      rejets: { n: rejets, proj: rejProj, niv: niveau(rejProj != null ? rejProj : rejets, S.rej_orange, S.rej_rouge, true) },
+      decelees: { n: decTotal, proj: decProj, niv: niveau(decProj != null ? decProj : decTotal, S.dec_orange, S.dec_rouge, false) },
+      vigilance: vigilance
+    };
+  }
+
+  return { calculer: calculer, parseDT: parseDT, minutesTravail: minutesTravail };
+})();
+
+</script>
+<script>
+/* ===================== DONNÉES DE DÉMO =====================
+   Utilisées uniquement si data.js est absent (aperçu sur téléphone).
+   Toucher le bloc statut fait défiler les 3 scénarios.              */
+var PP_DEMO = (function () {
+  var seed = 7;
+  function rnd() { seed = (seed * 9301 + 49297) % 233280; return seed / 233280; }
+  function between(a, b) { return Math.round(a + rnd() * (b - a)); }
+  var DATE = '2026-10-22', NOW = DATE + 'T17:32:00';
+
+  function base(scenario) {
+    seed = 7;
+    var equipe = [
+      { mat: '017', role: 'Pilote', present: true, coef: 0.5, cadence: 83.8 },
+      { mat: '018', role: 'Pilote', present: true, coef: 0.5, cadence: 83.8 },
+      { mat: '126', role: 'Pilote', present: true, coef: 0.5, cadence: 83.8 },
+      { mat: '142', role: 'Rejet', present: true, coef: 0, cadence: 83.8 },
+      { mat: '015', role: 'Carton', present: true, coef: 1, cadence: 77.1 }
+    ];
+    var pick = [['112', 82.7], ['129', 86.2], ['132', 92.6], ['149', 77.3], ['154', 84.0], ['159', 66.3],
+                ['172', 93.7], ['194', 75.6], ['617', 92.1], ['628', 75.6], ['670', 84.3], ['708', 80.0],
+                ['717', 75.9], ['739', 108.6], ['789', 59.6], ['036', 94.9], ['748', 50], ['115', 90.4]];
+    pick.forEach(function (p, i) {
+      equipe.push({ mat: p[0], role: 'Picking', present: i < 16, coef: 1, cadence: p[1] });
+    });
+    if (scenario === 'CRITIQUE') {
+      ['617', '739', '132'].forEach(function (m) {
+        equipe.forEach(function (e) { if (e.mat === m) { e.present = false; e.sorti = '17:00'; } });
+      });
+    }
+    if (scenario === 'STABLE') {
+      equipe.forEach(function (e) { if (e.mat === '748' || e.mat === '115') e.present = true; });
+    }
+
+    var tours = [], n = 4870000;
+    function tour(k, l, op, deb) { tours.push({ n: 'TO0' + (n++), k: k, st: 'DETAIL', l: l, t: k === 'F' ? l : 0, a: 0, op: op || '', deb: deb || null }); }
+    // en cours : un opérateur par tournée, prise dans la dernière heure
+    var enTournee = equipe.filter(function (e) { return e.present && e.role === 'Picking'; }).slice(0, 13);
+    enTournee.forEach(function (e, i) {
+      var m = 32 - between(2, 58), h = 17;
+      if (m < 0) { m += 60; h = 16; }
+      tour('C', between(45, 105), e.mat, DATE + 'T' + h + ':' + (m < 10 ? '0' : '') + m + ':00');
+    });
+    var aPrendre = scenario === 'STABLE' ? 900 : 2050, s = 0;
+    while (s < aPrendre) { var l = between(25, 95); tour('L', l); s += l; }
+    var faites = 0;
+    while (faites < 4800) { var f = between(30, 110); tour('F', f, '', null); faites += f; }
+
+    return {
+      genere: NOW,
+      demo: true,
+      maintenant: NOW,
+      jour: { date: DATE, debut: '13:06', fin: '21:00', pauses: [['15:00', '15:15'], ['17:45', '18:15']] },
+      params: { heures_pointees: 7.4, cadence_defaut: 50 },
+      seuils: { avance_stable: 10, retard_critique: 0, rej_orange: 120, rej_rouge: 140, dec_orange: 15, dec_rouge: 20,
+                vig_orange: 3, vig_rouge: 5, obj_lignes_op: 620, obj_ppm_averee: 220 },
+      saisie: { prevu: scenario === 'STABLE' ? 8700 : 9800 },
+      equipe: equipe,
+      tours: tours,
+      rejets: scenario === 'CRITIQUE' ? 94 : (scenario === 'STABLE' ? 58 : 71),
+      decelees: scenario === 'STABLE'
+        ? [{ mat: '149', n: 1 }, { mat: '628', n: 2 }, { mat: '194', n: 1 }, { mat: '717', n: 1 }]
+        : [{ mat: '149', n: 3 }, { mat: '628', n: scenario === 'CRITIQUE' ? 5 : 2 }, { mat: '194', n: 1 },
+           { mat: '717', n: 2 }, { mat: '670', n: 1 }, { mat: '739', n: scenario === 'CRITIQUE' ? 3 : 1 }],
+      hist: histo(),
+      mois: { nom: 'Octobre', prod: 588, ppm: 196 },
+      dec_mois: decMois()
+    };
+  }
+
+  function joursOuvres(fin, n) {
+    var out = [], d = new Date(2026, 9, 21);
+    while (out.length < n) {
+      if (d.getDay() !== 0 && d.getDay() !== 6) out.unshift(new Date(d));
+      d.setDate(d.getDate() - 1);
+    }
+    return out;
+  }
+  function iso(d) { return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2); }
+  function histo() {
+    var s = seed; seed = 11;
+    var out = joursOuvres(null, 30).map(function (d, i) {
+      var prod = between(540, 660) + (i > 18 ? 12 : 0);
+      var r = rnd(), ppm = r < 0.35 ? 0 : (r < 0.75 ? between(90, 220) : between(230, 480));
+      return { d: iso(d), prod: prod, ppm: ppm, rej: between(92, 150) };
+    });
+    seed = s; return out;
+  }
+  function decMois() {
+    var s = seed, out = []; seed = 23;
+    for (var j = 1; j <= 21; j++) {
+      var d = new Date(2026, 9, j);
+      if (d.getDay() === 0 || d.getDay() === 6) continue;
+      out.push({ d: iso(d), n: between(9, 23) });
+    }
+    seed = s; return out;
+  }
+
+  return { scenarios: ['TENDU', 'STABLE', 'CRITIQUE'], get: base };
+})();
+
+</script>
+<script>
+/* ===================== AFFICHAGE HUD =====================
+   Ne calcule rien : met en forme le résultat de PP.calculer().          */
+(function () {
+  var $ = function (id) { return document.getElementById(id); };
+  var NS = 'http://www.w3.org/2000/svg';
+  var JOURS = ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi'];
+  var MOIS = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
+  var MONO = '"JetBrains Mono","Cascadia Mono",Consolas,monospace';
+  var forceDemo = /[?&]demo=1/.test(location.search);
+  var mode = 'attente', scen = 0, D = null, R = null;
+
+  /* FLIP-FIT : hauteur fixe 1080, largeur = format de l'écran (16:9 mini, 3,2:1 maxi) */
+  var LARGE = false, COLS = 1;
+  function fit() {
+    var w = window.innerWidth, h = window.innerHeight, st = $('stage');
+    var W = Math.round(1080 * Math.min(Math.max(w / h, 16 / 9), 3.2));
+    st.style.width = W + 'px';
+    st.style.transform = 'translate(-50%,-50%) scale(' + Math.min(w / W, h / 1080) + ')';
+    LARGE = W >= 2500; COLS = LARGE ? 2 : 1;
+    st.classList.toggle('large', LARGE);
+    if (D) safeRender(true);
+  }
+  window.addEventListener('resize', fit);
+
+  function n0(v) { return Math.round(v).toLocaleString('fr-FR'); }
+  function p2(v) { return ('0' + v).slice(-2); }
+  function hh(d) { return d ? d.getHours() + 'h' + p2(d.getMinutes()) : '—'; }
+  function hhBig(d) { return d ? d.getHours() + '<span class="h">h</span>' + p2(d.getMinutes()) : '—'; }
+  function duree(m) { m = Math.round(m); return m >= 60 ? Math.floor(m / 60) + 'h' + p2(m % 60) : m + ' min'; }
+  function el(tag, attrs, parent) {
+    var e = document.createElementNS(NS, tag);
+    for (var k in attrs) e.setAttribute(k, attrs[k]);
+    if (parent) parent.appendChild(e);
+    return e;
+  }
+  function txt(parent, x, y, s, attrs) {
+    var a = { x: x, y: y, 'font-size': 15, fill: '#8EA2C0', 'font-family': MONO, 'font-weight': 500, 'letter-spacing': '.04em' };
+    for (var k in attrs) a[k] = attrs[k];
+    var t = el('text', a, parent); t.textContent = s; return t;
+  }
+  function css(v) { return getComputedStyle(document.documentElement).getPropertyValue(v).trim(); }
+  function clear(svg) { while (svg.firstChild) svg.removeChild(svg.firstChild); }
+  function maintenant() { return (mode === 'demo' && D && D.maintenant) ? PP.parseDT(D.maintenant) : new Date(); }
+  function pluriel(n, s, p) { return n + ' ' + (n > 1 ? p : s); }
+  var COL = function (niv) { return css({ ok: '--ok', warn: '--warn', bad: '--bad', neutre: '--dim', info: '--blue' }[niv] || '--blue'); };
+
+  /* compteur animé */
+  var reduit = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+  function compte(node, v) {
+    var from = node._v == null ? v : node._v; node._v = v;
+    if (reduit || from === v) { node.textContent = n0(v); return; }
+    var t0 = performance.now();
+    (function pas(t) {
+      if (node._v !== v) return;
+      var k = Math.min(1, (t - t0) / 900), e = 1 - Math.pow(1 - k, 3);
+      node.textContent = n0(from + (v - from) * e);
+      if (k < 1) requestAnimationFrame(pas);
+    })(t0);
+  }
+  /* grands chiffres : la taille baisse d'un cran quand le nombre s'allonge, pour ne jamais déborder */
+  function taille(node, v, paliers) {
+    for (var i = 0; i < paliers.length; i++) if (v >= paliers[i][0]) { node.style.fontSize = paliers[i][1] + 'px'; return; }
+  }
+
+  /* ---------- barre du haut ---------- */
+  var STAT = { STABLE: 'ok', TENDU: 'warn', CRITIQUE: 'bad', ATTENTE: 'neutre', FINI: 'info' };
+  function horloge() {
+    if (!D) return;
+    var now = maintenant(), s = new Date().getSeconds();
+    $('hm').innerHTML = p2(now.getHours()) + '<span class="col" style="opacity:' + (s % 2 ? .3 : 1) + '">:</span>' + p2(now.getMinutes());
+    $('ss').textContent = p2(s);
+  }
+  function renderHeader(now) {
+    horloge();
+    var j = JOURS[now.getDay()];
+    $('date').innerHTML = j + '<br>' + now.getDate() + ' ' + MOIS[now.getMonth()];
+    $('demo').style.display = mode === 'demo' ? 'inline-flex' : 'none';
+    document.documentElement.style.setProperty('--stat', STAT[R.statut] === 'neutre' ? css('--cyan') : COL(STAT[R.statut]));
+
+    var pz = null;
+    R.pauses.forEach(function (p) { if (now >= p[0] && now < p[1]) pz = p; });
+    var pe = $('pause');
+    if (pz) { pe.style.display = 'inline-flex'; pe.innerHTML = '<i class="dot"></i>Pause jusqu’à <b class="num">' + hh(pz[1]) + '</b>'; }
+    else pe.style.display = 'none';
+    var re = $('reste');
+    if (now < R.debut) re.innerHTML = 'Prise de poste à <b class="num">' + hh(R.debut) + '</b>';
+    else if (now < R.fin) re.innerHTML = 'Fin de poste dans <b class="num">' + duree((R.fin - now) / 60000) + '</b>';
+    else re.innerHTML = 'Poste terminé à <b class="num">' + hh(R.fin) + '</b>';
+
+    var f = $('fresh'), s = f.querySelector('span');
+    if (mode === 'demo') { f.className = 'pill warn'; s.textContent = 'Données fictives'; return; }
+    var g = PP.parseDT(D.genere), age = g ? (now - g) / 60000 : 99;
+    if (age < 3) { f.className = 'pill'; s.innerHTML = 'Synchro <b class="num">' + hh(g) + '</b>'; }
+    else if (age < 10) { f.className = 'pill warn'; s.textContent = 'Données de ' + hh(g) + ' · en retard'; }
+    else { f.className = 'pill bad'; s.textContent = 'Données de ' + hh(g) + ' · vérifier le PC Excel'; }
+  }
+
+  /* ---------- 01 lancées · 03 en cours · 04 équipe ---------- */
+  var NC = 60;   // nombre de cellules de la barre de journée
+  function cellules(seg) {
+    var box = $('cells'), kids = box.children, i, j;
+    if (kids.length !== NC) {
+      box.innerHTML = new Array(NC + 1).join('<i></i>');
+      for (i = 0; i < NC; i++) kids[i].style.transitionDelay = (i * 12) + 'ms';
+    }
+    var tot = seg.reduce(function (a, b) { return a + b; }, 0), cnt = [0, 0, 0, 0];
+    if (tot > 0) {
+      var raw = seg.map(function (v) { return v / tot * NC; });
+      cnt = raw.map(Math.floor);
+      seg.forEach(function (v, k) { if (v > 0 && cnt[k] === 0) cnt[k] = 1; });
+      var reste = NC - cnt.reduce(function (a, b) { return a + b; }, 0);
+      var ordre = raw.map(function (r, k) { return [r - Math.floor(r), k]; }).sort(function (a, b) { return b[0] - a[0]; });
+      for (j = 0; reste > 0; j++) { var k = ordre[j % 4][1]; if (seg[k] > 0) { cnt[k]++; reste--; } }
+      while (reste < 0) { var big = cnt.indexOf(Math.max.apply(null, cnt)); cnt[big]--; reste++; }
+    }
+    var cls = ['f', 'c', 'l', 'r'];
+    j = 0;
+    cls.forEach(function (c, k) { for (var n = 0; n < cnt[k]; n++) kids[j++].className = c; });
+    for (; j < NC; j++) kids[j].className = '';
+  }
+  function renderLignes() {
+    compte($('nLances'), R.lances);
+    taille($('nLances'), R.lances, [[100000, 140], [10000, 172], [0, 200]]);
+    $('tLances').innerHTML = '<b class="num">' + R.nbLances + '</b> ' + (R.nbLances > 1 ? 'tournées en attente' : 'tournée en attente');
+    var c = $('couv');
+    if (R.couverture == null || R.statut === 'FINI') { c.className = ''; c.innerHTML = ''; }
+    else if (R.couverture < 20) { c.className = 'tag bad'; c.innerHTML = '<i class="dot"></i>Moins de 20 min de travail · vague à lancer'; }
+    else if (R.couverture < 45) { c.className = 'tag warn'; c.innerHTML = '<i class="dot"></i>≈ ' + duree(R.couverture) + ' de travail pour l’équipe'; }
+    else { c.className = 'tag neutral'; c.innerHTML = '≈ ' + duree(R.couverture) + ' de travail pour l’équipe'; }
+    var pv = $('prev');
+    if (R.reelSeul) pv.innerHTML = 'réel seul depuis ' + hh(R.finPrevision);
+    else if (!R.totalPrevu) pv.innerHTML = '';
+    else if (R.resteALancer > 0) pv.innerHTML = 'encore <b class="num">' + n0(R.resteALancer) + '</b> à lancer';
+    else pv.innerHTML = 'prévision atteinte ✓';
+
+    compte($('nEnCours'), R.enCoursLogys);
+    taille($('nEnCours'), R.enCoursLogys, [[10000, 84], [1000, 104], [0, 132]]);
+    $('tEnCours').innerHTML = '<b class="num">' + R.nbEnCours + '</b> ' + (R.nbEnCours > 1 ? 'tournées en préparation' : 'tournée en préparation');
+    // une barrette lumineuse par tournée en préparation
+    var MAXP = 26, np = Math.min(R.nbEnCours, MAXP), ph = '';
+    for (var i = 0; i < np; i++) ph += '<i style="--k:' + i + '"></i>';
+    if (R.nbEnCours > MAXP) ph += '<b>+' + (R.nbEnCours - MAXP) + '</b>';
+    if ($('pips')._h !== ph) { $('pips').innerHTML = ph; $('pips')._h = ph; }
+
+    compte($('kPres'), R.presents); compte($('kTour'), R.enTournee); compte($('kCapa'), R.capaNow);
+    // une case par présent, allumée s'il est en tournée
+    var ro = $('roster'), nr = Math.min(R.presents, 40), on = Math.min(R.enTournee, nr);
+    if (ro.children.length !== nr) ro.innerHTML = new Array(nr + 1).join('<i></i>');
+    for (i = 0; i < nr; i++) { ro.children[i].className = i < on ? 'on' : ''; ro.children[i].style.transitionDelay = (i * 25) + 'ms'; }
+
+    var seg = [R.faites, R.enCoursLogys, R.lances, R.resteALancer];
+    var tot = seg.reduce(function (a, b) { return a + b; }, 0) || 1;
+    cellules(seg);
+    var items = [['Faites', R.faites, 'var(--done)'], ['En cours', R.enCoursLogys, 'var(--cyan)'], ['Lancées', R.lances, 'var(--blue)']];
+    if (R.resteALancer > 0) items.push(['À lancer', R.resteALancer, 'rgba(255,255,255,.22)']);
+    $('day').querySelector('.leg').innerHTML = items.map(function (x) {
+      return '<span><i style="background:' + x[2] + '"></i>' + x[0] + ' <b class="num">' + n0(x[1]) + '</b></span>';
+    }).join('');
+    $('pct').innerHTML = Math.round(100 * R.faites / tot) + ' %<small>faites</small>';
+  }
+
+  /* ---------- 05/06 jauges segmentées (270°) ---------- */
+  function pt(cx, cy, r, a) { a = a * Math.PI / 180; return [cx + r * Math.cos(a), cy + r * Math.sin(a)]; }
+  function arcD(cx, cy, r, a0, a1) {
+    var p = pt(cx, cy, r, a0), q = pt(cx, cy, r, a1);
+    return 'M' + p[0].toFixed(2) + ' ' + p[1].toFixed(2) + ' A' + r + ' ' + r + ' 0 ' + (a1 - a0 > 180 ? 1 : 0) + ' 1 ' + q[0].toFixed(2) + ' ' + q[1].toFixed(2);
+  }
+  function renderGauge(id, q, o, r) {
+    var tile = $(id), svg = tile.querySelector('svg');
+    tile.className = 'card gauge ' + q.niv;
+    var cx = 135, cy = 124, rad = 92, A0 = 135, SW = 270, N = 36, PAS_A = SW / N, GAP = 2.2;
+    var max = Math.max(Math.ceil(r * 1.45 / 10) * 10, (q.proj || q.n) * 1.1);
+    var A = function (v) { return A0 + SW * Math.min(Math.max(v, 0), max) / max; };
+    var c = COL(q.niv), off = 'rgba(140,190,255,.09)';
+    clear(svg);
+    // anneau intérieur décoratif (tourne lentement)
+    var sp = el('g', { class: 'spin' }, svg);
+    el('circle', { cx: cx, cy: cy, r: rad - 24, fill: 'none', stroke: 'rgba(140,190,255,.22)', 'stroke-width': 1.5, 'stroke-dasharray': '2 7' }, sp);
+    el('path', { d: arcD(cx, cy, rad - 24, 200, 250), fill: 'none', stroke: c, 'stroke-width': 2, opacity: .8 }, sp);
+    el('path', { d: arcD(cx, cy, rad - 24, 20, 70), fill: 'none', stroke: c, 'stroke-width': 2, opacity: .8 }, sp);
+    // zones de seuils (liseré extérieur) + graduations
+    [[0, o, 'ok'], [o, r, 'warn'], [r, max, 'bad']].forEach(function (z) {
+      var a0 = A(z[0]) + (z[0] ? 1.2 : 0), a1 = A(z[1]) - (z[1] < max ? 1.2 : 0);
+      if (a1 > a0) el('path', { d: arcD(cx, cy, rad + 19, a0, a1), stroke: COL(z[2]), 'stroke-width': 3, fill: 'none', opacity: .85 }, svg);
+    });
+    [o, r].forEach(function (v) {
+      var a = A(v), p1 = pt(cx, cy, rad + 14, a), p2_ = pt(cx, cy, rad + 26, a), p = pt(cx, cy, rad + 46, a);
+      el('line', { x1: p1[0], y1: p1[1], x2: p2_[0], y2: p2_[1], stroke: '#EAF4FF', 'stroke-width': 2, opacity: .7 }, svg);
+      txt(svg, p[0], p[1] + 5, String(v), { 'text-anchor': 'middle', 'font-size': 15, fill: '#8EA2C0' });
+    });
+    // segments : allumés jusqu'à la valeur du jour
+    var lit = q.n > 0 ? Math.max(1, Math.round(N * Math.min(q.n, max) / max)) : 0;
+    var prev = tile._lit == null ? 0 : tile._lit, segs = [];
+    var g = el('g', { style: 'filter:drop-shadow(0 0 7px ' + c + '99)' }, svg);
+    for (var i = 0; i < N; i++) {
+      var a = A0 + i * PAS_A;
+      var s = el('path', { d: arcD(cx, cy, rad, a + GAP / 2, a + PAS_A - GAP / 2), fill: 'none', 'stroke-width': 20, class: 'seg' }, g);
+      s.style.stroke = i < prev ? c : off;
+      segs.push(s);
+    }
+    requestAnimationFrame(function () { requestAnimationFrame(function () {
+      segs.forEach(function (s, i) {
+        s.style.transitionDelay = (Math.abs(i - (lit > prev ? prev : lit)) * 22) + 'ms';
+        s.style.stroke = i < lit ? c : off;
+      });
+    }); });
+    tile._lit = lit;
+    // projection : repère blanc sur le liseré
+    if (q.proj != null) {
+      var ap = A(q.proj), t1 = pt(cx, cy, rad + 12, ap), t2 = pt(cx, cy, rad + 30, ap - 4.5), t3 = pt(cx, cy, rad + 30, ap + 4.5);
+      el('path', { d: 'M' + t1.join(' ') + 'L' + t2.join(' ') + 'L' + t3.join(' ') + 'Z', fill: '#EAF4FF', stroke: '#02040A', 'stroke-width': 2.5, 'stroke-linejoin': 'round' }, svg);
+    }
+    compte(tile.querySelector('.val b'), q.n);
+    tile.querySelector('.val small').textContent = 'aujourd’hui';
+    tile.querySelector('.cap').innerHTML = q.proj != null
+      ? '<b class="num">≈ ' + q.proj + '</b> à ' + hh(R.fin) + ' à ce rythme'
+      : 'projection après 300 lignes faites';
+  }
+
+  /* ---------- 02 fin estimée ---------- */
+  var TXT = { STABLE: 'Stable', TENDU: 'Tendu', CRITIQUE: 'Critique', ATTENTE: 'En attente', FINI: 'Terminé' };
+  function renderFin() {
+    $('fin').className = 'card ' + STAT[R.statut];
+    $('fin').style.cursor = mode === 'demo' ? 'pointer' : 'default';
+    $('pill').querySelector('span').textContent = TXT[R.statut].toUpperCase();
+    var m = $('manque'); m.innerHTML = '';
+    if (R.statut === 'ATTENTE') { $('finp').innerHTML = '—'; $('finsub').textContent = 'Saisis les lignes prévues pour l’estimation'; }
+    else if (R.statut === 'FINI') { $('finp').innerHTML = n0(R.faites); $('finsub').textContent = 'lignes préparées aujourd’hui'; }
+    else {
+      $('finp').innerHTML = R.finPrevue ? hhBig(R.finPrevue) : '+6<span class="h">h</span>';
+      $('finsub').innerHTML = 'Fin de poste <b class="num">' + hh(R.fin) + '</b>' +
+        (R.ecart != null && R.ecart > 0 ? ' · <span id="retard">+' + duree(R.ecart) + '</span>'
+          : (R.ecart != null && R.ecart < 0 ? ' · <b class="num">' + duree(-R.ecart) + '</b> d’avance' : ''));
+      var manque = Math.max(0, R.restant - R.realisableAvantFin);
+      if (R.statut === 'CRITIQUE' && manque > 0) m.innerHTML = '≈ <b class="r num">' + n0(manque) + '</b> lignes non faites à ' + hh(R.fin) + ' sans renfort';
+      else if (R.restant > 0) m.innerHTML = 'Reste <b class="num">' + n0(R.restant) + '</b> lignes à <b class="num">' + n0(R.capaNow) + '</b> l/h';
+    }
+    renderTrack();
+  }
+  /* frise du poste : passé hachuré, projection lumineuse, pauses, fin de poste, maintenant */
+  function renderTrack() {
+    var svg = $('track'); clear(svg);
+    var W = Math.max(400, $('fin').clientWidth - 56), H = 100, y0 = 40, th = 12;
+    svg.setAttribute('width', W); svg.setAttribute('height', H);
+    var c = COL(STAT[R.statut]);
+    var start = R.debut.getTime(), endT = R.fin.getTime() + 20 * 60000;
+    if (R.finPrevue && R.finPrevue > R.fin) endT = Math.max(endT, R.finPrevue.getTime() + 12 * 60000);
+    var L = 6, RR = W - 6;
+    var X = function (t) { return L + (RR - L) * (Math.min(Math.max(t, start), endT) - start) / (endT - start); };
+    var defs = el('defs', {}, svg);
+    var g = el('linearGradient', { id: 'trk', x1: 0, x2: 1, y1: 0, y2: 0 }, defs);
+    el('stop', { offset: 0, 'stop-color': c, 'stop-opacity': .3 }, g); el('stop', { offset: 1, 'stop-color': c }, g);
+    var hp = el('pattern', { id: 'hatch', width: 7, height: 7, patternUnits: 'userSpaceOnUse', patternTransform: 'rotate(45)' }, defs);
+    el('rect', { width: 3, height: 7, fill: 'rgba(234,244,255,.30)' }, hp);
+    // rail
+    el('rect', { x: L, y: y0, width: RR - L, height: th, fill: 'rgba(140,190,255,.06)', stroke: 'rgba(140,190,255,.22)', 'stroke-width': 1 }, svg);
+    // graduations : quart d'heure fin, heure franche
+    var q = new Date(R.debut); q.setMinutes(Math.ceil(q.getMinutes() / 15) * 15, 0, 0);
+    for (; q.getTime() < endT; q = new Date(q.getTime() + 15 * 60000)) {
+      var xq = X(q.getTime()), maj = q.getMinutes() === 0;
+      el('line', { x1: xq, x2: xq, y1: y0 + th + 3, y2: y0 + th + (maj ? 11 : 6), stroke: maj ? 'rgba(234,244,255,.45)' : 'rgba(234,244,255,.18)', 'stroke-width': maj ? 2 : 1 }, svg);
+    }
+    var now = R.now.getTime(), nx = X(now);
+    if (now > start) el('rect', { x: L, y: y0, width: Math.max(0, nx - L), height: th, fill: 'url(#hatch)' }, svg);
+    var actif = R.finPrevue && R.statut !== 'FINI' && R.statut !== 'ATTENTE';
+    var fx = actif ? X(R.finPrevue.getTime()) : null;
+    if (actif) el('rect', { x: nx, y: y0, width: Math.max(6, fx - nx), height: th, fill: 'url(#trk)', style: 'filter:drop-shadow(0 0 9px ' + c + ')' }, svg);
+    R.pauses.forEach(function (p) {
+      var a = X(p[0].getTime()), b = X(p[1].getTime());
+      el('rect', { x: a, y: y0 - 5, width: Math.max(3, b - a), height: th + 10, fill: '#050A15', stroke: 'rgba(255,197,49,.55)', 'stroke-width': 1 }, svg);
+      el('rect', { x: a, y: y0 + th / 2 - 1, width: Math.max(3, b - a), height: 2, fill: 'rgba(255,197,49,.7)' }, svg);
+    });
+    // fin de poste
+    var px = X(R.fin.getTime());
+    el('line', { x1: px, x2: px, y1: y0 - 16, y2: y0 + th + 16, stroke: '#EAF4FF', 'stroke-width': 2, 'stroke-dasharray': '3 4' }, svg);
+    // maintenant : faisceau vertical + étiquette
+    if (now > start && now < endT) {
+      el('line', { x1: nx, x2: nx, y1: y0 - 12, y2: y0 + th + 10, stroke: '#EAF4FF', 'stroke-width': 3, style: 'filter:drop-shadow(0 0 6px #22E4FF)' }, svg);
+      var lx = Math.min(Math.max(nx, 40), W - 40), lw = 64;
+      el('path', { d: 'M' + (lx - lw / 2 + 6) + ' ' + (y0 - 40) + 'h' + (lw - 6) + 'v' + 16 + 'l-6 6h' + (-(lw - 6)) + 'v-16z', fill: '#EAF4FF' }, svg);
+      txt(svg, lx, y0 - 25, p2(R.now.getHours()) + ':' + p2(R.now.getMinutes()), { 'text-anchor': 'middle', fill: '#02040A', 'font-weight': 700, 'font-size': 15 });
+    }
+    // fin estimée : losange
+    if (actif) {
+      var cy_ = y0 + th / 2, d = 11;
+      el('path', { d: 'M' + fx + ' ' + (cy_ - d - 5) + 'l' + (d + 5) + ' ' + (d + 5) + 'l' + (-(d + 5)) + ' ' + (d + 5) + 'l' + (-(d + 5)) + ' ' + (-(d + 5)) + 'z', fill: 'none', stroke: c, 'stroke-width': 1.5, opacity: .5 }, svg);
+      el('path', { d: 'M' + fx + ' ' + (cy_ - d) + 'l' + d + ' ' + d + 'l' + (-d) + ' ' + d + 'l' + (-d) + ' ' + (-d) + 'z', fill: '#02040A', stroke: c, 'stroke-width': 4, style: 'filter:drop-shadow(0 0 8px ' + c + ')' }, svg);
+    }
+    var yl = y0 + th + 34;
+    txt(svg, L, yl, hh(R.debut), {});
+    var hr = new Date(R.debut); hr.setMinutes(0, 0, 0); hr.setHours(hr.getHours() + 1);
+    for (; hr < R.fin; hr.setHours(hr.getHours() + 1)) {
+      var xh = X(hr.getTime());
+      if (xh - L < 70 || px - xh < 60) continue;
+      txt(svg, xh, yl, hr.getHours() + 'h', { 'text-anchor': 'middle', fill: '#56667F' });
+    }
+    txt(svg, Math.min(px + 30, W), yl, hh(R.fin), { 'text-anchor': 'end', fill: '#EAF4FF', 'font-weight': 700 });
+  }
+
+  /* ---------- 07 vigilance ---------- */
+  function renderVig() {
+    var v = R.vigilance, box = $('chips'), tile = $('vig');
+    if (!v.length) { tile.className = 'card ok'; box.innerHTML = '<span class="calm"><b>✓</b> Aucun opérateur en vigilance aujourd’hui</span>'; return; }
+    tile.className = 'card ' + (v.some(function (x) { return x.niv === 'bad'; }) ? 'bad' : 'warn');
+    var max = LARGE ? 10 : 6, h = v.slice(0, max).map(function (x) {
+      return '<div class="chip ' + x.niv + '"><i class="dot"></i><b class="num">' + x.mat + '</b><span>' + pluriel(x.n, 'décelée', 'décelées') + '</span></div>';
+    }).join('');
+    if (v.length > max) h += '<span class="calm">+ ' + (v.length - max) + ' autres</span>';
+    box.innerHTML = h;
+  }
+
+  /* ---------- historique (colonne de droite) ---------- */
+  function cartes() {
+    var S = D.seuils, out = [], hist = D.hist || [], dm = D.dec_mois || [], mois = D.mois || {}, nm = mois.nom || 'Mois';
+    function nivProd(v) { return v >= S.obj_lignes_op ? 'ok' : (v >= .9 * S.obj_lignes_op ? 'warn' : 'bad'); }
+    function nivPpm(v) { return v <= S.obj_ppm_averee ? 'ok' : 'bad'; }
+    function nivDec(v) { return v >= S.dec_rouge ? 'bad' : (v >= S.dec_orange ? 'warn' : 'ok'); }
+    function nivRej(v) { return v > S.rej_rouge ? 'bad' : (v >= S.rej_orange ? 'warn' : 'ok'); }
+    if (hist.length) {
+      var hp = hist[hist.length - 1];
+      var okProd = hist.filter(function (x) { return x.prod >= S.obj_lignes_op; }).length;
+      out.push({ h: 'Productivité', code: 'H1', per: 'Lignes / jour / opérateur · 30 jours', unit: '',
+        k: [['Hier', hp.prod, nivProd(hp.prod)], [nm, mois.prod, nivProd(mois.prod)]],
+        line: 'Objectif ' + S.obj_lignes_op + ' atteint ' + okProd + ' jours sur ' + hist.length,
+        data: hist.map(function (x) { return { d: x.d, v: x.prod, niv: nivProd(x.prod) }; }), obj: S.obj_lignes_op, zoom: true });
+      out.push({ h: 'Erreurs avérées', code: 'H2', per: 'PPM · 30 jours', unit: 'ppm',
+        k: [['Hier', hp.ppm, nivPpm(hp.ppm)], [nm, mois.ppm, nivPpm(mois.ppm)]],
+        line: hp.ppm > 0 ? 'Hier : 1 erreur toutes les ' + n0(1e6 / hp.ppm) + ' lignes · plafond ' + S.obj_ppm_averee : 'Hier : aucune erreur avérée ✓',
+        data: hist.map(function (x) { return { d: x.d, v: x.ppm, niv: nivPpm(x.ppm) }; }), obj: S.obj_ppm_averee });
+      if (hist.some(function (x) { return x.rej != null; })) {
+        var hr = hist.filter(function (x) { return x.rej != null; }), moyR = hr.reduce(function (s, x) { return s + x.rej; }, 0) / hr.length;
+        out.push({ h: 'Rejets', code: 'H3', per: 'Par jour · 30 jours', unit: '',
+          k: [['Hier', hr[hr.length - 1].rej, nivRej(hr[hr.length - 1].rej)], ['Moyenne', Math.round(moyR), nivRej(moyR)]],
+          line: 'Vert sous ' + S.rej_orange + ' · rouge au-dessus de ' + S.rej_rouge,
+          data: hr.map(function (x) { return { d: x.d, v: x.rej, niv: nivRej(x.rej) }; }), obj: S.rej_orange, zoom: true });
+      }
+    }
+    if (dm.length) {
+      var moy = dm.reduce(function (s, x) { return s + x.n; }, 0) / dm.length;
+      out.push({ h: 'Décelées', code: 'H4', per: 'Par jour · depuis le début du mois', unit: '',
+        k: [['Hier', dm[dm.length - 1].n, nivDec(dm[dm.length - 1].n)], ['Moyenne', Math.round(moy), nivDec(moy)]],
+        line: 'Orange dès ' + S.dec_orange + ' · rouge dès ' + S.dec_rouge,
+        data: dm.map(function (x) { return { d: x.d, v: x.n, niv: nivDec(x.n) }; }), obj: S.dec_orange });
+    }
+    return out;
+  }
+  function carteHTML(c) {
+    return '<div class="card hcard ' + c.k[0][2] + '"><div class="hd"><h2>' + c.h + '</h2><i class="rule"></i><em>' + (c.code || '') + '</em></div>' +
+      '<div class="per">' + c.per + '</div>' +
+      '<div class="kpis">' + c.k.map(function (k) {
+        return '<div class="kpi"><div class="lab">' + k[0] + '</div><div class="v num" style="color:var(--' + k[2] + ')">' +
+          (k[1] == null ? '—' : n0(k[1])) + (c.unit ? '<small>' + c.unit + '</small>' : '') + '</div></div>';
+      }).join('') + '</div><div class="line">' + c.line + '</div><svg width="380" height="150"></svg></div>';
+  }
+  // histogramme « égaliseur » : une barre par jour découpée en diodes, couleur selon le seuil, objectif en pointillé
+  function chart(svg, c, uid) {
+    var W = 380, H = 150, top = 12, bot = 28, plotW = W - 58, data = c.data.slice(-30);
+    if (!data.length) return;
+    var vals = data.map(function (x) { return x.v; });
+    var vmax = Math.max(Math.max.apply(null, vals), c.obj), vmin = Math.min(Math.min.apply(null, vals), c.obj);
+    var pad = (vmax - vmin) * .15 || 1;
+    var hi = vmax + pad, lo = c.zoom ? Math.max(0, vmin - pad * 2) : 0;
+    var base = H - bot;
+    var Y = function (v) { return top + (base - top) * (hi - v) / (hi - lo); };
+    var step = plotW / data.length, bw = Math.max(3, step * .64);
+    var defs = el('defs', {}, svg), pid = 'led' + uid, mid = 'msk' + uid;
+    var pat = el('pattern', { id: pid, width: 8, height: 5, patternUnits: 'userSpaceOnUse', y: base % 5 }, defs);
+    el('rect', { width: 8, height: 3.6, fill: '#fff' }, pat);
+    var mk = el('mask', { id: mid, maskUnits: 'userSpaceOnUse', x: -10, y: -10, width: W + 20, height: H + 20 }, defs);
+    el('rect', { x: -10, y: -10, width: W + 20, height: H + 20, fill: 'url(#' + pid + ')' }, mk);
+    var g = el('g', { mask: 'url(#' + mid + ')' }, svg);
+    data.forEach(function (x, i) {
+      var y = Math.min(Y(x.v), base - 4), last = i === data.length - 1;
+      el('rect', { x: i * step + (step - bw) / 2, y: y, width: bw, height: base - y,
+        fill: COL(x.niv), opacity: last ? 1 : .6 }, g);
+    });
+    // dernier jour : capuchon lumineux
+    var xl = data[data.length - 1], yl = Math.min(Y(xl.v), base - 4), il = data.length - 1;
+    el('rect', { x: il * step + (step - bw) / 2 - 1, y: yl - 4, width: bw + 2, height: 2.5, fill: '#EAF4FF', style: 'filter:drop-shadow(0 0 6px ' + COL(xl.niv) + ')' }, svg);
+    el('line', { x1: 0, x2: plotW, y1: base + 1.5, y2: base + 1.5, stroke: 'rgba(140,190,255,.25)' }, svg);
+    var oy = Y(c.obj);
+    el('line', { x1: 0, x2: plotW + 6, y1: oy, y2: oy, stroke: '#EAF4FF', 'stroke-width': 2, 'stroke-dasharray': '2 6', 'stroke-linecap': 'round', opacity: .9 }, svg);
+    el('path', { d: 'M' + (plotW + 14) + ' ' + (oy - 14) + 'h40v20l-8 8h-40v-20z', fill: 'rgba(234,244,255,.12)', stroke: 'rgba(234,244,255,.35)', 'stroke-width': 1 }, svg);
+    txt(svg, plotW + 30, oy + 6, String(Math.round(c.obj)), { 'text-anchor': 'middle', fill: '#EAF4FF', 'font-weight': 700, 'font-size': 15 });
+    var dd = function (s) { var q = s.split('-'); return q[2] + '/' + q[1]; };
+    txt(svg, 0, H - 4, dd(data[0].d), { fill: '#56667F', 'font-size': 14 });
+    txt(svg, plotW, H - 4, dd(data[data.length - 1].d), { 'text-anchor': 'end', fill: '#56667F', 'font-size': 14 });
+  }
+  var pos = 0, nCartes = 0, PAS = 475, reelTimer = null, ARRET = 9000;
+  document.documentElement.style.setProperty('--dwell', ARRET + 'ms');
+  function construireBandeau() {
+    var cs = cartes(), reel = $('reel'), side = $('side');
+    var ch = Math.floor((side.clientHeight - 20) / 2);
+    side.style.setProperty('--ch', ch + 'px'); PAS = ch + 20;
+    if (!cs.length) { nCartes = 0; $('dots').innerHTML = ''; reel.innerHTML = '<div class="card hcard"><div class="hd"><h2>Historique</h2><i class="rule"></i></div><div class="line">Indisponible dans data.js</div></div>'; return; }
+    var places = 2 * COLS, liste = cs;
+    nCartes = 0;
+    if (cs.length > places) {
+      var base = cs.length % COLS ? cs.concat(cs) : cs;
+      liste = base.concat(base.slice(0, places));
+      nCartes = base.length / COLS;
+    }
+    reel.innerHTML = liste.map(carteHTML).join('');
+    reel.querySelectorAll('svg').forEach(function (svg, i) { chart(svg, liste[i], i); });
+    pos = nCartes ? pos % nCartes : 0;
+    reel.className = 'jump'; reel.style.transform = 'translateY(' + (-pos * PAS) + 'px)';
+    void reel.offsetHeight; reel.className = '';
+    $('dots').innerHTML = nCartes ? new Array(nCartes + 1).join('<i></i>') : '';
+    points();
+  }
+  function points() {
+    var d = $('dots').children;
+    for (var i = 0; i < d.length; i++) d[i].className = i === pos % nCartes ? 'on' : '';
+  }
+  function avancer() {
+    if (!nCartes) return;
+    var reel = $('reel'); pos++;
+    reel.style.transform = 'translateY(' + (-pos * PAS) + 'px)';
+    points();
+    if (pos === nCartes) setTimeout(function () {
+      reel.className = 'jump'; pos = 0; reel.style.transform = 'translateY(0)';
+      void reel.offsetHeight; reel.className = '';
+    }, 1500);
+  }
+
+  /* ---------- rendu ---------- */
+  function render(bandeau) {
+    if (!D) return;
+    var now = maintenant();
+    R = PP.calculer(D, now);
+    renderHeader(now); renderLignes();
+    renderGauge('grej', R.rejets, D.seuils.rej_orange, D.seuils.rej_rouge);
+    renderGauge('gdec', R.decelees, D.seuils.dec_orange, D.seuils.dec_rouge);
+    renderFin(); renderVig();
+    if (bandeau) construireBandeau();
+  }
+  // un data.js incomplet ne laisse jamais l'écran noir : on garde le dernier affichage et on le signale
+  function safeRender(bandeau) {
+    try { render(bandeau); $('err').style.display = 'none'; }
+    catch (e) { var x = $('err'); x.textContent = 'Erreur d’affichage : ' + e.message + ' — vérifier data.js'; x.style.display = 'block'; if (window.console) console.error(e); }
+  }
+  function demarrerBandeau() { if (reelTimer) clearInterval(reelTimer); reelTimer = setInterval(avancer, ARRET); points(); }
+
+  function chargerDemo() {
+    mode = 'demo'; D = PP_DEMO.get(PP_DEMO.scenarios[scen]);
+    safeRender(true); demarrerBandeau();
+  }
+  var derniereDate = null;
+  function rechargerData() {
+    var s = document.createElement('script');
+    s.src = 'data.js?t=' + Date.now();
+    s.onload = function () {
+      if (window.PP_DATA && window.PP_DATA.jour) {
+        var premier = mode !== 'live';
+        mode = 'live'; D = window.PP_DATA;
+        var nouveauJour = D.jour.date !== derniereDate; derniereDate = D.jour.date;
+        safeRender(premier || nouveauJour); if (premier) demarrerBandeau();
+      } else if (mode === 'attente') chargerDemo();
+      s.remove();
+    };
+    s.onerror = function () { s.remove(); if (mode === 'attente') chargerDemo(); };
+    document.head.appendChild(s);
+  }
+  $('fin').addEventListener('click', function () {
+    if (mode !== 'demo') return;
+    scen = (scen + 1) % PP_DEMO.scenarios.length;
+    D = PP_DEMO.get(PP_DEMO.scenarios[scen]); safeRender(false);
+  });
+
+  /* plein écran : double-clic ou touche F */
+  function pleinEcran() {
+    var d = document, e = d.documentElement;
+    if (d.fullscreenElement || d.webkitFullscreenElement) (d.exitFullscreen || d.webkitExitFullscreen).call(d);
+    else if (e.requestFullscreen) e.requestFullscreen(); else if (e.webkitRequestFullscreen) e.webkitRequestFullscreen();
+  }
+  document.addEventListener('dblclick', pleinEcran);
+  document.addEventListener('keydown', function (e) { if (e.key === 'f' || e.key === 'F') pleinEcran(); });
+  var curT = null;
+  document.addEventListener('mousemove', function () {
+    document.body.style.cursor = ''; clearTimeout(curT);
+    curT = setTimeout(function () { document.body.style.cursor = 'none'; }, 3000);
+  });
+  // la police arrive après le premier affichage : on retrace les éléments mesurés
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { if (D) safeRender(true); });
+
+  fit();
+  if (forceDemo) chargerDemo();
+  else { rechargerData(); setInterval(rechargerData, 30000); }
+  setInterval(function () { if (D) safeRender(false); }, 20000);
+  setInterval(horloge, 1000);
+})();
+</script>
+</body>
+</html>
