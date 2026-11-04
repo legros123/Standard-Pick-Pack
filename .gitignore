@@ -3,6 +3,6 @@ bilan/
 *.xlsx
 *.xlsm
 __pycache__/
-outils/tournees/calibration.json
+
 tournees_*.xlsx
 jeu_test.csv

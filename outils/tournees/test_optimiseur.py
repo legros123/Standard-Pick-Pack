@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Contrôle automatique de l'optimiseur sur le jeu d'essai : python3 outils/tournees/test_optimiseur.py"""
+"""Contrôle automatique de l'optimiseur : python3 outils/tournees/test_optimiseur.py"""
 import subprocess
 import sys
 import tempfile
@@ -11,66 +11,61 @@ sys.path.insert(0, str(ICI))
 import optimiseur_tournees as ot  # noqa: E402
 
 
-class TestOptimiseur(unittest.TestCase):
+def ecrire(rows, dossier=None):
+    d = Path(dossier or tempfile.mkdtemp()) / "cas.csv"
+    cols = sorted({k for r in rows for k in r})
+    with open(d, "w", encoding="utf-8") as f:
+        f.write(";".join(cols) + "\n")
+        for r in rows:
+            f.write(";".join(str(r.get(c, "")) for c in cols) + "\n")
+    return d
+
+
+def ligne(cmd, allee, pos, cont="C11", num="1", vague="V1", **kw):
+    r = {"COMMANDE": cmd, "EMPLACEMENT": f"54APP{allee:02d}{pos:03d}01A", "ZONE": "PICK01A14",
+         "VAGUE": vague, "QTE_PREVUE": 1, "PDS_LIGNE": 500, "VOL_LIGNE": 100000, "CONTENANT": num,
+         "TYPE_CONTENANT": cont, "STYP_TOUR": "DETA", "ETAT_LIGNE": "TERM"}
+    r.update(kw)
+    return r
+
+
+class TestJeuEssai(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.dossier = Path(tempfile.mkdtemp())
         cls.csv = cls.dossier / "jeu.csv"
-        subprocess.run([sys.executable, str(ICI / "generer_jeu_test.py"), "--commandes", "250",
+        subprocess.run([sys.executable, str(ICI / "generer_jeu_test.py"), "--commandes", "500",
                         "--sortie", str(cls.csv)], check=True, capture_output=True)
-        cls.anomalies = []
-        cls.lignes = ot.charger_lignes(cls.csv, cls.anomalies)
-        cls.plan, cls.tournees, cls.fifo, _ = ot.optimiser(cls.lignes, cls.anomalies, 5)
+        cls.an, cls.cp = [], {}
+        cls.lignes = ot.charger_lignes(cls.csv, cls.an, cls.cp)
+        cls.plan, cls.ts, _ = ot.optimiser(cls.lignes, cls.an, 6)
+        cls.ref = ot.tournees_logys(cls.lignes)
 
-    def test_emplacements(self):
-        self.assertEqual(ot.decouper_emplacement("11-05-B"), (11, 5, 2))
-        self.assertEqual(ot.decouper_emplacement("011 05 2"), (11, 5, 2))
-        self.assertEqual(ot.decouper_emplacement("110502"), (11, 5, 2))
-        self.assertEqual(ot.decouper_emplacement("1105B"), (11, 5, 2))
-        self.assertEqual(ot.decouper_emplacement("A11.05.02")[1:], (5, 2))
+    def test_lecture(self):
+        self.assertGreater(self.cp.get("annulees", 0), 0)
+        self.assertGreater(self.cp.get("hors_zone:AEROSOLS", 0), 0)
+        self.assertTrue(all(l.zone == "PICK01A14" for l in self.lignes))
 
     def test_controles_conformes(self):
-        ecarts = [c for c in ot.controler(self.tournees, self.lignes) if c[1] == "ÉCART"]
-        self.assertEqual(ecarts, [])
+        self.assertEqual([c for c in ot.controler(self.ts, self.lignes) if c[1] == "ÉCART"], [])
 
-    def test_bornes(self):
-        for t in self.tournees:
-            self.assertLessEqual(t.nb_lignes, ot.bornes(t.type)[1])
-            if t.type != "MONO":
-                self.assertLessEqual(t.places, ot.CHARIOT_PLACES)
-            self.assertLessEqual(t.poids, ot.CHARIOT_POIDS_MAX)
+    def test_capacites(self):
+        for t in self.ts:
+            if t.type == "MULTI":
+                self.assertLessEqual(t.nb_lignes, ot.LIGNES_MAX)
+                self.assertLessEqual(t.eq, ot.CHARIOT_EQ_C16 + 1e-9)
+            if t.type == "MONO":
+                self.assertLessEqual(t.ncolis, ot.MONO_MAX)
 
-    def test_mieux_que_fifo(self):
-        opt, fifo = ot.total(self.tournees, self.plan), ot.total(self.fifo, self.plan)
-        self.assertLess(opt["distance"], fifo["distance"])
-        self.assertLessEqual(opt["tournees"], fifo["tournees"])
-
-    def test_serpentin(self):
-        plan = self.plan
-        p = {1: (0, 5), 3: (0, 10)}
-        d, mode = plan.distance(p, "S")
-        # 2 allées (pair) : les deux traversées en entier
-        self.assertAlmostEqual(d, 2 * (plan.x(3) - ot.ALLEE_DEPART_X) + plan.longueur(1) + plan.longueur(3))
-        self.assertEqual(mode, "S")
-        # 1 allée (impair) : aller-retour jusqu'au point le plus profond
-        d, _ = plan.distance({3: (0, 10)}, "S")
-        self.assertAlmostEqual(d, 2 * (plan.x(3) - ot.ALLEE_DEPART_X) + 2 * 10)
-        # MIXTE jamais plus long que S ni que RETOUR
-        p = {1: (0, 3), 2: (0, 4), 5: (0, 50)}
-        self.assertLessEqual(plan.distance(p, "MIXTE")[0], min(plan.distance(p, "S")[0], plan.distance(p, "RETOUR")[0]))
-
-    def test_sequence_alternee(self):
-        ls = [l for t in self.tournees if t.type == "MULTI" and len(t.profil) >= 2
-              for l in [ot.lignes_de(t)]][0]
-        seq = self.plan.sequence(ls, "S")
-        allees = [l.allee for l in seq]
-        self.assertEqual(allees, sorted(allees, key=self.plan.x))
+    def test_mieux_que_logys_simule(self):
+        o, r = ot.total(self.ts, self.plan), ot.total(self.ref, self.plan)
+        self.assertLess(o["distance"], r["distance"])
+        self.assertEqual(o["cmd_coupees"], 0)
 
     def test_excel(self):
         sortie = self.dossier / "t.xlsx"
-        ot.ecrire_excel(sortie, self.tournees, self.plan, self.fifo, None,
-                        ot.controler(self.tournees, self.lignes), self.anomalies,
-                        {"passes": 0, "ameliorations": 0, "duree_s": 0}, "test")
+        ot.ecrire_excel(sortie, self.ts, self.plan, self.ref, ot.controler(self.ts, self.lignes), self.an,
+                        {"ameliorations": 0, "duree_s": 0}, "test", self.cp)
         import openpyxl
         wb = openpyxl.load_workbook(sortie)
         self.assertEqual(wb.sheetnames, ["SYNTHESE", "TOURNEES", "PRELEVEMENT", "PREVISIONNEL",
@@ -78,65 +73,114 @@ class TestOptimiseur(unittest.TestCase):
         self.assertEqual(wb["PRELEVEMENT"].max_row - 1, len(self.lignes))
 
 
-class TestCasLimites(unittest.TestCase):
-    """Non-régression des écarts trouvés en revue de code."""
+class TestModele(unittest.TestCase):
+    def test_emplacement_logys(self):
+        self.assertEqual(ot.decouper_emplacement("54APP0302201A"), (3, 22, 1))
+        self.assertEqual(ot.decouper_emplacement("54APP0608105"), (6, 81, 5))
+        self.assertEqual(ot.decouper_emplacement("54APP1310812H"), (13, 108, 12))
+        self.assertEqual(ot.decouper_emplacement("54APA2105802D")[0], 21)   # rétract : hors zone pick
 
-    def _ecrire(self, rows):
-        d = Path(tempfile.mkdtemp()) / "cas.csv"
-        cols = sorted({k for r in rows for k in r})
-        with open(d, "w", encoding="utf-8") as f:
-            f.write(";".join(cols) + "\n")
-            for r in rows:
-                f.write(";".join(str(r.get(c, "")) for c in cols) + "\n")
-        an = []
-        lignes = ot.charger_lignes(d, an)
-        plan, ts, _, _ = ot.optimiser(lignes, an, 1)
+    def test_equivalents_c16(self):
+        self.assertAlmostEqual(ot.eq_c16("C16"), 1)
+        self.assertAlmostEqual(ot.eq_c16("C11"), 600 * 400 / (335 * 190))
+
+    def test_sens_unique(self):
+        p = ot.Plan()
+        L = p.L
+        # allée 1 seule (impaire, vers le fond) : retour obligatoire par une paire -> 2
+        d, ch = p.chemin(1 << 1)
+        self.assertEqual(ch, [1, 2])
+        self.assertAlmostEqual(d, L[1] + L[2] + 2 * (p.x(2) - p.x0))
+        # allée 2 seule (paire, vers la sortie) : il faut d'abord aller au fond par la 1
+        self.assertEqual(p.chemin(1 << 2)[1], [1, 2])
+        # 1 et 3 (deux impaires) : la 2 sert de retour entre les deux, la 4 pour revenir
+        self.assertEqual(p.chemin((1 << 1) | (1 << 3))[1], [1, 2, 3, 4])
+        # 4 et 5 : une impaire courte (1 ou 3, même longueur) pour aller au fond, 4 revient, 5, 6
+        self.assertIn(p.chemin((1 << 4) | (1 << 5))[1], ([1, 4, 5, 6], [3, 4, 5, 6]))
+        # chaque allée du chemin est parcourue dans son sens : on alterne fond / avant
+        for m in range(2, 1 << 15, 97):
+            ch = p.chemin(m & ~1)[1]
+            if ch:
+                self.assertEqual([a % 2 for a in ch], [1, 0] * (len(ch) // 2))
+
+    def test_sequence(self):
+        p = ot.Plan()
+        ls = [ot.Ligne(i, "C", "", "V", "", "DETA", "PICK01A14", "", a, pos, 0, "", "", 1, 0, None, "1", "C11", "")
+              for i, (a, pos) in enumerate([(5, 90), (2, 10), (5, 20), (2, 30)])]
+        self.assertEqual([(l.allee, l.position) for l in p.sequence(ls)], [(2, 10), (2, 30), (5, 20), (5, 90)])
+
+
+class TestCasLimites(unittest.TestCase):
+    def _run(self, rows):
+        an, cp = [], {}
+        lignes = ot.charger_lignes(ecrire(rows), an, cp)
+        plan, ts, _ = ot.optimiser(lignes, an, 1)
         return lignes, ts, an
 
-    def _sans_ecart(self, ts, lignes):
-        ecarts = [c for c in ot.controler(ts, lignes) if c[1] == "ÉCART"]
-        self.assertEqual(ecarts, [])
-
-    def test_retract_au_dela_du_max(self):
-        ancien = ot.NIVEAU_MIN_RETRACT
-        ot.NIVEAU_MIN_RETRACT = 4
-        try:
-            rows = [{"commande": "BL1", "emplacement": f"05-{i % 20 + 1:02d}-E", "quantite": 1,
-                     "poids_unitaire_kg": 0.1} for i in range(ot.RETRACT_MAX + 5)]
-            rows.append({"commande": "BL1", "emplacement": "02-01-A", "quantite": 1, "poids_unitaire_kg": 0.1})
-            lignes, ts, an = self._ecrire(rows)
-            self.assertTrue(all(t.nb_lignes <= ot.bornes(t.type)[1] for t in ts))
-            self._sans_ecart(ts, lignes)
-        finally:
-            ot.NIVEAU_MIN_RETRACT = ancien
+    def _ok(self, ts, lignes):
+        self.assertEqual([c for c in ot.controler(ts, lignes) if c[1] == "ÉCART"], [])
 
     def test_commande_plus_grande_que_le_chariot(self):
-        rows = [{"commande": "BL2", "emplacement": f"03-{i % 20 + 1:02d}-A", "quantite": 1,
-                 "poids_unitaire_kg": 9, "num_colis": i, "type_contenant": "C9"} for i in range(30)]
-        lignes, ts, an = self._ecrire(rows)
+        rows = [ligne("BIG", 4 + i % 10, 30 + i, cont="C9", num=str(i)) for i in range(30)]   # 30 × 3,77 éq.
+        lignes, ts, an = self._run(rows)
         self.assertGreater(len(ts), 1)
-        self._sans_ecart(ts, lignes)
+        self.assertTrue(all(t.eq <= ot.CHARIOT_EQ_C16 for t in ts))
+        self.assertTrue(any(a[0] == "Découpage" for a in an))
+        self._ok(ts, lignes)
 
-    def test_colis_numerotes_par_commande(self):
-        rows = []
-        for c in range(6):
-            for i in range(4):
-                rows.append({"commande": f"BL{c}", "emplacement": f"0{c + 1}-0{i + 1}-A", "quantite": 1,
-                             "poids_unitaire_kg": 0.2, "num_colis": 1, "type_contenant": "C13",
-                             "tournee_wms": "TW1"})
-        lignes, ts, an = self._ecrire(rows)
-        self._sans_ecart(ts, lignes)
-        wms = ot.tournees_wms(lignes, ot.Plan(lignes))
-        self.assertEqual(len(ot.colis_de(wms[0])), 6)
+    def test_monolignes(self):
+        rows = [ligne(f"M{i}", 1 + i % 14, 30, cont="C16", num="1") for i in range(80)]
+        lignes, ts, an = self._run(rows)
+        self.assertEqual({t.type for t in ts}, {"MONO"})
+        self.assertTrue(all(ot.MONO_MIN <= t.ncolis <= ot.MONO_MAX for t in ts))
+        self._ok(ts, lignes)
 
-    def test_monoligne_bac_jamais_avec_cartons(self):
-        rows = [{"commande": f"M{i}", "emplacement": f"0{i % 9 + 1}-01-A", "quantite": 1, "poids_unitaire_kg": 0.1,
-                 "flux": "AGENCE" if i % 2 else "CLIENT", "type_contenant": "D11" if i % 2 else ""}
-                for i in range(30)]
-        lignes, ts, an = self._ecrire(rows)
-        for t in ts:
-            self.assertEqual(len({ot.est_carton(c.contenant) for c in ot.colis_de(t)}), 1)
-        self._sans_ecart(ts, lignes)
+    def test_peu_de_monolignes_vont_en_multi(self):
+        rows = [ligne(f"M{i}", 4, 30 + i, cont="C16", num="1") for i in range(10)]
+        lignes, ts, an = self._run(rows)
+        self.assertEqual({t.type for t in ts}, {"MULTI"})
+
+    def test_monoligne_agence_reste_en_multi(self):
+        rows = [ligne(f"B{i}", 4, 30, cont="B16", num="1") for i in range(50)]
+        lignes, ts, an = self._run(rows)
+        self.assertEqual({t.type for t in ts}, {"MULTI"})
+
+    def test_vagues_jamais_melangees(self):
+        rows = [ligne(f"V{i}", 4, 30, num="1", vague=f"VAG{i % 2}") for i in range(20)]
+        lignes, ts, an = self._run(rows)
+        self.assertTrue(all(len({b.vague for b in t.blocs}) == 1 for t in ts))
+
+    def test_monolignes_comptees_comme_construites(self):
+        # 30 monolignes C16 + 10 monolignes sans type : seules les 30 comptent -> < 36 -> tout en multi
+        rows = [ligne(f"M{i}", 4, 30 + i, cont="C16") for i in range(30)]
+        rows += [ligne(f"X{i}", 5, 30 + i, cont="") for i in range(10)]
+        lignes, ts, an = self._run(rows)
+        self.assertNotIn("MONO", {t.type for t in ts})
+
+    def test_quantite_zero_conservee(self):
+        an, cp = [], {}
+        lignes = ot.charger_lignes(ecrire([ligne("Q", 4, 30, QTE_PREVUE=0)]), an, cp)
+        self.assertEqual(lignes[0].qte, 0)
+
+    def test_emplacement_inconnu_signale(self):
+        an, cp = [], {}
+        rows = [ligne("A", 4, 30), {**ligne("B", 4, 30), "EMPLACEMENT": "54APP1501001A"}]
+        lignes = ot.charger_lignes(ecrire(rows), an, cp)
+        self.assertEqual(len(lignes), 1)
+        self.assertTrue(any(a[0] == "Emplacement" for a in an))
+
+    def test_main_ne_modifie_pas_les_reglages(self):
+        avant = ot.LIGNES_MAX
+        d = ecrire([ligne(f"C{i}", 4, 30 + i) for i in range(3)])
+        ot.main([str(d), "--lignes-max", "60", "--sortie", str(d.with_suffix(".xlsx")), "--temps-calcul", "0.2"])
+        self.assertEqual(ot.LIGNES_MAX, avant)
+
+    def test_annulees_et_hors_zone(self):
+        rows = [ligne("A", 4, 30, ETAT_LIGNE="ANNU"), ligne("B", 4, 31, ZONE="ARETRACT"), ligne("C", 4, 32)]
+        an, cp = [], {}
+        lignes = ot.charger_lignes(ecrire(rows), an, cp)
+        self.assertEqual([l.commande for l in lignes], ["C"])
+        self.assertEqual(cp["annulees"], 1)
 
 
 if __name__ == "__main__":

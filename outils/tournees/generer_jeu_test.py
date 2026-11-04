@@ -1,94 +1,99 @@
 #!/usr/bin/env python3
 """
-Jeu d'essai fictif (aucune donnée réelle) au format de l'extraction Oracle :
-une journée type du CLR, 3 vagues, flux client / agences / réassort, ~35 % de
-monolignes, composés en allée 11, aérosols et batteries.
+Jeu d'essai FICTIF au format de l'extraction Logys (mêmes colonnes que la requête
+sql/02) : aucune donnée réelle. Sert aux tests automatiques.
 
-Les colonnes tournee_wms et duree_tournee_min simulent les tournées actuelles
-(lotissement par ordre d'arrivée) pour tester la comparaison et la calibration.
+Profil calqué sur les 21-23/10/2026 : ~43 % de monolignes, commandes CL (cartons
+C16…C9 ou bacs bleus B16/B13/D11) et PV (bacs jaunes A16/A13/A11), une partie en
+carton complet (CART), allées A01-A14, quelques lignes hors zone pick.
+La colonne CHARIOT simule des tournées « à la Logys » (ordre d'arrivée, 120 lignes
+ou 45 éq. C16 maxi, commandes coupées) pour tester la comparaison.
 
-  python3 outils/tournees/generer_jeu_test.py --commandes 400 --sortie jeu_test.csv
+  python3 outils/tournees/generer_jeu_test.py --commandes 600 --sortie jeu_test.csv
 """
 import argparse
 import csv
 import random
-from collections import defaultdict
 
-VAGUES = ["10H00", "13H30", "16H00"]
-NB_ALLEES, NB_EP, NIVEAUX = 24, 20, "ABCDE"
+POS = {1: (5, 32), 2: (5, 32), 3: (5, 32), 4: (23, 122), 5: (19, 118), 6: (23, 122), 7: (19, 117),
+       8: (23, 122), 9: (19, 118), 10: (23, 122), 11: (19, 117), 12: (23, 122), 13: (19, 118), 14: (24, 112)}
+EQ = {"C16": 1, "C14": 1.26, "C13": 1.89, "C12": 1.89, "C11": 3.77, "C9": 3.77, "B16": 1.01, "B13": 1.76,
+      "D11": 4.08, "A16": 1.01, "A13": 1.89, "A11": 3.93, "CARTON": 1.62}
 
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--commandes", type=int, default=400)
+    ap.add_argument("--commandes", type=int, default=600)
+    ap.add_argument("--vagues", type=int, default=3)
     ap.add_argument("--graine", type=int, default=7)
     ap.add_argument("--sortie", default="jeu_test.csv")
     a = ap.parse_args()
     rnd = random.Random(a.graine)
 
-    # articles : les allées proches du départ sont les plus demandées (rotation ABC)
+    allees = list(POS)
+    poids_allee = [9, 10, 10, 8, 9, 8, 7, 9, 7, 6, 3, 3, 4, 3]
     articles = []
-    for k in range(3000):
-        allee = min(NB_ALLEES, 1 + int(rnd.expovariate(1 / 7)))
-        articles.append({
-            "ref": f"REF{k:05d}", "des": f"Article {k}",
-            "empl": f"{allee:02d}-{rnd.randint(1, NB_EP):02d}-{rnd.choice(NIVEAUX[:3] if rnd.random() < .85 else NIVEAUX)}",
-            "poids": round(rnd.uniform(0.02, 3.5), 3), "vol": round(rnd.uniform(0.05, 4.0), 2),
-            "aerosol": rnd.random() < .02, "batterie": rnd.random() < .02,
-        })
-    poids_art = [1 / (i + 1) ** 0.8 for i in range(len(articles))]
+    for k in range(4000):
+        al = rnd.choices(allees, poids_allee)[0]
+        p = rnd.randint(*POS[al])
+        articles.append((f"ART{k:05d}", f"54APP{al:02d}{p:03d}{rnd.choice(['00', '01', '03', '05']):s}"
+                         f"{rnd.choice('ABCD')}", al, rnd.randint(10, 3000), rnd.randint(500, 400000)))
+    pop = [1 / (i + 1) ** 0.7 for i in range(len(articles))]
 
-    lignes = []
+    lignes, n_cont = [], 248800000
     for c in range(a.commandes):
-        flux = rnd.choices(["CLIENT", "AGENCE", "REASSORT"], [60, 30, 10])[0]
-        vague = rnd.choices(VAGUES, [45, 35, 20])[0]
-        n = 1 if rnd.random() < .35 else max(2, int(rnd.lognormvariate(1.6, .7)))
-        for art in rnd.choices(articles, poids_art, k=n):
+        vague = f"VAG{136000 + rnd.randint(1, a.vagues)}"
+        pref = rnd.choices(["CL", "PV"], [88, 12])[0]
+        cmd = f"{pref}-{rnd.randint(1000, 9999)}-{715000000 + c}-01"
+        cart = rnd.random() < 0.04
+        n = 1 if rnd.random() < 0.43 else max(2, int(rnd.lognormvariate(1.4, 0.8)))
+        arts = rnd.choices(articles, pop, k=n)
+        if cart:
+            types = ["CARTON"] * n
+        elif n == 1:
+            types = [rnd.choices(["C16", "C14", "B16", "A16" if pref == "PV" else "C13"], [55, 15, 20, 10])[0]]
+        else:
+            fam = (["A16", "A13", "A11"] if pref == "PV" else
+                   rnd.choice([["C16", "C14", "C13", "C12", "C11", "C9"], ["B16", "B13", "D11"]]))
+            nb_cont = max(1, n // rnd.randint(4, 9))
+            types = [rnd.choice(fam) for _ in range(nb_cont)]
+        conts = []
+        for t in types:
+            n_cont += 1
+            conts.append((f"{n_cont:012d}", t))
+        for i, (ref, empl, al, pds, vol) in enumerate(arts):
+            num, typ = conts[i % len(conts)]
+            hors = rnd.random() < 0.03
+            q = rnd.choice([1, 1, 1, 2, 3, 5, 10])
             lignes.append({
-                "commande": f"BL{100000 + c}", "client": f"{'AG' if flux != 'CLIENT' else 'CL'}{rnd.randint(1, 300):04d}",
-                "flux": flux, "vague": vague, "emplacement": art["empl"], "reference": art["ref"],
-                "designation": art["des"], "quantite": rnd.choice([1, 1, 1, 2, 2, 3, 5, 10]),
-                "poids_unitaire_kg": str(art["poids"]).replace(".", ","),
-                "volume_unitaire_l": str(art["vol"]).replace(".", ","),
-                "aerosol": "O" if art["aerosol"] else "", "batterie": "O" if art["batterie"] else "",
-            })
+                "JOUR": "21/10/2026", "VAGUE": vague, "CHARIOT": "", "STYP_TOUR": "CART" if cart else "DETA",
+                "ZONE": "AEROSOLS" if hors else "PICK01A14", "COMMANDE": cmd, "ORDRE_PASSAGE": 0,
+                "ARTICLE": ref, "QTE_PREVUE": q, "PDS_LIGNE": pds * q, "VOL_LIGNE": vol * q,
+                "EMPLACEMENT": empl, "ALLEE": f"A{al:02d}", "CONTENANT": num, "TYPE_CONTENANT": typ,
+                "ETAT_LIGNE": "ANNU" if rnd.random() < 0.02 else "TERM", "_eq": EQ[typ]})
 
-    # « tournées actuelles » : ordre d'arrivée, 35 lignes maxi, par vague et flux
-    groupes = defaultdict(list)
+    # « tournées Logys » simulées : ordre d'arrivée par vague et service, coupe les commandes
+    num_t, vus = 5012000, {}
+    for cle in sorted({(l["VAGUE"], l["STYP_TOUR"], l["ZONE"]) for l in lignes}):
+        ls = [l for l in lignes if (l["VAGUE"], l["STYP_TOUR"], l["ZONE"]) == cle]
+        n_l, eq, cur = 0, 0.0, None
+        for l in ls:
+            neuf = l["CONTENANT"] not in vus
+            if cur is None or n_l >= 120 or (neuf and eq + l["_eq"] > 45):
+                num_t += 1
+                cur, n_l, eq = f"TO{num_t:08d}", 0, 0.0
+            if neuf:
+                vus[l["CONTENANT"]] = cur
+                eq += l["_eq"]
+            l["CHARIOT"] = vus[l["CONTENANT"]]
+            n_l += 1
     for l in lignes:
-        groupes[(l["vague"], l["flux"])].append(l)
-    num = 0
-    for ls in groupes.values():
-        cur, n_cur, cmd_prec = None, 0, None
-        for l in ls:
-            if l["commande"] != cmd_prec:
-                nb = sum(1 for x in ls if x["commande"] == l["commande"])
-                if cur is None or n_cur + nb > 35:
-                    num += 1
-                    cur, n_cur = f"TW{num:04d}", 0
-                n_cur += nb
-                cmd_prec = l["commande"]
-            l["tournee_wms"] = cur
-    # durée réalisée simulée : 200 s + 20 s/ligne + 2 s/unité + 30 s/colis + distance / 0,8 m/s, ± bruit
-    par_t = defaultdict(list)
-    for l in lignes:
-        par_t[l["tournee_wms"]].append(l)
-    for t, ls in par_t.items():
-        allees = {int(l["emplacement"][:2]): 0 for l in ls}
-        for l in ls:
-            al, ep = int(l["emplacement"][:2]), int(l["emplacement"][3:5])
-            allees[al] = max(allees[al], ep)
-        dist = 2 * (max(allees) - 1) * 3.2 + sum(NB_EP * 2.7 for _ in allees)
-        colis = len({l["commande"] for l in ls}) * 1.3
-        sec = 200 + 20 * len(ls) + 2 * sum(l["quantite"] for l in ls) + 30 * colis + dist / 0.8
-        for l in ls:
-            l["duree_tournee_min"] = str(round(sec * rnd.uniform(.9, 1.1) / 60, 1)).replace(".", ",")
-
+        del l["_eq"]
     with open(a.sortie, "w", newline="", encoding="utf-8") as f:
         w = csv.DictWriter(f, fieldnames=list(lignes[0]), delimiter=";")
         w.writeheader()
         w.writerows(lignes)
-    print(f"{len(lignes)} lignes, {a.commandes} commandes, {num} tournées simulées -> {a.sortie}")
+    print(f"{len(lignes)} lignes, {a.commandes} commandes -> {a.sortie}")
 
 
 if __name__ == "__main__":
