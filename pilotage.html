@@ -1,0 +1,1785 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<meta name="referrer" content="no-referrer">
+<meta name="theme-color" content="#EEEEEB">
+<meta name="description" content="Pilotage Pick & Pack : l'accueil et la fiche opérateur, lus directement depuis le classeur Suivi Op. Rien n'est envoyé en ligne.">
+<title>Pilotage Pick &amp; Pack</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<style>
+/* ════════════════════════════════════════════════════════════════
+   PILOTAGE PICK & PACK — lecture du classeur Suivi Op
+   Accueil : esprit « CRM dashboard » (blanc, noir, vert anis)
+   Fiche   : esprit « profil » (rail noir, bandeau lavande)
+   ════════════════════════════════════════════════════════════════ */
+:root{
+  --bg:#EEEEEB; --card:#FFFFFF; --soft:#F5F5F2; --soft-2:#ECECE8;
+  --ink:#111111; --ink-2:#4D4D48; --ink-3:#86867F; --ink-4:#B3B3AC;
+  --line:#E8E8E3; --line-2:#D9D9D3;
+  --lime:#D7F25C; --lime-2:#BFE33C; --lime-soft:#F1F9CF; --lime-ink:#283400;
+  --lav:#CEC6F8; --lav-2:#EEEBFE; --lav-3:#8F80EC; --lav-4:#5E4CD3; --pink:#F2C1E1; --pink-2:#FBE8F4;
+  --good:#0CA30C; --good-ink:#0A7A0B; --good-soft:#E3F4E1;
+  --warn:#FAB219; --warn-ink:#875900; --warn-soft:#FFF1CF;
+  --crit:#D03B3B; --crit-ink:#B02D2D; --crit-soft:#FBE2E2;
+  --info:#2A78D6; --info-ink:#1D5DAA; --info-soft:#E2EDFB;
+  --r:20px; --r-sm:14px; --r-xs:10px;
+  --sh:0 1px 1px rgba(17,17,17,.03),0 8px 22px -12px rgba(17,17,17,.16);
+  --ff:'Inter Tight',ui-sans-serif,system-ui,-apple-system,'Segoe UI',Roboto,Arial,sans-serif;
+  --fs:'Instrument Serif',Georgia,'Times New Roman',serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-text-size-adjust:100%}
+body{font-family:var(--ff);font-size:14px;line-height:1.45;color:var(--ink);background:var(--bg);-webkit-font-smoothing:antialiased;min-height:100vh;overflow-x:hidden}
+button,input,select{font:inherit;color:inherit}
+button{cursor:pointer;background:none;border:0}
+a{color:inherit;text-decoration:none}
+:focus-visible{outline:2px solid var(--ink);outline-offset:2px;border-radius:8px}
+svg{display:block}
+.num{font-variant-numeric:tabular-nums}
+.serif{font-family:var(--fs);font-style:italic;font-weight:400;letter-spacing:0}
+.muted{color:var(--ink-3)}
+.short{display:none}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.wrap{max-width:1480px;margin:0 auto;padding:16px 20px 48px}
+.card{background:var(--card);border-radius:var(--r);box-shadow:var(--sh);padding:18px;min-width:0;position:relative}
+.ic{width:16px;height:16px;flex:none;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+
+/* ── barre du haut ── */
+.top{background:var(--card);border-radius:18px;box-shadow:var(--sh);padding:10px 12px 0;position:sticky;top:10px;z-index:30}
+.top-1{display:flex;align-items:center;gap:12px;padding-bottom:10px;border-bottom:1px solid var(--line)}
+.brand{display:flex;align-items:center;gap:9px;font-weight:600;font-size:15px;white-space:nowrap}
+.logo{width:30px;height:30px;border-radius:9px;background:var(--ink);color:#fff;display:grid;place-items:center}
+.logo svg{width:16px;height:16px}
+.brand .serif{color:var(--ink-3);font-size:16px}
+.site{display:flex;align-items:center;gap:8px;padding:4px 10px 4px 4px;border-radius:999px;background:var(--soft);font-size:13px;font-weight:500;white-space:nowrap}
+.site b{width:22px;height:22px;border-radius:50%;background:var(--lime);display:grid;place-items:center;font-size:11px;color:var(--lime-ink)}
+.tag{font-size:10.5px;font-weight:600;background:var(--lime);color:var(--lime-ink);padding:1px 6px;border-radius:6px}
+.search{flex:1;max-width:440px;margin:0 auto;position:relative}
+.search input{width:100%;height:36px;border-radius:999px;border:1px solid var(--line);background:var(--soft);padding:0 14px 0 36px;font-size:13px;outline:none}
+.search input:focus{border-color:var(--ink-4);background:#fff}
+.search .ic{position:absolute;left:13px;top:10px;color:var(--ink-3)}
+.chip{display:inline-flex;align-items:center;gap:6px;height:30px;padding:0 11px;border-radius:999px;border:1px solid var(--line);font-size:12px;font-weight:500;color:var(--ink-2);white-space:nowrap;background:#fff}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--good);flex:none}
+.ibtn{width:34px;height:34px;border-radius:50%;border:1px solid var(--line);display:grid;place-items:center;color:var(--ink-2);flex:none;background:#fff}
+.ibtn:hover{background:var(--soft)}
+.user{display:flex;align-items:center;gap:9px;padding:3px 6px 3px 3px;border-radius:999px;text-align:left}
+.user:hover{background:var(--soft)}
+.av{width:32px;height:32px;border-radius:50%;display:grid;place-items:center;font-size:12px;font-weight:600;flex:none;background:var(--lav);color:#2B2170}
+.user small{display:block;font-size:11px;color:var(--ink-3);line-height:1.2}
+.user span{font-size:13px;font-weight:600;line-height:1.2}
+.top-2{display:flex;align-items:center;gap:4px;padding:8px 0;overflow-x:auto;scrollbar-width:none}
+.top-2::-webkit-scrollbar{display:none}
+.tab{display:inline-flex;align-items:center;gap:7px;height:32px;padding:0 13px;border-radius:999px;font-size:13px;font-weight:500;color:var(--ink-2);white-space:nowrap}
+.tab:hover{background:var(--soft)}
+.tab.on{background:var(--ink);color:#fff}
+.tab .cnt{font-size:10.5px;font-weight:600;background:var(--lime);color:var(--lime-ink);border-radius:999px;padding:0 6px;line-height:16px}
+.top-2 .sync{margin-left:auto;font-size:12px;color:var(--ink-3);display:flex;align-items:center;gap:6px;white-space:nowrap;padding-left:12px}
+
+/* ── en-tête de page ── */
+.head{display:flex;align-items:flex-end;justify-content:space-between;gap:18px;flex-wrap:wrap;margin:26px 2px 16px}
+.eyebrow{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3);display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.eyebrow .dot{background:var(--ink)}
+h1{font-size:40px;line-height:1.05;font-weight:600;letter-spacing:-.025em}
+h1 .serif{font-size:46px;letter-spacing:-.01em}
+.sub{color:var(--ink-3);font-size:13px;margin-top:6px}
+.ctrls{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.seg{display:inline-flex;background:#fff;border-radius:999px;padding:3px;box-shadow:var(--sh)}
+.seg button{height:30px;padding:0 13px;border-radius:999px;font-size:12.5px;font-weight:500;color:var(--ink-2)}
+.seg button.on{background:var(--ink);color:#fff}
+.pnav{display:inline-flex;align-items:center;background:#fff;border-radius:999px;box-shadow:var(--sh);height:36px}
+.pnav button{height:36px;min-width:34px;display:grid;place-items:center;color:var(--ink-2);border-radius:999px}
+.pnav button:hover{background:var(--soft)}
+.pnav .lbl{padding:0 6px;font-size:12.5px;font-weight:600;white-space:nowrap;display:flex;align-items:center;gap:6px}
+.btn{display:inline-flex;align-items:center;gap:7px;height:36px;padding:0 15px;border-radius:999px;font-size:13px;font-weight:600;background:#fff;box-shadow:var(--sh);white-space:nowrap}
+.btn:hover{background:var(--soft)}
+.btn.lime{background:var(--lime);color:var(--lime-ink)}
+.btn.lime:hover{background:var(--lime-2)}
+.btn.dark{background:var(--ink);color:#fff;box-shadow:none}
+.btn.dark:hover{background:#2a2a2a}
+.btn.sm{height:30px;padding:0 12px;font-size:12px}
+
+/* ── grilles ── */
+.grid{display:grid;gap:14px;margin-bottom:14px}
+.kpis{grid-template-columns:repeat(6,minmax(0,1fr))}
+.g-perf{grid-template-columns:minmax(0,2.15fr) minmax(0,1fr)}
+.g-3{grid-template-columns:repeat(3,minmax(0,1fr))}
+.g-lb{grid-template-columns:minmax(0,1.25fr) minmax(0,1fr)}
+.g-rh{grid-template-columns:minmax(0,1fr) minmax(0,1.2fr)}
+
+/* ── carte KPI ── */
+.kpi{display:flex;flex-direction:column;gap:6px;padding:15px 15px 13px;min-height:150px}
+.kpi .k-top{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--ink-2);font-weight:500}
+.kpi .k-ic{width:26px;height:26px;border-radius:8px;background:var(--soft);display:grid;place-items:center;flex:none}
+.kpi .k-ic .ic{width:14px;height:14px}
+.kpi .k-go{margin-left:auto;width:24px;height:24px;border-radius:50%;display:grid;place-items:center;color:var(--ink-3)}
+.kpi .k-val{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;margin-top:6px}
+.kpi .k-val strong{font-size:27px;font-weight:600;letter-spacing:-.02em;line-height:1}
+.kpi .k-val .u{font-size:13px;color:var(--ink-3);font-weight:500;margin-left:-4px}
+.kpi .k-sub{font-size:11.5px;color:var(--ink-3);line-height:1.35}
+.kpi .k-foot{margin-top:auto;display:flex;align-items:flex-end;justify-content:space-between;gap:8px}
+.kpi .k-foot .k-sub{max-width:62%}
+.kpi.hl{background:var(--lime)}
+.kpi.hl .k-top,.kpi.hl .k-sub{color:var(--lime-ink)}
+.kpi.hl .k-ic{background:rgba(255,255,255,.55)}
+.kpi.hl .k-val .u{color:var(--lime-ink)}
+.spark{width:96px;height:32px;flex:none}
+
+/* pastilles de statut : jamais la couleur seule (icône + texte) */
+.pill{display:inline-flex;align-items:center;gap:4px;height:20px;padding:0 7px;border-radius:999px;font-size:11px;font-weight:600;white-space:nowrap;background:var(--soft);color:var(--ink-2)}
+.pill svg{width:10px;height:10px;stroke-width:2.6}
+.pill.s1{background:var(--good-soft);color:var(--good-ink)}
+.pill.s2{background:var(--warn-soft);color:var(--warn-ink)}
+.pill.s3{background:var(--crit-soft);color:var(--crit-ink)}
+.pill.s4{background:var(--info-soft);color:var(--info-ink)}
+.pill.dark{background:var(--ink);color:#fff}
+.pill.lime{background:var(--lime);color:var(--lime-ink)}
+.kpi.hl .pill{background:rgba(255,255,255,.6);color:var(--lime-ink)}
+
+/* ── titres de carte ── */
+.c-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:12px}
+.c-title{display:flex;align-items:center;gap:9px;font-size:14px;font-weight:600}
+.c-title .n{width:22px;height:22px;border-radius:7px;background:var(--soft);display:grid;place-items:center;font-size:10.5px;color:var(--ink-3);font-weight:600}
+.c-sub{font-size:11.5px;color:var(--ink-3);margin-top:2px;margin-left:31px}
+.c-sub.flat{margin-left:0}
+.mini-seg{display:inline-flex;background:var(--soft);border-radius:999px;padding:2px;flex:none}
+.mini-seg button{height:24px;padding:0 10px;border-radius:999px;font-size:11.5px;font-weight:500;color:var(--ink-2);white-space:nowrap}
+.mini-seg button.on{background:var(--ink);color:#fff}
+.c-foot{font-size:11px;color:var(--ink-3);margin-top:12px;line-height:1.45}
+
+/* ── performance ── */
+.perf-val{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin:2px 0 4px}
+.perf-val strong{font-size:44px;font-weight:600;letter-spacing:-.03em;line-height:1}
+.perf-val .u{font-size:18px;color:var(--ink-3);font-weight:500}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:11.5px;color:var(--ink-2)}
+.legend i{display:inline-block;width:14px;height:3px;border-radius:2px;background:var(--ink);vertical-align:middle;margin-right:6px}
+.legend i.sq{width:9px;height:9px;border-radius:3px}
+.legend i.rg{width:9px;height:9px;border-radius:50%;background:#fff;border:2px solid var(--ink)}
+.chart{width:100%;min-height:40px}
+.chart text{font-family:var(--ff);fill:var(--ink-3);font-size:10.5px}
+.hov .xh,.hov .pt{opacity:0;transition:opacity .08s}
+.hov:hover .xh,.hov:hover .pt{opacity:1}
+.bar-h:hover{opacity:.82}
+
+/* ── carte sombre « en direct » ── */
+.live{background:#121212;color:#fff;overflow:hidden;display:flex;flex-direction:column}
+.live::before{content:'';position:absolute;inset:auto -40px -60px auto;width:260px;height:260px;border-radius:50%;background:radial-gradient(circle,rgba(215,242,92,.18),transparent 65%);pointer-events:none}
+.live .badge{display:inline-flex;align-items:center;gap:6px;background:var(--lime);color:var(--lime-ink);font-size:10.5px;font-weight:700;letter-spacing:.06em;padding:3px 8px;border-radius:999px;width:max-content}
+.live .badge i{width:6px;height:6px;border-radius:50%;background:var(--lime-ink)}
+.live .big{font-size:56px;font-weight:600;letter-spacing:-.03em;line-height:1;margin-top:16px}
+.live .big small{font-size:14px;color:#9a9a93;font-weight:500;letter-spacing:0;margin-left:8px}
+.live .lsub{color:#9a9a93;font-size:12px;margin-top:6px}
+.live .chart text{fill:#77776f}
+.live dl{display:grid;grid-template-columns:1fr auto;gap:7px 12px;font-size:12.5px;margin-top:auto;padding-top:14px;border-top:1px solid #2a2a2a}
+.live dt{color:#9a9a93}
+.live dd{text-align:right;font-weight:600}
+
+/* ── donut / anneau ── */
+.split{display:flex;align-items:center;gap:18px}
+.split > svg{flex:none}
+.lst{list-style:none;flex:1;min-width:0;display:flex;flex-direction:column;gap:7px}
+.lst li{display:grid;grid-template-columns:12px 1fr auto auto;align-items:center;gap:8px;font-size:12.5px}
+.lst li .sw{width:10px;height:10px;border-radius:3px}
+.lst li .v{font-weight:600}
+.lst li .p{color:var(--ink-3);font-size:11px;min-width:34px;text-align:right}
+.lst li.z{color:var(--ink-4)}
+.minirow{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px;padding-top:12px;border-top:1px dashed var(--line-2);font-size:11.5px;color:var(--ink-2);align-items:center}
+
+/* ── classement ── */
+.lb{width:100%;border-collapse:collapse;font-size:12.5px}
+.lb th{font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-3);font-weight:500;text-align:left;padding:0 6px 8px}
+.lb td{padding:7px 6px;border-top:1px solid var(--line);vertical-align:middle}
+.lb tr.click{cursor:pointer}
+.lb tr.click:hover td{background:var(--soft)}
+.lb .rk{width:28px;color:var(--ink-3);font-weight:600}
+.lb .who{display:flex;align-items:center;gap:9px;min-width:0}
+.lb .who .av{width:30px;height:30px;font-size:11px}
+.lb .who b{font-weight:600;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lb .who small{display:block;color:var(--ink-3);font-size:11px}
+.lb .r{text-align:right;white-space:nowrap}
+.track{height:6px;border-radius:999px;background:var(--soft-2);position:relative;min-width:80px}
+.track i{position:absolute;left:0;top:0;bottom:0;border-radius:999px;background:var(--ink)}
+.track u{position:absolute;top:-3px;bottom:-3px;width:2px;background:var(--ink-3);border-radius:1px}
+.scroll{max-height:660px;overflow:auto;margin:0 -6px;padding:0 6px}
+
+/* ── actions ── */
+.acts{list-style:none;display:flex;flex-direction:column}
+.acts li{display:grid;grid-template-columns:30px 1fr auto;gap:10px;align-items:center;padding:10px 0;border-top:1px solid var(--line);font-size:12.5px}
+.acts li:first-child{border-top:0}
+.acts .a-ic{width:30px;height:30px;border-radius:50%;display:grid;place-items:center}
+.acts .a-ic .ic{width:14px;height:14px;stroke-width:2.2}
+.acts .s1 .a-ic{background:var(--good-soft);color:var(--good-ink)}
+.acts .s2 .a-ic{background:var(--warn-soft);color:var(--warn-ink)}
+.acts .s3 .a-ic{background:var(--crit-soft);color:var(--crit-ink)}
+.acts .s4 .a-ic{background:var(--info-soft);color:var(--info-ink)}
+.acts .a-t b{font-weight:600}
+.acts .a-t small{display:block;color:var(--ink-3);font-size:11px;margin-top:1px}
+.acts .a-t button{font-weight:600;text-decoration:underline;text-underline-offset:2px}
+.empty{padding:22px 10px;text-align:center;color:var(--ink-3);font-size:12.5px}
+
+/* ── tableau de bord équipe (colonnes) ── */
+.board{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.col{background:var(--soft);border-radius:var(--r-sm);padding:10px;min-width:0}
+.col-h{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px;font-size:12px}
+.col-h .pill{height:22px}
+.col-h b{font-weight:600}
+.opc{background:#fff;border-radius:12px;padding:10px;margin-bottom:8px;display:grid;grid-template-columns:28px 1fr auto;gap:9px;align-items:center;width:100%;text-align:left;box-shadow:0 1px 0 rgba(0,0,0,.03)}
+.opc:hover{outline:1px solid var(--line-2)}
+.opc .av{width:28px;height:28px;font-size:10.5px}
+.opc b{font-size:12.5px;font-weight:600;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.opc small{display:block;font-size:11px;color:var(--ink-3)}
+.opc .q{font-size:13px;font-weight:600}
+
+/* ── tableau « essentiel » ── */
+.tbl{width:100%;border-collapse:collapse;font-size:12.5px}
+.tbl th{font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-3);font-weight:500;text-align:right;padding:0 8px 8px;white-space:nowrap}
+.tbl th:first-child{text-align:left;padding-left:0}
+.tbl td{padding:7px 8px;border-top:1px solid var(--line);text-align:right;white-space:nowrap}
+.tbl td:first-child{text-align:left;color:var(--ink-2);padding-left:0;white-space:normal}
+.tbl td.hl{background:var(--lime-soft);font-weight:600}
+.tbl th.hl{color:var(--lime-ink)}
+.rh-n{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-bottom:14px}
+.rh-n div{background:var(--soft);border-radius:12px;padding:10px}
+.rh-n b{display:block;font-size:22px;font-weight:600;letter-spacing:-.02em}
+.rh-n small{font-size:11px;color:var(--ink-3)}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.mini-l{list-style:none;font-size:12.5px}
+.mini-l li{display:flex;justify-content:space-between;gap:8px;padding:6px 0;border-top:1px solid var(--line)}
+.mini-l li:first-child{border-top:0}
+.mini-l h4{font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-3);font-weight:500;margin-bottom:6px}
+
+.foot{font-size:11px;color:var(--ink-3);margin:18px 4px 0;line-height:1.6}
+
+/* ════════════════ FICHE (esprit profil lavande) ════════════════ */
+.f-layout{display:grid;grid-template-columns:68px minmax(0,1fr);gap:16px;margin-top:16px}
+.rail{background:#141414;border-radius:30px;padding:12px 0;display:flex;flex-direction:column;align-items:center;gap:6px;position:sticky;top:124px;max-height:calc(100vh - 140px);align-self:start}
+.rail .r-logo{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;color:#fff;margin-bottom:6px}
+.rail .r-list{display:flex;flex-direction:column;align-items:center;gap:8px;overflow-y:auto;scrollbar-width:none;padding:4px 0;flex:1;width:100%}
+.rail .r-list::-webkit-scrollbar{display:none}
+.rail .r-op{width:38px;height:38px;border-radius:50%;display:grid;place-items:center;font-size:11px;font-weight:600;color:#cfcfc9;background:#262626;position:relative;flex:none}
+.rail .r-op:hover{background:#333;color:#fff}
+.rail .r-op.on{background:var(--lav);color:#2B2170}
+.rail .r-op.on::after{content:'';position:absolute;right:-15px;top:11px;width:5px;height:16px;border-radius:3px;background:#141414}
+.rail .r-op.off{opacity:.45}
+.rail .r-nav{display:flex;flex-direction:column;gap:6px;padding-top:8px;border-top:1px solid #2a2a2a;width:44px;align-items:center}
+.rail .r-nav button{width:34px;height:34px;border-radius:50%;color:#cfcfc9;display:grid;place-items:center}
+.rail .r-nav button:hover{background:#2c2c2c;color:#fff}
+.f-main{min-width:0}
+.f-row{display:grid;gap:14px;margin-bottom:14px}
+.f-1{grid-template-columns:minmax(0,2fr) minmax(0,1fr)}
+.f-stats{grid-template-columns:repeat(6,minmax(0,1fr))}
+.f-3{grid-template-columns:minmax(0,1fr) minmax(0,1.25fr) minmax(0,1fr)}
+.f-4{grid-template-columns:minmax(0,1fr) minmax(0,1.15fr) minmax(0,1fr)}
+
+.prof{padding:0;overflow:hidden}
+.banner{height:118px;background:linear-gradient(115deg,#E4DEFD 0%,#D5CCFA 45%,#F1D3EC 100%);position:relative;overflow:hidden}
+.banner svg{position:absolute;right:-10px;top:-30px;width:300px;height:220px;opacity:.9}
+.prof-b{display:flex;align-items:flex-start;gap:16px;padding:14px 20px 16px;position:relative;flex-wrap:wrap}
+.prof .av-xl{width:88px;height:88px;margin-top:-58px;border-radius:50%;border:4px solid #fff;box-shadow:0 6px 16px -8px rgba(43,33,112,.45);display:grid;place-items:center;font-size:26px;font-weight:600;color:#2B2170;background:linear-gradient(135deg,#CEC6F8,#F2C1E1);flex:none}
+.prof .who{flex:1;min-width:200px}
+.facts{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));border-top:1px solid var(--line);margin:0 20px;padding:12px 0 16px;gap:10px}
+.facts div{font-size:11px;color:var(--ink-3)}
+.facts b{display:block;font-size:16px;font-weight:600;color:var(--ink);letter-spacing:-.01em}
+.prof .who h2{font-size:24px;font-weight:600;letter-spacing:-.02em;line-height:1.15}
+.prof .who h2 .serif{font-size:27px}
+.prof .who p{font-size:12.5px;color:var(--ink-2);margin-top:3px}
+.prof .meta{display:flex;flex-wrap:wrap;gap:14px;font-size:11.5px;color:var(--ink-3);margin-top:7px}
+.prof .meta span{display:inline-flex;align-items:center;gap:5px}
+.prof .meta .ic{width:13px;height:13px}
+.prof .acts-r{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.status{display:inline-flex;align-items:center;gap:6px;height:30px;padding:0 12px;border-radius:999px;border:1px solid var(--line);font-size:12px;font-weight:600;background:#fff}
+.status.off .dot{background:var(--ink-4)}
+.status.mid .dot{background:var(--warn)}
+
+.cal-h{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.cal-h h3{font-size:17px;font-weight:600;letter-spacing:-.01em}
+.cal-h .nv{display:flex;gap:6px}
+.cal-h .nv button{width:28px;height:28px;border-radius:50%;border:1px solid var(--line);display:grid;place-items:center;color:var(--ink-2)}
+.cal-h .nv button:hover{background:var(--soft)}
+.days{display:grid;grid-template-columns:repeat(6,1fr);gap:4px;margin:14px 0 12px}
+.days button{display:flex;flex-direction:column;align-items:center;gap:3px;padding:7px 0 6px;border-radius:14px;font-size:11px;color:var(--ink-3);position:relative}
+.days button b{font-size:14px;font-weight:600;color:var(--ink)}
+.days button:hover{background:var(--soft)}
+.days button.in{background:var(--lav-2)}
+.days button.on{background:var(--ink);color:#bdbdb6}
+.days button.on b{color:#fff}
+.days button i{width:4px;height:4px;border-radius:50%;background:var(--lav-3)}
+.days button i.no{background:transparent}
+.days button.on i{background:var(--lime)}
+.cal-seg{display:flex;justify-content:center}
+.score{display:flex;align-items:center;gap:14px;margin-top:14px;padding-top:14px;border-top:1px solid var(--line)}
+.score b{font-size:13px;font-weight:600;display:block}
+.score small{font-size:11.5px;color:var(--ink-3);display:block;line-height:1.4}
+
+.stat{padding:15px;display:flex;flex-direction:column;gap:5px;min-height:132px}
+.stat .s-top{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--ink-2);font-weight:500}
+.stat .s-ic{width:26px;height:26px;border-radius:50%;background:var(--lav-2);color:var(--lav-4);display:grid;place-items:center;flex:none}
+.stat .s-ic .ic{width:13px;height:13px}
+.stat strong{font-size:26px;font-weight:600;letter-spacing:-.02em;line-height:1;margin-top:8px}
+.stat strong .u{font-size:13px;color:var(--ink-3);font-weight:500;margin-left:3px}
+.stat .s-d{font-size:11.5px;color:var(--ink-2);display:flex;align-items:center;gap:5px;flex-wrap:wrap}
+.stat .s-sub{font-size:11px;color:var(--ink-3);margin-top:auto;line-height:1.35}
+.ar{font-weight:700}
+.ar.up{color:var(--good-ink)} .ar.dn{color:var(--crit-ink)} .ar.eq{color:var(--ink-3)}
+
+.about p{font-size:12.5px;color:var(--ink-2);line-height:1.6}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}
+.chips span{font-size:11.5px;padding:5px 10px;border-radius:999px;background:var(--soft);color:var(--ink-2)}
+.chips span b{font-weight:600;color:var(--ink)}
+.kv{display:grid;grid-template-columns:1fr auto;gap:8px 12px;font-size:12.5px;margin-top:14px;padding-top:12px;border-top:1px solid var(--line)}
+.kv dt{color:var(--ink-3)}
+.kv dd{text-align:right;font-weight:600}
+
+.focus-h{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.focus-h strong{font-size:22px;font-weight:600;letter-spacing:-.02em}
+details.tv{margin-top:10px}
+details.tv summary{font-size:11.5px;color:var(--ink-2);cursor:pointer;font-weight:600;list-style:none;display:inline-flex;align-items:center;gap:6px}
+details.tv summary::-webkit-details-marker{display:none}
+details.tv summary::before{content:'+';width:16px;height:16px;border-radius:50%;background:var(--soft);display:grid;place-items:center;font-size:12px}
+details.tv[open] summary::before{content:'–'}
+details.tv .tbl{margin-top:8px}
+
+.promo{background:linear-gradient(140deg,#EAE5FE 0%,#DCD3FB 50%,#F4D9EE 100%);overflow:hidden}
+.promo .swirl{position:absolute;right:-30px;bottom:-34px;width:170px;height:170px;opacity:.75;pointer-events:none}
+.promo h3{font-size:20px;font-weight:600;letter-spacing:-.02em;line-height:1.15;position:relative}
+.promo .c-sub{margin-left:0;position:relative;color:#5d5683}
+.promo ul{list-style:none;margin-top:12px;display:flex;flex-direction:column;gap:7px;position:relative;max-width:88%}
+.promo li{display:grid;grid-template-columns:18px 1fr;gap:6px;font-size:12.5px;line-height:1.4;background:rgba(255,255,255,.62);border-radius:12px;padding:8px 10px}
+.promo li .ic{width:14px;height:14px;margin-top:1px;stroke-width:2.3}
+.promo li.s1 .ic{color:var(--good-ink)} .promo li.s2 .ic{color:var(--warn-ink)} .promo li.s3 .ic{color:var(--crit-ink)} .promo li.s4 .ic{color:var(--info-ink)}
+.promo .btn{margin-top:14px;position:relative}
+
+.qual{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.qual > div{background:var(--soft);border-radius:14px;padding:12px}
+.qual small{font-size:11px;color:var(--ink-3);display:block}
+.qual strong{font-size:30px;font-weight:600;letter-spacing:-.03em;line-height:1.1;display:block;margin:4px 0 6px}
+.qual .q-l{font-size:11px;color:var(--ink-2);margin-top:6px;line-height:1.5}
+.hb{display:grid;grid-template-columns:minmax(0,1fr) 2fr 24px;gap:8px;align-items:center;font-size:12px;padding:4px 0}
+.hb .t{height:8px;border-radius:999px;background:var(--soft-2);overflow:hidden}
+.hb .t i{display:block;height:100%;border-radius:999px;background:var(--lav-3)}
+.hb .t i.a{background:var(--pink)}
+.hb b{text-align:right;font-weight:600}
+.hb.z{color:var(--ink-4)}
+.h4{font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-3);font-weight:500;margin:14px 0 4px}
+
+.cmp td .ec{font-weight:600}
+.cmp td .ec.up{color:var(--good-ink)} .cmp td .ec.dn{color:var(--crit-ink)}
+
+.notif{list-style:none}
+.notif li{display:grid;grid-template-columns:34px 1fr;gap:10px;padding:9px 0;border-top:1px solid var(--line);font-size:12.5px}
+.notif li:first-child{border-top:0}
+.notif .n-ic{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;font-size:11px;font-weight:700}
+.notif .n-ic.d{background:var(--lav-2);color:var(--lav-4)}
+.notif .n-ic.a{background:var(--pink-2);color:#9A2C72}
+.notif .n-ic.pos{background:var(--good-soft);color:var(--good-ink)}
+.notif .n-ic.neg{background:var(--crit-soft);color:var(--crit-ink)}
+.notif .n-ic.neu{background:var(--soft);color:var(--ink-2)}
+.notif b{font-weight:600}
+.notif small{display:block;color:var(--ink-3);font-size:11px;margin-top:1px}
+
+.tvals{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-bottom:12px}
+.tvals div{background:var(--soft);border-radius:12px;padding:10px}
+.tvals b{display:block;font-size:20px;font-weight:600;letter-spacing:-.02em}
+.tvals small{font-size:11px;color:var(--ink-3)}
+
+/* ── écran d'ouverture ── */
+.land{max-width:980px;margin:0 auto}
+.drop{margin-top:18px;border:2px dashed var(--line-2);background:#fff;border-radius:26px;padding:40px 28px;text-align:center;transition:border-color .15s,background .15s}
+.drop.over{border-color:var(--ink);background:var(--lime-soft)}
+.drop .big-ic{width:64px;height:64px;border-radius:20px;background:var(--lime);display:grid;place-items:center;margin:0 auto 16px;color:var(--lime-ink)}
+.drop .big-ic .ic{width:28px;height:28px}
+.drop h2{font-size:22px;font-weight:600;letter-spacing:-.02em}
+.drop p{color:var(--ink-3);font-size:13px;margin-top:6px}
+.drop .row{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:20px}
+.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:14px}
+.steps div{background:#fff;border-radius:18px;padding:16px;font-size:12.5px;color:var(--ink-2);box-shadow:var(--sh)}
+.steps b{display:flex;width:26px;height:26px;border-radius:50%;background:var(--ink);color:#fff;align-items:center;justify-content:center;font-size:12px;margin-bottom:8px}
+.err{margin-top:14px;background:var(--crit-soft);color:var(--crit-ink);border-radius:14px;padding:12px 14px;font-size:13px;text-align:left}
+.spin{width:22px;height:22px;border-radius:50%;border:3px solid var(--line-2);border-top-color:var(--ink);animation:sp .8s linear infinite;margin:0 auto 12px}
+@keyframes sp{to{transform:rotate(360deg)}}
+
+/* ── infobulle ── */
+#tip{position:fixed;z-index:100;pointer-events:none;background:#141414;color:#fff;font-size:12px;line-height:1.45;padding:8px 10px;border-radius:10px;max-width:260px;white-space:pre-line;opacity:0;transform:translateY(4px);transition:opacity .08s,transform .08s;box-shadow:0 10px 24px -10px rgba(0,0,0,.5)}
+#tip.on{opacity:1;transform:none}
+#tip b{display:block;font-weight:600;margin-bottom:2px}
+
+/* ── adaptatif ── */
+@media (max-width:1280px){
+  .kpis,.f-stats{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .f-3,.f-4{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+  .f-3 > :first-child,.f-4 > :last-child{grid-column:1/-1}
+}
+@media (max-width:1060px){
+  .g-perf,.g-lb,.g-rh,.f-1{grid-template-columns:minmax(0,1fr)}
+  .g-3{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+  .g-3 > :last-child{grid-column:1/-1}
+  .board{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .search{display:none}
+  .top-1 .chip.fresh{display:none}
+}
+@media (max-width:760px){
+  .wrap{padding:10px 16px 40px}
+  .top{top:6px;border-radius:16px}
+  .site,.user div{display:none}
+  .kpis,.f-stats{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .g-3,.f-3,.f-4,.two{grid-template-columns:minmax(0,1fr)}
+  .board{grid-template-columns:minmax(0,1fr)}
+  h1{font-size:30px} h1 .serif{font-size:34px}
+  .head{margin-top:18px}
+  .ctrls{width:100%}
+  .rh-n{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .f-layout{grid-template-columns:minmax(0,1fr);gap:12px}
+  .rail{position:static;flex-direction:row;max-height:none;border-radius:22px;padding:6px 8px;overflow:hidden}
+  .rail .r-logo{display:none}
+  .rail .r-list{flex-direction:row;overflow-x:auto;overflow-y:hidden;padding:2px}
+  .rail .r-op.on::after{display:none}
+  .rail .r-nav{flex-direction:row;border-top:0;border-left:1px solid #2a2a2a;padding:0 0 0 6px;width:auto}
+  .steps{grid-template-columns:1fr}
+  .kpi{min-height:0}
+  .top-2 .sync{display:none}
+  .c-head{flex-wrap:wrap}
+  .kpi .k-foot{flex-direction:column;align-items:stretch}
+  .kpi .k-foot .k-sub{max-width:none}
+  .kpi .spark{align-self:flex-end}
+  .split{flex-wrap:wrap;justify-content:center}
+  .lst{min-width:200px}
+  .long{display:none}
+  .short{display:inline}
+  .tab{padding:0 10px}
+  .facts{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .perf-val .legend{margin-left:0!important;width:100%}
+  .prof .acts-r{width:100%}
+  .lb .hide-s{display:none}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+@media print{
+  @page{size:A4 landscape;margin:10mm}
+  body{background:#fff;font-size:12px}
+  .top,.ctrls,.rail,.no-print,.k-go,.acts-r .btn{display:none!important}
+  .wrap{padding:0;max-width:none}
+  .card{box-shadow:none;border:1px solid #ddd;break-inside:avoid}
+  .f-layout{grid-template-columns:1fr}
+  .scroll{max-height:none;overflow:visible}
+  #tip{display:none}
+}
+</style>
+</head>
+<body>
+<div id="app" aria-live="polite"></div>
+<div id="tip" role="tooltip"></div>
+<input type="file" id="fileIn" accept=".xlsm,.xlsx,.xlsb" class="sr" tabindex="-1" aria-hidden="true">
+<input type="date" id="datePick" class="sr" tabindex="-1" aria-hidden="true">
+<datalist id="opsList"></datalist>
+
+<script src="vendor/xlsx.full.min.js"></script>
+<script>
+/* ════════════════════════════════════════════════════════════════
+   MOTEUR — reproduit les calculs de CALC_ACCUEIL, CALC_FICHE et CALC
+   à partir des onglets de saisie (PROD, ERREURS, AVEREES, SUIVI_RH,
+   ACTIVITES, OPERATEURS, PARAMETRES, ANOMALIES, JOURNAL_IMPORTS).
+   Le classeur reste la seule source : rien n'est stocké ni envoyé.
+   ════════════════════════════════════════════════════════════════ */
+/*ENGINE-START*/
+const PP = (() => {
+  'use strict';
+  const EPOCH = Date.UTC(1899, 11, 30), DAY = 864e5;
+  const toDate = s => new Date(EPOCH + s * DAY);
+  const ser = (y, m, d) => Math.round((Date.UTC(y, m, d) - EPOCH) / DAY);
+  const wdi = s => (toDate(s).getUTCDay() + 6) % 7;            // 0 = lundi
+  const monday = s => s - wdi(s);
+  const monthStart = s => { const d = toDate(s); return ser(d.getUTCFullYear(), d.getUTCMonth(), 1); };
+  const monthEnd = s => { const d = toDate(s); return ser(d.getUTCFullYear(), d.getUTCMonth() + 1, 0); };
+  const addMonths = (s, k) => { const d = toDate(s); return ser(d.getUTCFullYear(), d.getUTCMonth() + k, 1); };
+  const year = s => toDate(s).getUTCFullYear();
+  function isoWeek(s) {
+    const d = toDate(s), t = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
+    t.setUTCDate(t.getUTCDate() + 3 - (t.getUTCDay() + 6) % 7);
+    const w1 = new Date(Date.UTC(t.getUTCFullYear(), 0, 4));
+    return 1 + Math.round(((t - w1) / DAY - 3 + (w1.getUTCDay() + 6) % 7) / 7);
+  }
+  const J = ['lun.', 'mar.', 'mer.', 'jeu.', 'ven.', 'sam.', 'dim.'];
+  const JL = ['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi', 'dimanche'];
+  const MO = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
+  const p2 = n => String(n).padStart(2, '0');
+  const dm = s => { const d = toDate(s); return p2(d.getUTCDate()) + '/' + p2(d.getUTCMonth() + 1); };
+  const dmy = s => dm(s) + '/' + year(s);
+  const jdm = s => J[wdi(s)] + ' ' + dm(s);
+  const moisNom = s => MO[toDate(s).getUTCMonth()];
+
+  const num = v => {
+    if (typeof v === 'number') return isFinite(v) ? v : null;
+    if (typeof v === 'string') { const t = v.trim().replace(',', '.'); if (t !== '' && !isNaN(+t)) return +t; }
+    return null;
+  };
+  const str = v => (v == null ? '' : String(v).trim());
+  const up = v => str(v).toUpperCase();
+  const r1 = x => Math.round(x * 10) / 10;
+  const sum = (a, f) => a.reduce((s, r) => s + f(r), 0);
+
+  /* ── lecture du classeur ── */
+  const NEEDED = ['PROD', 'ERREURS', 'AVEREES', 'OPERATEURS', 'PARAMETRES', 'SUIVI_RH', 'ACTIVITES', 'ANOMALIES', 'JOURNAL_IMPORTS'];
+  function readOptions() {
+    return { type: 'array', cellFormula: false, cellHTML: false, cellText: false, cellStyles: false, cellNF: false, bookVBA: false, sheets: NEEDED };
+  }
+  function rowsOf(X, wb, name) {
+    const nm = wb.SheetNames.find(n => n.toUpperCase().replace(/\s+/g, '_') === name);
+    const ws = nm && wb.Sheets[nm];
+    if (!ws || !ws['!ref']) return null;
+    const r = X.utils.decode_range(ws['!ref']); r.s.r = 0; r.s.c = 0; ws['!ref'] = X.utils.encode_range(r);
+    return X.utils.sheet_to_json(ws, { header: 1, raw: true, defval: null, blankrows: true });
+  }
+  function header(rows, first, scan = 15) {
+    for (let i = 0; i < Math.min(rows.length, scan); i++) {
+      const r = rows[i] || [];
+      if (up(r[0]) === first) { const m = {}; r.forEach((v, j) => { if (v != null && m[up(v)] == null) m[up(v)] = j; }); return { row: i, m }; }
+    }
+    return { row: 3, m: {} };
+  }
+  const col = (h, name, dflt) => (h.m[name] != null ? h.m[name] : dflt);
+  const byDate = (a, b) => a.d - b.d;
+
+  function build(X, wb, fileName) {
+    const R = n => rowsOf(X, wb, n);
+    const prodR = R('PROD');
+    if (!prodR) throw new Error("Onglet PROD introuvable : ce fichier ne ressemble pas au classeur Suivi Op Pick & Pack.");
+    const opsR = R('OPERATEURS') || [], parR = R('PARAMETRES') || [];
+
+    /* paramètres : même recherche par libellé que les onglets CALC */
+    const pick = (re, d) => { for (const r of parR) { if (r && re.test(str(r[0]))) { const v = num(r[1]); if (v != null) return v; } } return d; };
+    const P = {
+      quota: pick(/^Quota lignes/i, 620), href: pick(/^Heures de r.f.rence/i, 7.4), plafond: pick(/^Plafond du quota/i, 150),
+      qRouge: pick(/^QUOTA.*rouge/i, 90), qVert: pick(/^QUOTA.*vert/i, 100),
+      aOrange: pick(/^PPM AV.R.E.*orange/i, 180), aRouge: pick(/^PPM AV.R.E.*rouge/i, 220),
+      dOrange: pick(/^PPM D.CEL.E.*orange/i, 1000), dRouge: pick(/^PPM D.CEL.E.*rouge/i, 2000),
+      hMin: pick(/^Heures de picking mini pour compter/i, 2), ligQual: pick(/^Lignes minimum pour juger la qualit/i, 2000),
+      baisse: pick(/^Baisse de cadence/i, 10), progr: pick(/^Progression signal/i, 10), tunnel: pick(/^Tunnel de r.gularit/i, 15),
+      h7: pick(/^Heures minimum sur 7/i, 10), h30: pick(/^Heures minimum sur 30/i, 40), lig7: pick(/^Lignes minimum sur 7/i, 1000),
+      wQ: pick(/^Poids atteinte/i, 50), wA: pick(/^Poids qualit/i, 30), wR: pick(/^Poids r.gularit/i, 20)
+    };
+    P.cadObj = P.href > 0 ? P.quota / P.href : 83.8;
+    P.perDay = Math.max(1, Math.round(P.ligQual / 20));
+
+    /* registre */
+    const oh = (() => { for (let i = 0; i < 15; i++) if (up((opsR[i] || [])[3]) === 'NOM PRENOM') return i; return 5; })();
+    const ops = [];
+    for (let i = oh + 1; i < opsR.length; i++) {
+      const r = opsR[i] || []; const np = up(r[3]); if (!np) continue;
+      ops.push({
+        i: ops.length + 1, np, mat: str(r[0]), nom: str(r[1]), prenom: str(r[2]), role: str(r[4]), poste: str(r[5]), contrat: str(r[6]),
+        entree: num(r[7]), sortie: num(r[8]), actif: up(r[9]), habil: str(r[10]), notes: str(r[11]),
+        soumis: (typeof r[12] === 'string' ? up(r[12]) : ''), aff: up(r[13])
+      });
+    }
+    const opBy = new Map(ops.map(o => [o.np, o]));
+
+    /* PROD — valeurs calculées par Excel (heures, quota, h. réelles…) */
+    const ph = header(prodR, 'DATE');
+    const c = {
+      d: col(ph, 'DATE', 0), n: col(ph, 'NOM PRENOM', 2), h: col(ph, 'HEURES', 3), hhp: col(ph, 'H. HORS PICK', 4), l: col(ph, 'LIGNES', 5),
+      tour: col(ph, 'NB TOURNEES', 9), cont: col(ph, 'CONTENANTS', 10), ed: col(ph, 'ERR. DECELEE', 11), ea: col(ph, 'ERR. AVEREE', 12),
+      q: col(ph, 'QUOTA %', 13), t: col(ph, 'HREEL', 19), so: col(ph, 'SOUMIS QUOTA', 27), code: col(ph, '_CODEPTG', 30)
+    };
+    const prod = [];
+    for (let i = ph.row + 1; i < prodR.length; i++) {
+      const r = prodR[i]; if (!r) continue;
+      const d = num(r[c.d]), n = up(r[c.n]); if (d == null || !n) continue;
+      const h = num(r[c.h]) || 0, hhp = num(r[c.hhp]) || 0, t0 = num(r[c.t]);
+      prod.push({
+        d: Math.floor(d), n, h, hhp, l: num(r[c.l]) || 0, tour: num(r[c.tour]) || 0, cont: num(r[c.cont]) || 0,
+        ed: num(r[c.ed]) || 0, ea: num(r[c.ea]) || 0, q: num(r[c.q]), t: t0 != null ? t0 : Math.max(0, h - hhp),
+        so: up(r[c.so]) === 'OUI', code: str(r[c.code])
+      });
+    }
+    prod.sort(byDate);
+
+    const simple = (rows, map) => {
+      if (!rows) return [];
+      const h = header(rows, 'DATE'); const out = [];
+      for (let i = h.row + 1; i < rows.length; i++) {
+        const r = rows[i]; if (!r) continue; const d = num(r[0]); if (d == null) continue;
+        const o = map(r); if (o) { o.d = Math.floor(d); out.push(o); }
+      }
+      return out.sort(byDate);
+    };
+    const err = simple(R('ERREURS'), r => up(r[2]) ? { n: up(r[2]), type: up(r[3]), det: str(r[4]), adr: str(r[5]), rc: str(r[6]), rp: str(r[7]), com: str(r[8]) } : null);
+    const ave = simple(R('AVEREES'), r => up(r[2]) ? { n: up(r[2]), lit: str(r[3]), res: str(r[4]), mode: str(r[5]), motif: up(r[6]), ag: str(r[7]), cli: str(r[8]), rc: str(r[9]), rr: str(r[10]) } : null);
+    const act = simple(R('ACTIVITES'), r => up(r[2]) ? { n: up(r[2]), type: up(r[3]) || 'NON PRÉCISÉ', det: str(r[4]), h: num(r[5]) || 0 } : null);
+    const anom = simple(R('ANOMALIES'), r => ({ n: up(r[2]), grav: up(r[3]), txt: str(r[4]) }));
+
+    /* SUIVI RH : compteurs (haut) + journal (sous l'en-tête « OPÉRATEUR (liste) ») */
+    const rhR = R('SUIVI_RH') || [];
+    let jh = -1; for (let i = 0; i < rhR.length; i++) { const v = up((rhR[i] || [])[1]); if (/^OP.RATEUR/.test(v) && v.includes('LISTE')) { if (i > 30) { jh = i; break; } } }
+    if (jh < 0) for (let i = 30; i < rhR.length; i++) { const v = up((rhR[i] || [])[1]); if (/^OP.RATEUR/.test(v)) { jh = i; break; } }
+    const rhC = new Map(), rhJ = [];
+    const cTop = (() => { for (let i = 0; i < Math.min(rhR.length, 40); i++) if (/^NOM/.test(up((rhR[i] || [])[1]))) return i; return 11; })();
+    for (let i = cTop + 1; i < (jh > 0 ? jh : rhR.length); i++) {
+      const r = rhR[i] || []; const n = up(r[1]); if (!n || !opBy.has(n)) continue;
+      rhC.set(n, { maj: num(r[2]), sit: str(r[3]), cp: num(r[10]), rtt: num(r[11]), rec: num(r[12]) });
+    }
+    if (jh > 0) for (let i = jh + 1; i < rhR.length; i++) {
+      const r = rhR[i] || []; const n = up(r[1]), d = num(r[2]); if (!n || d == null) continue;
+      rhJ.push({ n, d: Math.floor(d), type: str(r[3]), sens: up(r[4]), fam: up(r[5]), suite: str(r[6]), det: str(r[7]) });
+    }
+    rhJ.sort(byDate);
+    const comptASaisir = rhR.slice(0, jh > 0 ? jh : 60).filter(r => r && /saisir/i.test(str(r[3]))).length;
+
+    const impR = R('JOURNAL_IMPORTS') || [];
+    let lastImp = null; for (let i = impR.length - 1; i >= 0; i--) { const r = impR[i] || []; if (num(r[1]) != null) { lastImp = { jour: Math.floor(num(r[1])), inconnus: num(r[5]) || 0 }; break; } }
+
+    /* index */
+    const group = arr => { const m = new Map(); for (const r of arr) { if (!m.has(r.n)) m.set(r.n, []); m.get(r.n).push(r); } return m; };
+    const wdSet = new Set(prod.filter(r => r.l > 0).map(r => r.d));
+    const wd = [...wdSet].sort((a, b) => a - b);
+    const maxD = arr => arr.length ? arr[arr.length - 1].d : null;
+    return {
+      P, ops, opBy, prod, err, ave, act, anom, rhJ, rhC, comptASaisir, lastImp, wd, wdSet,
+      pBy: group(prod), eBy: group(err), aBy: group(ave), tBy: group(act), rBy: group(rhJ),
+      maxProd: maxD(prod), maxErr: maxD(err), maxAve: maxD(ave), fileName: fileName || ''
+    };
+  }
+
+  /* ── outils de période ── */
+  function lb(arr, d) { let lo = 0, hi = arr.length; while (lo < hi) { const m = (lo + hi) >> 1; if (arr[m].d < d) lo = m + 1; else hi = m; } return lo; }
+  const rng = (arr, a, b) => (arr ? arr.slice(lb(arr, a), lb(arr, b + 1)) : []);
+  function lbn(arr, x) { let lo = 0, hi = arr.length; while (lo < hi) { const m = (lo + hi) >> 1; if (arr[m] < x) lo = m + 1; else hi = m; } return lo; }
+  const nWd = (M, a, b) => lbn(M.wd, b + 1) - lbn(M.wd, a);
+  const lastWdBefore = (M, x, floor) => { const i = lbn(M.wd, x) - 1; return i >= 0 && M.wd[i] >= floor ? M.wd[i] : 0; };
+  const lastWdLE = (M, x, floor) => lastWdBefore(M, x + 1, floor);
+
+  function period(M, mode, date) {
+    let a, b;
+    if (mode === 'JOUR') { a = b = date; }
+    else if (mode === 'SEMAINE') { a = monday(date); b = a + 6; }
+    else { a = monthStart(date); b = monthEnd(date); }
+    const before = lastWdBefore(M, a, a - 60);
+    let pa, pb;
+    if (mode === 'JOUR') { pa = pb = before || a - 1; }
+    else if (mode === 'SEMAINE') { pa = a - 7; pb = b - 7; }
+    else { pa = addMonths(a, -1); pb = a - 1; }
+    const anchor = lastWdLE(M, b, a - 60) || b;
+    const short = s => mode === 'JOUR' ? jdm(s) : mode === 'SEMAINE' ? 'S' + p2(isoWeek(s)) : moisNom(s);
+    const lbl = mode === 'JOUR' ? (JL[wdi(a)] + ' ' + toDate(a).getUTCDate() + ' ' + moisNom(a) + ' ' + year(a))
+      : mode === 'SEMAINE' ? ('Semaine ' + isoWeek(a) + ' · ' + dm(a) + ' → ' + dmy(b))
+        : (moisNom(a) + ' ' + year(a));
+    const plage = mode === 'JOUR' ? dmy(a) : 'du ' + dm(a) + ' au ' + dmy(b);
+    const jt = nWd(M, a, b);
+    const w = mode === 'JOUR' ? [anchor - 29, anchor] : [a, b];       // fenêtre RH / qualité (jour = 30 j)
+    return {
+      mode, date, a, b, pa, pb, anchor, jt, w, short: short(a), prevShort: short(pa), lbl, plage,
+      wTxt: mode === 'JOUR' ? '30 derniers jours au ' + dm(anchor) : short(a) + ' · ' + plage,
+      minLig: Math.max(1, Math.min(M.P.ligQual, M.P.perDay * Math.max(1, jt)))
+    };
+  }
+  function step(M, mode, date, k) {
+    if (mode === 'JOUR') {
+      if (k < 0) { const x = lastWdBefore(M, date, -Infinity); return x || date - 1; }
+      const i = lbn(M.wd, date + 1); return i < M.wd.length ? M.wd[i] : date + 1;
+    }
+    if (mode === 'SEMAINE') return date + 7 * k;
+    /* mois : on se place sur la dernière journée travaillée du mois (sinon le 1er) */
+    const d = toDate(date), a = ser(d.getUTCFullYear(), d.getUTCMonth() + k, 1), b = monthEnd(a);
+    return lastWdLE(M, b, a) || a;
+  }
+
+  /* ── agrégats (une même fonction pour l'équipe et pour une personne) ── */
+  function agg(M, a, b, name) {
+    const P = M.P;
+    const src = name ? M.pBy.get(name) : M.prod;
+    const R = rng(src, a, b);
+    const o = { a, b, lig: 0, hp: 0, hpk: 0, hs: 0, hsN: 0, cmd: 0, cont: 0, pres: 0, presAll: R.length, presH: 0, ligQ: 0, hQ: 0, qS: 0, qN: 0, nQ: 0, nOk: 0, nWarn: 0, nLow: 0, dQ: 0, hhp: 0 };
+    for (const r of R) {
+      o.lig += r.l; o.hp += r.h; o.hpk += r.t; o.cmd += r.tour; o.cont += r.cont; o.hhp += r.hhp;
+      if (r.l > 0) o.pres++;
+      if (r.h > 0) o.presH++;
+      if (r.h > P.href) { o.hs += r.h - P.href; o.hsN++; }
+      if (r.t >= P.hMin && (name || r.so)) {
+        o.ligQ += r.l; o.hQ += r.t; o.dQ++;
+        if (r.q != null) { o.qS += r.q; o.qN++; if (r.q >= 0) { o.nQ++; if (r.q >= P.qVert) o.nOk++; else if (r.q >= P.qRouge) o.nWarn++; else o.nLow++; } }
+      }
+    }
+    o.R = R;
+    o.E = rng(name ? M.eBy.get(name) : M.err, a, b);
+    o.A = rng(name ? M.aBy.get(name) : M.ave, a, b);
+    o.T = rng(name ? M.tBy.get(name) : M.act, a, b);
+    o.dec = o.E.length; o.ave = o.A.length; o.actH = sum(o.T, r => r.h); o.actN = o.T.length;
+    o.jt = nWd(M, a, b);
+    o.etp = o.jt ? o.pres / o.jt : null;
+    o.cad = o.hQ > 0 ? o.ligQ / o.hQ : null;
+    o.quota = o.qN ? o.qS / o.qN : null;
+    o.ppmD = o.lig > 0 ? o.dec / o.lig * 1e6 : null;
+    o.ppmA = o.lig > 0 ? o.ave / o.lig * 1e6 : null;
+    o.ligJ = name ? (o.pres ? o.lig / o.pres : null) : (o.jt ? o.lig / o.jt : null);
+    o.reg = o.nQ ? o.nOk / o.nQ * 100 : null;
+    o.hPickJ = o.dQ ? o.hQ / o.dQ : null;
+    o.ligPickJ = o.dQ ? o.ligQ / o.dQ : null;
+    o.hsPres = o.presH ? o.hs / o.presH : null;
+    o.partHors = o.hp > 0 ? o.hhp / o.hp * 100 : null;
+    return o;
+  }
+
+  /* statuts : 1 vert · 2 orange · 3 rouge · 0 sans objet */
+  const stQ = (P, v) => v == null ? 0 : v >= P.qVert ? 1 : v >= P.qRouge ? 2 : 3;
+  const stD = (P, v) => v == null ? 0 : v < P.dOrange ? 1 : v < P.dRouge ? 2 : 3;
+  const stA = (P, v) => v == null ? 0 : v < P.aOrange ? 1 : v < P.aRouge ? 2 : 3;
+  const stCad = (P, v) => v == null ? 0 : stQ(P, v / P.cadObj * 100);
+
+  /* ── indicateurs « CALC » d'une personne à une date (alerte, score, tendance) ── */
+  function indic(M, name, A) {
+    const P = M.P, op = M.opBy.get(name) || {};
+    const rows = M.pBy.get(name) || [];
+    const win = k => rng(rows, A - k + 1, A);
+    const w7 = win(7), w30 = win(30), w90 = win(90);
+    const H = w => sum(w, r => r.h), L = w => sum(w, r => r.l), AV = w => sum(w, r => r.ea);
+    const h7 = H(w7), l7 = L(w7), h30 = H(w30), l30 = L(w30), h90 = H(w90), l90 = L(w90);
+    const cad7 = h7 > 0 ? r1(l7 / h7) : null, cad30 = h30 > 0 ? r1(l30 / h30) : null, cad90 = h90 > 0 ? r1(l90 / h90) : null;
+    const qs = w => { const v = w.filter(r => r.q != null); return v.length ? r1(sum(v, r => r.q) / v.length) : null; };
+    const q30 = qs(w30);
+    const ppm7 = l7 ? Math.round(AV(w7) / l7 * 1e6) : null, ppm30 = l30 ? Math.round(AV(w30) / l30 * 1e6) : null;
+    /* comme PROD!X + COUNTIFS(X,"<>") : toutes les journées comptent au dénominateur */
+    let rs = 0;
+    for (const r of w30) { if (r.t > 0 && cad90) { const u = r1(r.l / r.t); if (Math.abs(u / cad90 - 1) <= P.tunnel / 100) rs++; } }
+    const reg30 = w30.length ? Math.round(rs / w30.length * 100) : null;
+    const varcad = (cad7 != null && cad30) ? r1((cad7 / cad30 - 1) * 100) : null;
+    const so = op.soumis === 'OUI';
+    const score = (so && q30 != null && h30 >= P.h30)
+      ? Math.round(P.wQ * Math.min(1, q30 / P.qVert) + P.wA * Math.max(0, 1 - (ppm30 || 0) / P.aRouge) + P.wR * (reg30 || 0) / 100) : null;
+    const tend = varcad == null ? '' : varcad >= P.progr ? 'hausse' : varcad <= -P.baisse ? 'baisse' : 'stable';
+    let alerte = '', sev = 0;
+    if (so && op.actif === 'OUI') {
+      const f0 = x => Math.round(x).toLocaleString('fr-FR');
+      if (l30 >= P.ligQual && l7 >= P.ligQual && ppm7 != null && ppm30 != null && ppm7 > P.aRouge && ppm7 > ppm30 * 1.5) {
+        alerte = `erreurs avérées en hausse (${f0(ppm7)} PPM sur 7 j contre ${f0(ppm30)} sur 30 j)`; sev = 3;
+      } else if (h7 >= P.h7 && l7 >= P.lig7 && h30 >= P.h30 && varcad != null && varcad <= -P.baisse) {
+        alerte = `cadence inférieure de ${f0(Math.abs(varcad))} % à sa moyenne 30 j (${f0(cad7)} contre ${f0(cad30)} lignes/h)`; sev = 2;
+      } else if (h7 >= P.h7 && q30 != null && q30 < P.qRouge) {
+        alerte = `quota 30 j à ${f0(q30)} % (${f0(h30)} h productives)`; sev = 1.5;
+      } else if (h7 >= P.h7 && h30 >= P.h30 && varcad != null && varcad >= P.progr) {
+        alerte = `progression de ${f0(varcad)} % sur 7 j (${f0(cad7)} lignes/h)`; sev = 1;
+      }
+    }
+    return { cad7, cad30, cad90, q30, ppm7, ppm30, reg30, varcad, score, tend, alerte, sev, h7, h30 };
+  }
+
+  /* ── classement par personne sur une fenêtre ── */
+  function perOp(M, a, b, minLig) {
+    const P = M.P;
+    return M.ops.map(op => {
+      const g = agg(M, a, b, op.np);
+      const so = op.soumis === 'OUI';
+      const o = {
+        op, np: op.np, i: op.i, lig: g.lig, hpk: g.hpk, quota: g.quota, dec: g.dec, ave: g.ave, ppmD: g.ppmD, ppmA: g.ppmA,
+        so, eQ: so && g.quota != null, eE: so && g.lig >= minLig, cad: g.cad, ligPickJ: g.ligPickJ, g
+      };
+      const G = Math.min(o.lig, 999999), t = 99 - o.i;
+      o.kQ = o.eQ ? Math.round(o.quota * 10) * 1e8 + G * 100 + t : null;
+      o.kD = o.eE ? Math.min(Math.round(o.ppmD * 10), 9999999) * 1e8 + (999999 - G) * 100 + t : null;
+      o.kA = o.eE ? Math.min(Math.round(o.ppmA * 10), 9999999) * 1e8 + (999999 - G) * 100 + t : null;
+      o.kC = so && o.cad != null ? Math.round(o.cad * 10) * 1e8 + G * 100 + t : null;
+      o.kL = so && o.ligPickJ != null ? Math.round(o.ligPickJ) * 1e8 + G * 100 + t : null;
+      o.stQ = o.eQ ? stQ(P, o.quota) : 0; o.stD = o.eE ? stD(P, o.ppmD) : 0; o.stA = o.eE ? stA(P, o.ppmA) : 0;
+      return o;
+    });
+  }
+  const rankOf = (list, k, me, higherBetter) => {
+    if (!me || me[k] == null) return null;
+    const keys = list.filter(o => o[k] != null).map(o => o[k]);
+    return { r: keys.filter(x => higherBetter ? x > me[k] : x < me[k]).length + 1, n: keys.length };
+  };
+
+  /* ── RH sur une fenêtre ── */
+  const isEcart = r => r.sens.includes('CART');
+  const isPos = r => r.sens.includes('POSITIF');
+  const isSecu = r => r.fam.includes('CURIT');
+  const sansSuite = r => r.suite === '' || /^aucune$/i.test(r.suite);
+  function rh(M, a, b, name) {
+    const J = rng(name ? M.rBy.get(name) : M.rhJ, a, b);
+    const E = J.filter(isEcart);
+    return {
+      J, ecarts: E.length, secu: E.filter(isSecu).length, positifs: J.filter(isPos).length,
+      sansSuite: E.filter(sansSuite).length, secuSansSuite: E.filter(r => isSecu(r) && sansSuite(r)).length
+    };
+  }
+
+  /* ── ACCUEIL ── */
+  const DEC_TYPES = [['ERREUR REF', 'Erreur de référence', /^ERREUR REF/], ['NON PRÉCISÉE', 'Non précisée', /^NON PR.CIS/], ['QTE +', 'Quantité en plus', /^QTE \+/], ['ORIENTATION', 'Orientation', /^ORIENTATION/]];
+  const AVE_MOTIFS = [['MANQUANT', 'Manquant', /^MANQUANT/], ['NON CONFORME', 'Non conforme', /^NON CONFORME/], ['ENDOMMAGÉ', 'Endommagé', /^ENDOMMAG/], ['COLIS DÉVOYÉ', 'Colis dévoyé', /^COLIS D/]];
+  function split(list, field, defs) {
+    const out = defs.map(([k, label, re]) => ({ k, label, v: list.filter(r => re.test(r[field])).length }));
+    out.push({ k: 'AUTRES', label: 'Autres', v: Math.max(0, list.length - sum(out, x => x.v)) });
+    return out;
+  }
+
+  function accueil(M, mode, date, today) {
+    const P = M.P, per = period(M, mode, date);
+    const D = agg(M, per.a, per.b), E = agg(M, per.pa, per.pb);
+    const A = per.anchor;
+    const cols = {
+      jour: agg(M, A, A), j7: agg(M, A - 6, A), j30: agg(M, A - 29, A), mois: agg(M, monthStart(A), A)
+    };
+    const L = perOp(M, per.a, per.b, per.minLig);
+    const classQ = L.filter(o => o.kQ != null).sort((x, y) => y.kQ - x.kQ);
+    const classD = L.filter(o => o.kD != null).sort((x, y) => y.kD - x.kD);
+    const classA = L.filter(o => o.kA != null).sort((x, y) => y.kA - x.kA);
+    const horsQ = L.filter(o => o.lig > 0 && !o.eQ);
+    const sousMin = L.filter(o => o.so && o.lig > 0 && !o.eE);
+    const sansSoumis = L.filter(o => o.op.actif === 'OUI' && o.op.soumis === '');
+    const nTopQ = Math.min(5, Math.ceil(classQ.length / 2)), nTopE = Math.min(5, Math.ceil(classD.length / 2));
+
+    /* RH : jour = 30 derniers jours, sinon la période */
+    const [ra, rb] = mode === 'JOUR' ? [A - 29, A] : [per.a, per.b];
+    const RH = rh(M, ra, rb);
+    const parOp = new Map();
+    for (const r of RH.J) { if (!parOp.has(r.n)) parOp.set(r.n, { n: r.n, pos: 0, ec: 0, secu: 0 }); const x = parOp.get(r.n); if (isPos(r)) x.pos++; if (isEcart(r)) { x.ec++; if (isSecu(r)) x.secu++; } }
+    const topPos = [...parOp.values()].filter(x => x.pos > 0).sort((x, y) => y.pos - x.pos).slice(0, 5);
+    const flopEc = [...parOp.values()].filter(x => x.ec > 0).sort((x, y) => (y.ec - x.ec) || (y.secu - x.secu)).slice(0, 5);
+
+    /* actions à réaliser (même liste et même ordre que CALC_ACCUEIL) */
+    const actions = [];
+    if (RH.sansSuite > 0) actions.push({ sev: RH.secuSansSuite > 0 ? 3 : 2, txt: `${RH.sansSuite} écart${RH.sansSuite > 1 ? 's' : ''} RH sans suite donnée${RH.secuSansSuite > 0 ? ` (dont ${RH.secuSansSuite} sécurité)` : ''}`, ou: 'SUIVI RH' });
+    const anomB = rng(M.anom, A - 29, A).filter(r => r.grav === 'BLOQUANT').length;
+    if (anomB > 0) actions.push({ sev: 3, txt: `${anomB} anomalie${anomB > 1 ? 's' : ''} bloquante${anomB > 1 ? 's' : ''} sur 30 jours`, ou: 'ANOMALIES' });
+    const alerts = M.ops.map(op => ({ op, x: indic(M, op.np, A) })).filter(o => o.x.alerte)
+      .sort((p, q) => (q.x.sev - p.x.sev) || (q.op.i - p.op.i));
+    for (const o of alerts) actions.push({ sev: o.x.sev >= 3 ? 3 : o.x.sev === 1 ? 4 : 2, txt: o.x.alerte, who: o.op.np });
+    if (sansSoumis.length) actions.push({ sev: 2, txt: `« Soumis au quota » vide : ${sansSoumis.slice(0, 2).map(o => court(o.op)).join(', ')}${sansSoumis.length > 2 ? ' +' + (sansSoumis.length - 2) : ''}`, ou: 'OPÉRATEURS' });
+    const jImp = M.maxProd != null && today ? Math.floor(today - M.maxProd) : 0;
+    if (jImp > 3) actions.push({ sev: 2, txt: `Dernier import PROD il y a ${jImp} jours`, ou: 'IMPORT' });
+    if (M.comptASaisir > 0) actions.push({ sev: 1, txt: `${M.comptASaisir} compteur${M.comptASaisir > 1 ? 's' : ''} CP / RTT à saisir`, ou: 'SUIVI RH' });
+    if (M.lastImp && M.lastImp.inconnus > 0) actions.push({ sev: 2, txt: `Import du ${dm(M.lastImp.jour)} : ${M.lastImp.inconnus} opérateur${M.lastImp.inconnus > 1 ? 's' : ''} inconnu${M.lastImp.inconnus > 1 ? 's' : ''} du registre`, ou: 'OPÉRATEURS' });
+
+    return {
+      per, D, E, cols, L, classQ, classD, classA, horsQ, sousMin, nTopQ, nTopE,
+      dist: { ok: L.filter(o => o.stQ === 1), warn: L.filter(o => o.stQ === 2), low: L.filter(o => o.stQ === 3) },
+      types: split(D.E, 'type', DEC_TYPES), motifs: split(D.A, 'motif', AVE_MOTIFS),
+      RH, rhWin: [ra, rb], topPos, flopEc, actions
+    };
+  }
+
+  /* séries pour les mini-courbes : 12 périodes jusqu'à la période lue */
+  function series(M, mode, date, n = 12) {
+    const out = []; let d = date;
+    for (let k = 0; k < n; k++) {
+      const per = period(M, mode, d);
+      out.unshift({ per, D: agg(M, per.a, per.b) });
+      d = mode === 'JOUR' ? step(M, 'JOUR', per.a, -1) : step(M, mode, per.a, -1);
+    }
+    return out;
+  }
+  /* série jour par jour (jours travaillés) sur 30 jours jusqu'à l'ancre */
+  function daily(M, A, k = 30) {
+    return M.wd.filter(d => d > A - k && d <= A).map(d => ({ d, D: agg(M, d, d) }));
+  }
+
+  /* ── FICHE ── */
+  const court = op => (op.nom ? op.nom + ' ' + (op.prenom ? op.prenom[0] + '.' : '') : op.np).trim();
+  const joli = op => op.nom ? op.nom + ' ' + op.prenom.toLowerCase().replace(/(^|[\s-])\S/g, m => m.toUpperCase()) : op.np;
+
+  function fiche(M, name, mode, date, today) {
+    const P = M.P, op = M.opBy.get(name) || { np: name, nom: '', prenom: '', i: 0 };
+    const per = period(M, mode, date);
+    const [w1, w2] = per.w;
+    const rows = M.pBy.get(name) || [];
+    /* journée précédente de la personne (vue jour) */
+    let prevA = per.pa, prevB = per.pb;
+    if (mode === 'JOUR') { const i = lb(rows, date) - 1; if (i >= 0) prevA = prevB = rows[i].d; }
+    const G = agg(M, per.a, per.b, name), Dt = agg(M, per.a, per.b), H = agg(M, prevA, prevB, name);
+    const I = agg(M, w1, w2, name), F = agg(M, w1, w2);
+    const prevShort = mode === 'JOUR' ? (prevA ? jdm(prevA) : '—') : per.prevShort;
+
+    /* rangs sur la fenêtre */
+    const minW = Math.max(1, Math.min(P.ligQual, P.perDay * Math.max(1, F.jt)));
+    const L = perOp(M, w1, w2, minW);
+    const me = L.find(o => o.np === name);
+    const rk = {
+      q: rankOf(L, 'kQ', me, true), d: rankOf(L, 'kD', me, false), a: rankOf(L, 'kA', me, false),
+      c: rankOf(L, 'kC', me, true), l: rankOf(L, 'kL', me, true)
+    };
+
+    /* jour par jour */
+    const endL = mode === 'JOUR' ? date : per.b, startL = mode === 'JOUR' ? date - 99 : per.a;
+    let days = rng(rows, startL, endL).slice().reverse();
+    const nDays = days.length;
+    if (days.length > 24) days = days.slice(0, 24);
+    const eAll = M.eBy.get(name) || [], aAll = M.aBy.get(name) || [];
+    days = days.map(r => {
+      const nd = rng(eAll, r.d, r.d).length, na = rng(aAll, r.d, r.d).length;
+      return { d: r.d, h: r.h, t: r.t, l: r.l, cad: r.t > 0 ? r.l / r.t : null, q: r.q, st: r.q == null ? 0 : r.t < P.hMin ? 0 : stQ(P, r.q), dec: nd, ave: na, hs: Math.max(0, r.h - P.href), code: r.code };
+    }).sort((x, y) => x.d - y.d);
+
+    /* 8 dernières semaines */
+    const lundi = monday(mode === 'JOUR' ? date : per.b);
+    const weeks = [];
+    for (let k = 7; k >= 0; k--) {
+      const a = lundi - 7 * k, b = a + 6, g = agg(M, a, b, name), t = agg(M, a, b);
+      weeks.push({ a, lbl: 'S' + p2(isoWeek(a)), jours: g.pres, lig: g.lig, cad: g.cad, q: g.quota, qEq: t.quota, ppmD: g.lig ? g.dec / g.lig * 1e6 : null, dec: g.dec, ave: g.ave });
+    }
+    const avg = arr => { const v = arr.filter(x => x != null); return v.length ? v.reduce((s, x) => s + x, 0) / v.length : null; };
+    const q4 = avg(weeks.slice(4).map(w => w.q)), q4p = avg(weeks.slice(0, 4).map(w => w.q));
+
+    /* erreurs et activités sur la fenêtre */
+    const types = split(I.E, 'type', DEC_TYPES), motifs = split(I.A, 'motif', AVE_MOTIFS);
+    const last = [...I.E.map(r => ({ k: 'D', d: r.d, type: r.type, det: [r.adr && 'adr. ' + r.adr, r.rc, r.rp && '→ ' + r.rp].filter(Boolean).join('  ') })),
+      ...I.A.map(r => ({ k: 'A', d: r.d, type: r.motif, det: [r.lit && 'litige ' + r.lit, r.cli, r.rc].filter(Boolean).join('  ·  ') }))]
+      .sort((x, y) => y.d - x.d).slice(0, 12);
+    const actM = new Map();
+    for (const r of I.T) { if (!actM.has(r.type)) actM.set(r.type, { type: r.type, h: 0, n: 0 }); const x = actM.get(r.type); x.h += r.h; x.n++; }
+    const tAll = M.tBy.get(name) || [];
+    const acts = [...actM.values()].sort((x, y) => y.h - x.h).map(x => {
+      const l = tAll.filter(r => r.type === x.type && r.d <= w2); return { ...x, last: l.length ? l[l.length - 1].d : null };
+    });
+
+    /* RH */
+    const RH = rh(M, w1, w2, name);
+    const comp = M.rhC.get(name) || null;
+    const events = (M.rBy.get(name) || []).slice().reverse().slice(0, 8);
+
+    /* indicateurs CALC à l'ancre */
+    const X = indic(M, name, per.anchor);
+
+    /* à retenir (même logique que CALC_FICHE) */
+    const ret = [];
+    const push = (sev, txt) => ret.push({ sev, txt });
+    if (!M.opBy.has(name)) push(3, `« ${name} » absent du registre OPÉRATEURS`);
+    if (M.opBy.has(name) && G.presAll === 0) push(1, `Aucune journée dans PROD sur la période (${per.short})`);
+    const sq = stQ(P, G.quota);
+    if (sq === 3) push(3, `Quota ${per.short} : ${fr(G.quota, 1)} %, sous le seuil rouge (${fr(P.qRouge)} %)`);
+    else if (sq === 2) push(2, `Quota ${per.short} : ${fr(G.quota, 1)} %, sous l'objectif (${fr(P.qVert)} %)`);
+    const wTxt = mode === 'JOUR' ? '30 derniers jours' : per.short;
+    if (I.nLow > 0) push(I.nLow / Math.max(1, I.nQ) >= .5 ? 3 : 2, `${I.nLow} journée${I.nLow > 1 ? 's' : ''} sous ${fr(P.qRouge)} % sur ${I.nQ} (${wTxt})`);
+    const sd = stD(P, I.ppmD), sa = stA(P, I.ppmA);
+    if (I.lig >= minW && sd >= 2) push(sd, `PPM décelée ${fr(I.ppmD)} ≥ seuil ${sd === 3 ? 'rouge (' + fr(P.dRouge) : 'orange (' + fr(P.dOrange)})  ·  ${I.dec} erreur${I.dec > 1 ? 's' : ''} (${wTxt})`);
+    if (I.lig >= minW && sa >= 2) push(sa, `PPM avérée ${fr(I.ppmA)} ≥ seuil ${sa === 3 ? 'rouge (' + fr(P.aRouge) : 'orange (' + fr(P.aOrange)})  ·  ${I.ave} litige${I.ave > 1 ? 's' : ''} (${wTxt})`);
+    if (RH.sansSuite > 0) push(RH.secuSansSuite > 0 ? 3 : 2, `${RH.sansSuite} écart${RH.sansSuite > 1 ? 's' : ''} RH sans suite donnée${RH.secuSansSuite > 0 ? ` (dont ${RH.secuSansSuite} sécurité)` : ''}  →  SUIVI RH`);
+    if (RH.secu > 0 && RH.secuSansSuite === 0) push(2, `${RH.secu} écart${RH.secu > 1 ? 's' : ''} de sécurité (${wTxt}), suite donnée`);
+    if (M.opBy.has(name) && op.soumis === '') push(2, `« Soumis au quota » non renseigné  →  OPÉRATEURS`);
+    if (comp && /saisir/i.test(comp.sit)) push(1, `Compteurs CP / RTT à saisir  →  SUIVI RH`);
+    if (op.actif === 'NON') push(1, `Opérateur inactif dans le registre${op.sortie ? ' (sorti le ' + dm(op.sortie) + ')' : ''}`);
+    if (X.alerte) push(X.sev >= 3 ? 3 : X.sev <= 1 ? 4 : 2, X.alerte.charAt(0).toUpperCase() + X.alerte.slice(1));
+    if (I.nOk > 0) push(4, `Quota ≥ objectif sur ${I.nOk} journée${I.nOk > 1 ? 's' : ''} sur ${I.nQ} (${wTxt})`);
+    if (RH.positifs > 0) push(4, `${RH.positifs} point${RH.positifs > 1 ? 's' : ''} positif${RH.positifs > 1 ? 's' : ''} saisi${RH.positifs > 1 ? 's' : ''} (${wTxt})`);
+    if (sd === 1 && I.lig >= minW) push(4, `PPM décelée sous le seuil orange (${fr(I.ppmD)})`);
+    const ord = { 3: 1, 2: 2, 1: 3, 4: 4 };
+    ret.sort((x, y) => ord[x.sev] - ord[y.sev]);
+
+    return { op, per, G, Dt, H, I, F, prevShort, minW, rk, me, days, nDays, weeks, q4, q4p, types, motifs, last, acts, RH, comp, events, X, ret, wTxt };
+  }
+
+  const fr = (v, d = 0) => v == null || !isFinite(v) ? '—' : v.toLocaleString('fr-FR', { minimumFractionDigits: d, maximumFractionDigits: d }).replace(/\u202f/g, '\u00a0');
+
+  return {
+    readOptions, build, period, step, agg, accueil, fiche, series, daily, indic, perOp, rh,
+    stQ, stD, stA, stCad, court, joli, fr, toDate, ser, dm, dmy, jdm, wdi, monday, monthStart, isoWeek, moisNom, J, JL, MO, num
+  };
+})();
+if (typeof module !== 'undefined') module.exports = PP;
+/*ENGINE-END*/
+</script>
+
+<script>
+/* ════════════════════════════════════════════════════════════════
+   INTERFACE
+   ════════════════════════════════════════════════════════════════ */
+(() => {
+'use strict';
+const $ = s => document.querySelector(s);
+const app = $('#app'), tip = $('#tip');
+const fr = PP.fr;
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const store = {
+  get(k, d) { try { const v = localStorage.getItem('pp.' + k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } },
+  set(k, v) { try { localStorage.setItem('pp.' + k, JSON.stringify(v)); } catch (e) { /* stockage indisponible */ } }
+};
+const todaySer = () => { const n = new Date(); return PP.ser(n.getFullYear(), n.getMonth(), n.getDate()); };
+
+const S = {
+  M: null, view: store.get('view', 'accueil'), mode: store.get('mode', 'SEMAINE'), date: null, op: store.get('op', null),
+  lb: 'q', perf: 'quota', errTab: 'all', handle: null, saved: null, loading: '', error: '', loadedAt: null, nom: store.get('nom', '')
+};
+
+/* ── icônes (traits 1,8 px) ── */
+const IC = {
+  box: '<path d="M21 8 12 3 3 8v8l9 5 9-5Z"/><path d="m3 8 9 5 9-5M12 13v8"/>',
+  gauge: '<path d="M12 14 16 9"/><path d="M3.5 18a9 9 0 1 1 17 0"/>',
+  target: '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/>',
+  scan: '<path d="M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3"/><path d="M8 12h8"/>',
+  truck: '<path d="M3 6h11v10H3zM14 10h4l3 3v3h-7"/><circle cx="7" cy="17.5" r="1.8"/><circle cx="17" cy="17.5" r="1.8"/>',
+  clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+  users: '<circle cx="9" cy="8" r="3.2"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/><path d="M16 4.5a3 3 0 0 1 0 6M21 20c0-2.6-1.6-4.8-4-5.6"/>',
+  home: '<path d="M4 11 12 4l8 7v9H4z"/><path d="M10 20v-5h4v5"/>',
+  id: '<rect x="3" y="5" width="18" height="14" rx="3"/><circle cx="9" cy="11" r="2.2"/><path d="M5.8 16c.6-1.5 1.8-2.3 3.2-2.3s2.6.8 3.2 2.3M15 10h3M15 13h3"/>',
+  refresh: '<path d="M20 11a8 8 0 0 0-14.5-4.5L4 8"/><path d="M4 4v4h4"/><path d="M4 13a8 8 0 0 0 14.5 4.5L20 16"/><path d="M20 20v-4h-4"/>',
+  print: '<path d="M7 9V4h10v5"/><rect x="4" y="9" width="16" height="8" rx="2"/><path d="M7 14h10v6H7z"/>',
+  search: '<circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>',
+  left: '<path d="m15 18-6-6 6-6"/>', right: '<path d="m9 18 6-6-6-6"/>',
+  arrow: '<path d="M7 17 17 7M9 7h8v8"/>',
+  file: '<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8Z"/><path d="M14 3v5h5M9 13h6M9 17h4"/>',
+  upload: '<path d="M12 15V4M7 9l5-5 5 5"/><path d="M5 15v3a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-3"/>',
+  check: '<path d="m5 12.5 4.5 4.5L19 7.5"/>', bang: '<path d="M12 6v8M12 18.5v.01"/>', down: '<path d="M12 5v14M6 13l6 6 6-6"/>', info: '<path d="M12 11v6M12 7.5v.01"/>',
+  up: '<path d="M12 19V5M6 11l6-6 6 6"/>', minus: '<path d="M6 12h12"/>',
+  cal: '<rect x="3.5" y="5" width="17" height="15" rx="3"/><path d="M3.5 10h17M8 3v4M16 3v4"/>',
+  shield: '<path d="M12 3 5 6v6c0 4.5 3 7.7 7 9 4-1.3 7-4.5 7-9V6Z"/><path d="m9 12 2 2 4-4"/>',
+  brief: '<rect x="3" y="7" width="18" height="13" rx="3"/><path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2M3 13h18"/>',
+  spark: '<path d="M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2.5 2.5M15.5 15.5 18 18M6 18l2.5-2.5M15.5 8.5 18 6"/>',
+  book: '<path d="M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2Z"/><path d="M4 19V5M8 7h7"/>',
+  heart: '<path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10Z"/>',
+  logo: '<path d="M4 7.5 12 3l8 4.5v9L12 21l-8-4.5Z" fill="currentColor" stroke="none" opacity=".25"/><path d="M4 7.5 12 12l8-4.5M12 12v9"/>'
+};
+const ic = (k, cls = '') => `<svg class="ic ${cls}" viewBox="0 0 24 24" aria-hidden="true">${IC[k] || ''}</svg>`;
+const ST_IC = { 1: 'check', 2: 'bang', 3: 'down', 4: 'info', 0: 'minus' };
+const ST_TXT = { 1: 'objectif atteint', 2: 'à surveiller', 3: 'sous le seuil', 4: 'info', 0: '—' };
+const ST_PPM = { 1: 'dans la cible', 2: 'à surveiller', 3: 'seuil rouge dépassé', 0: '—' };
+const pill = (st, txt) => `<span class="pill s${st}">${ic(ST_IC[st] || 'minus')}${esc(txt)}</span>`;
+const initials = op => { const n = (op && (op.nom || op.np)) || '?', p = (op && op.prenom) || ''; return ((n[0] || '') + (p[0] || n[1] || '')).toUpperCase(); };
+const AV_BG = ['#CEC6F8', '#D7F25C', '#F2C1E1', '#C9E6F5', '#F6D9B8', '#D5ECD4', '#E4E4DF'];
+const avBg = op => AV_BG[((op && op.i) || 0) % AV_BG.length];
+const av = (op, cls = '') => `<span class="av ${cls}" style="background:${avBg(op)}" aria-hidden="true">${esc(initials(op))}</span>`;
+const sign = (v, d = 1, unit = '') => v == null || !isFinite(v) ? '—' : (v >= 0 ? '+' : '−') + fr(Math.abs(v), d) + unit;
+const plural = (n, one, many) => n > 1 ? (many || one + 's') : one;
+/* sévérité (convention du classeur) : 3 rouge · 2 orange · 1 info · 4 point fort */
+const SEV_ST = { 3: 3, 2: 2, 1: 4, 4: 1 }, SEV_LBL = { 3: 'À traiter', 2: 'À surveiller', 1: 'Info', 4: 'Point fort' }, SEV_IC = { 3: 'down', 2: 'bang', 1: 'info', 4: 'check' };
+
+/* ── infobulle partagée ── */
+function showTip(t, x, y) {
+  const lines = String(t).split('\n');
+  tip.innerHTML = '<b>' + esc(lines[0]) + '</b>' + esc(lines.slice(1).join('\n'));
+  tip.classList.add('on');
+  const w = tip.offsetWidth, h = tip.offsetHeight;
+  let L = x + 14, T = y - h - 12;
+  if (L + w > innerWidth - 8) L = x - w - 14;
+  if (T < 8) T = y + 16;
+  tip.style.left = Math.max(8, L) + 'px'; tip.style.top = T + 'px';
+}
+document.addEventListener('pointermove', e => {
+  const t = e.target.closest && e.target.closest('[data-tip]');
+  if (t) showTip(t.getAttribute('data-tip'), e.clientX, e.clientY); else tip.classList.remove('on');
+});
+document.addEventListener('focusin', e => {
+  const t = e.target.closest && e.target.closest('[data-tip]');
+  if (t) { const r = t.getBoundingClientRect(); showTip(t.getAttribute('data-tip'), r.left + r.width / 2, r.top); }
+});
+document.addEventListener('focusout', () => tip.classList.remove('on'));
+document.addEventListener('scroll', () => tip.classList.remove('on'), true);
+
+/* ════════════ GRAPHIQUES (SVG dessinés à la largeur réelle) ════════════ */
+let CH = [];
+const chart = (fn, h, label) => { const id = 'c' + CH.length; CH.push({ id, fn, h }); return `<div class="chart" id="${id}" role="img" aria-label="${esc(label || '')}" style="height:${h}px"></div>`; };
+function drawCharts() {
+  for (const c of CH) { const el = document.getElementById(c.id); if (!el) continue; const w = Math.max(120, el.clientWidth); el.innerHTML = c.fn(w, c.h); }
+}
+let rzT; addEventListener('resize', () => { clearTimeout(rzT); rzT = setTimeout(drawCharts, 120); });
+const tipA = t => `data-tip="${esc(t)}"`;
+const barPath = (x, y, w, h, r = 4) => { if (h <= 0) return ''; r = Math.min(r, h, w / 2); return `M${x},${y + h}V${y + r}Q${x},${y} ${x + r},${y}H${x + w - r}Q${x + w},${y} ${x + w},${y + r}V${y + h}Z`; };
+const pillPath = (x, y, w, h) => { const r = Math.min(w / 2, h / 2); return `M${x},${y + h - r}V${y + r}A${r},${r} 0 0 1 ${x + w},${y + r}V${y + h - r}A${r},${r} 0 0 1 ${x},${y + h - r}Z`; };
+const niceStep = v => { if (!(v > 0)) return 1; const p = Math.pow(10, Math.floor(Math.log10(v))), m = v / p; return (m <= 1 ? 1 : m <= 2 ? 2 : m <= 2.5 ? 2.5 : m <= 5 ? 5 : 10) * p; };
+const niceMax = v => { if (!(v > 0)) return 1; const p = Math.pow(10, Math.floor(Math.log10(v))), m = v / p; return (m <= 1 ? 1 : m <= 2 ? 2 : m <= 2.5 ? 2.5 : m <= 5 ? 5 : 10) * p; };
+
+function spark(vals, color = 'var(--ink)') {
+  const W = 96, H = 32, pts = vals.map((v, i) => [i, v]).filter(p => p[1] != null);
+  if (pts.length < 2) return '';
+  const xs = i => 3 + i / (vals.length - 1) * (W - 6);
+  const mn = Math.min(...pts.map(p => p[1])), mx = Math.max(...pts.map(p => p[1])), sp = mx - mn || 1;
+  const ys = v => H - 4 - (v - mn) / sp * (H - 8);
+  const d = pts.map((p, k) => (k ? 'L' : 'M') + xs(p[0]).toFixed(1) + ',' + ys(p[1]).toFixed(1)).join('');
+  const lp = pts[pts.length - 1];
+  return `<svg class="spark" viewBox="0 0 ${W} ${H}" aria-hidden="true"><path d="${d}" fill="none" stroke="${color}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" opacity=".9"/><circle cx="${xs(lp[0])}" cy="${ys(lp[1])}" r="3.2" fill="${color}" stroke="currentColor" stroke-width="0"/></svg>`;
+}
+
+/* courbe avec repère d'objectif, survol par colonne */
+function lineChart(pts, o) {
+  return (W, H) => {
+    const pl = 38, pr = 12, pt = 12, pb = 24, iw = W - pl - pr, ih = H - pt - pb;
+    const vals = pts.map(p => p.v).filter(v => v != null);
+    if (!vals.length) return `<div class="empty">Pas de donnée sur ces 30 jours.</div>`;
+    let lo = o.min != null ? o.min : Math.min(...vals), hi = Math.max(...vals, o.ref || -Infinity);
+    if (o.min == null) { lo = Math.min(lo, o.ref != null ? o.ref : lo); lo = Math.max(0, lo - (hi - lo) * .25); }
+    hi = hi + (hi - lo) * .12; if (hi === lo) hi = lo + 1;
+    const step = niceStep((hi - lo) / 4); lo = Math.floor(lo / step) * step; hi = Math.ceil(hi / step) * step;
+    const x = i => pl + (pts.length === 1 ? iw / 2 : i / (pts.length - 1) * iw), y = v => pt + ih - (v - lo) / (hi - lo) * ih;
+    let g = '';
+    const nt = Math.round((hi - lo) / step);
+    for (let k = 0; k <= nt; k++) { const v = lo + step * k, yy = y(v); g += `<line x1="${pl}" x2="${W - pr}" y1="${yy}" y2="${yy}" stroke="var(--line)" stroke-width="1"/><text x="${pl - 8}" y="${yy + 3.5}" text-anchor="end" class="num">${o.fmt(v, true)}</text>`; }
+    pts.forEach((p, i) => { if (p.band) g += `<rect x="${x(i) - iw / Math.max(1, pts.length - 1) / 2}" y="${pt}" width="${iw / Math.max(1, pts.length - 1)}" height="${ih}" fill="var(--lime-soft)"/>`; });
+    if (o.ref != null && o.ref >= lo && o.ref <= hi) g += `<line x1="${pl}" x2="${W - pr}" y1="${y(o.ref)}" y2="${y(o.ref)}" stroke="var(--ink-3)" stroke-width="1"/>`;
+    const seg = []; let cur = [];
+    pts.forEach((p, i) => { if (p.v == null) { if (cur.length) seg.push(cur); cur = []; } else cur.push([x(i), y(p.v)]); });
+    if (cur.length) seg.push(cur);
+    for (const s of seg) {
+      const d = s.map((q, k) => (k ? 'L' : 'M') + q[0].toFixed(1) + ',' + q[1].toFixed(1)).join('');
+      g += `<path d="${d}L${s[s.length - 1][0]},${pt + ih}L${s[0][0]},${pt + ih}Z" fill="var(--ink)" opacity=".06"/>`;
+      g += `<path d="${d}" fill="none" stroke="var(--ink)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>`;
+    }
+    const every = Math.ceil(pts.length / Math.max(2, Math.floor(iw / 58)));
+    pts.forEach((p, i) => {
+      if (i % every === 0 || i === pts.length - 1) g += `<text x="${x(i)}" y="${H - 6}" text-anchor="middle">${esc(p.lbl)}</text>`;
+      const bw = iw / Math.max(1, pts.length - 1);
+      g += `<g class="hov" ${tipA(p.tip)}><rect x="${x(i) - bw / 2}" y="${pt}" width="${bw}" height="${ih}" fill="transparent"/>` +
+        `<line class="xh" x1="${x(i)}" x2="${x(i)}" y1="${pt}" y2="${pt + ih}" stroke="var(--ink-3)" stroke-width="1"/>` +
+        (p.v != null ? `<circle class="pt" cx="${x(i)}" cy="${y(p.v)}" r="5" fill="var(--ink)" stroke="#fff" stroke-width="2"/>` : '') + `</g>`;
+    });
+    const lp = [...pts].reverse().find(p => p.v != null), li = pts.lastIndexOf(lp);
+    g += `<circle cx="${x(li)}" cy="${y(lp.v)}" r="4.5" fill="var(--lime)" stroke="var(--ink)" stroke-width="2"/>`;
+    return `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">${g}</svg>`;
+  };
+}
+
+/* colonnes (≤ 24 px, bout arrondi 4 px) */
+function columns(items, o = {}) {
+  return (W, H) => {
+    const pt = 18, pb = 22, ih = H - pt - pb, n = items.length || 1;
+    const max = o.max || niceMax(Math.max(...items.map(i => i.v || 0), 1));
+    const band = W / n, bw = Math.min(24, band * .62);
+    let g = '';
+    if (o.ref != null && o.ref <= max) { const yy = pt + ih - o.ref / max * ih; g += `<line x1="0" x2="${W}" y1="${yy}" y2="${yy}" stroke="var(--ink-3)" stroke-width="1"/>`; }
+    g += `<line x1="0" x2="${W}" y1="${pt + ih}" y2="${pt + ih}" stroke="${o.dark ? '#2c2c2c' : 'var(--line-2)'}" stroke-width="1"/>`;
+    items.forEach((it, i) => {
+      const cx = band * i + band / 2, h = Math.max(it.v > 0 ? 3 : 0, Math.min(it.v || 0, max) / max * ih), yy = pt + ih - h;
+      g += `<g ${tipA(it.tip)}><rect x="${cx - band / 2}" y="${pt}" width="${band}" height="${ih + pb}" fill="transparent"/>`;
+      g += `<path class="bar-h" d="${barPath(cx - bw / 2, yy, bw, h)}" fill="${it.c}"/></g>`;
+      if (it.top) g += `<text x="${cx}" y="${yy - 5}" text-anchor="middle" style="fill:${o.dark ? '#eee' : 'var(--ink)'};font-weight:600">${esc(it.top)}</text>`;
+      if (it.lbl && (n <= 12 || i % Math.ceil(n / 12) === 0)) g += `<text x="${cx}" y="${H - 6}" text-anchor="middle">${esc(it.lbl)}</text>`;
+    });
+    return `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">${g}</svg>`;
+  };
+}
+
+/* barres « pilule » façon focus de la semaine (piste + remplissage) */
+function pills(items, o) {
+  return (W, H) => {
+    const pt = 26, pb = 24, ih = H - pt - pb, n = items.length || 1, band = W / n, bw = Math.min(34, band * .58), max = o.max;
+    let g = '';
+    const yr = pt + ih - o.ref / max * ih;
+    items.forEach((it, i) => {
+      const cx = band * i + band / 2, h = it.v == null ? 0 : Math.max(bw, Math.min(it.v, max) / max * ih);
+      g += `<g ${tipA(it.tip)}><rect x="${cx - band / 2}" y="0" width="${band}" height="${H}" fill="transparent"/>`;
+      g += `<path d="${pillPath(cx - bw / 2, pt, bw, ih)}" fill="var(--lav-2)"/>`;
+      if (h) g += `<path d="${pillPath(cx - bw / 2, pt + ih - h, bw, h)}" fill="${it.c}"/>`;
+      g += `</g>`;
+      if (it.hi && it.v != null) { const tw = 40, ty = Math.max(2, pt + ih - h - 22), lx = Math.min(W - tw / 2 - 1, Math.max(tw / 2 + 1, cx)); g += `<rect x="${lx - tw / 2}" y="${ty}" width="${tw}" height="18" rx="9" fill="var(--ink)"/><text x="${lx}" y="${ty + 12.5}" text-anchor="middle" style="fill:#fff;font-weight:600;font-size:10px">${esc(it.top)}</text>`; }
+      if (n <= 14 || i % Math.ceil(n / 14) === 0) g += `<text x="${cx}" y="${H - 6}" text-anchor="middle">${esc(it.lbl)}</text>`;
+    });
+    g += `<line x1="0" x2="${W}" y1="${yr}" y2="${yr}" stroke="var(--ink)" stroke-width="1" opacity=".35"/>`;
+    return `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">${g}</svg>`;
+  };
+}
+
+/* colonnes semaines + point équipe */
+function weeksChart(ws, P) {
+  return (W, H) => {
+    const pt = 14, pb = 22, ih = H - pt - pb, n = ws.length, band = W / n, bw = Math.min(24, band * .55), max = P.plafond;
+    const y = v => pt + ih - Math.min(v, max) / max * ih;
+    let g = `<line x1="0" x2="${W}" y1="${y(P.qVert)}" y2="${y(P.qVert)}" stroke="var(--ink-3)" stroke-width="1"/><line x1="0" x2="${W}" y1="${pt + ih}" y2="${pt + ih}" stroke="var(--line-2)"/>`;
+    ws.forEach((w, i) => {
+      const cx = band * i + band / 2;
+      const t = `${w.lbl} · semaine du ${PP.dm(w.a)}\nQuota : ${w.q == null ? '—' : fr(w.q, 1) + ' %'}\nÉquipe : ${w.qEq == null ? '—' : fr(w.qEq, 1) + ' %'}\n${fr(w.lig)} lignes · ${w.jours} ${plural(w.jours, 'jour')}\nDécelées ${w.dec} · avérées ${w.ave}`;
+      g += `<g ${tipA(t)}><rect x="${cx - band / 2}" y="0" width="${band}" height="${H}" fill="transparent"/>`;
+      if (w.q != null) g += `<path class="bar-h" d="${barPath(cx - bw / 2, y(w.q), bw, pt + ih - y(w.q))}" fill="var(--lav-3)"/>`;
+      if (w.qEq != null) g += `<circle cx="${cx}" cy="${y(w.qEq)}" r="4.5" fill="#fff" stroke="var(--ink)" stroke-width="2"/>`;
+      g += `</g><text x="${cx}" y="${H - 6}" text-anchor="middle">${w.lbl}</text>`;
+    });
+    return `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">${g}</svg>`;
+  };
+}
+
+function donut(segs, total, size = 150) {
+  const r = size / 2 - 12, C = 2 * Math.PI * r, sw = 18, gap = segs.filter(s => s.v > 0).length > 1 ? 3 : 0;
+  let off = 0, g = `<circle cx="${size / 2}" cy="${size / 2}" r="${r}" fill="none" stroke="var(--soft-2)" stroke-width="${sw}"/>`;
+  if (total > 0) for (const s of segs) {
+    if (!(s.v > 0)) continue; const len = s.v / total * C;
+    g += `<circle cx="${size / 2}" cy="${size / 2}" r="${r}" fill="none" stroke="${s.c}" stroke-width="${sw}" stroke-dasharray="${Math.max(0, len - gap)} ${C}" stroke-dashoffset="${-off}" transform="rotate(-90 ${size / 2} ${size / 2})" ${tipA(`${s.label}\n${s.v} · ${fr(s.v / total * 100)} %`)}/>`;
+    off += len;
+  }
+  return `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">${g}<text x="${size / 2}" y="${size / 2 + 4}" text-anchor="middle" style="font-size:26px;font-weight:600;fill:var(--ink);font-family:var(--ff)">${fr(total)}</text><text x="${size / 2}" y="${size / 2 + 22}" text-anchor="middle" style="font-size:10.5px;fill:var(--ink-3);font-family:var(--ff)">erreurs</text></svg>`;
+}
+function ring(pct, size = 130, color = 'var(--ink)', label = '', track = 'var(--soft-2)') {
+  const r = size / 2 - 10, C = 2 * Math.PI * r, v = pct == null ? 0 : Math.max(0, Math.min(100, pct));
+  return `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" aria-hidden="true"><circle cx="${size / 2}" cy="${size / 2}" r="${r}" fill="none" stroke="${track}" stroke-width="12"/>` +
+    `<circle cx="${size / 2}" cy="${size / 2}" r="${r}" fill="none" stroke="${color}" stroke-width="12" stroke-linecap="round" stroke-dasharray="${v / 100 * C} ${C}" transform="rotate(-90 ${size / 2} ${size / 2})"/>` +
+    `<text x="${size / 2}" y="${size / 2 + (label ? 2 : 7)}" text-anchor="middle" style="font-size:${size > 100 ? 24 : 17}px;font-weight:600;fill:var(--ink);font-family:var(--ff)">${pct == null ? '—' : fr(pct) + (label === '/100' ? '' : ' %')}</text>` +
+    (label ? `<text x="${size / 2}" y="${size / 2 + 18}" text-anchor="middle" style="font-size:10px;fill:var(--ink-3);font-family:var(--ff)">${esc(label)}</text>` : '') + `</svg>`;
+}
+
+/* ════════════ BARRE DU HAUT ════════════ */
+function topbar() {
+  const M = S.M, nAct = S.view === 'accueil' && S._acc ? S._acc.actions.filter(a => a.sev >= 2 && a.sev <= 3).length : 0;
+  const fresh = M ? `PROD au ${PP.dm(M.maxProd)}` : 'aucun classeur';
+  const nom = S.nom || 'Superviseur';
+  const ini = (S.nom || 'S P').split(/\s+/).map(w => w[0]).join('').slice(0, 2).toUpperCase();
+  const t = S.loadedAt ? S.loadedAt.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) : '';
+  return `<header class="top">
+    <div class="top-1">
+      <div class="brand"><span class="logo">${ic('logo')}</span>Pick &amp; Pack <span class="serif">pilotage</span></div>
+      <div class="site"><b>R</b>CLR Champigneulles <span class="tag">5406</span></div>
+      <label class="search"><span class="sr">Rechercher un opérateur</span>${ic('search')}<input id="q" list="opsList" placeholder="Rechercher un opérateur…" autocomplete="off" ${M ? '' : 'disabled'}></label>
+      <span class="chip fresh" title="Dernière journée importée dans PROD"><span class="dot"></span>${esc(fresh)}</span>
+      <button class="ibtn" data-act="reload" title="Relire le classeur (après l'avoir enregistré dans Excel)" aria-label="Relire le classeur">${ic('refresh')}</button>
+      <button class="ibtn" data-act="print" title="Imprimer / PDF" aria-label="Imprimer">${ic('print')}</button>
+      <button class="user" data-act="name" title="Changer le nom affiché"><span class="av" style="background:var(--lav)">${esc(ini)}</span><div><span>${esc(nom)}</span><small>Pick &amp; Pack · CLR</small></div></button>
+    </div>
+    <nav class="top-2" aria-label="Vues">
+      <button class="tab ${S.view === 'accueil' ? 'on' : ''}" data-act="view" data-v="accueil">${ic('home')}Accueil${nAct ? `<span class="cnt">${nAct}</span>` : ''}</button>
+      <button class="tab ${S.view === 'fiche' ? 'on' : ''}" data-act="view" data-v="fiche">${ic('id')}<span class="long">Fiche opérateur</span><span class="short">Fiche</span></button>
+      <button class="tab" data-act="open">${ic('file')}<span class="long">Changer de classeur</span><span class="short">Classeur</span></button>
+      <span class="sync">${ic('refresh')}${esc(M ? M.fileName : '')}${t ? ' · lu à ' + t : ''}</span>
+    </nav>
+  </header>`;
+}
+
+/* contrôles de période (communs) */
+function periodCtrls(per, extra = '') {
+  return `<div class="ctrls">
+    <div class="seg" role="group" aria-label="Période">${['JOUR', 'SEMAINE', 'MOIS'].map(m => `<button data-act="mode" data-m="${m}" class="${S.mode === m ? 'on' : ''}" aria-pressed="${S.mode === m}">${m[0] + m.slice(1).toLowerCase()}</button>`).join('')}</div>
+    <div class="pnav"><button data-act="prev" aria-label="Période précédente">${ic('left')}</button><button class="lbl" data-act="pick" title="Choisir une date">${ic('cal')}${esc(per.mode === 'SEMAINE' ? per.short + ' · ' + PP.dm(per.a) + ' → ' + PP.dm(per.b) : per.mode === 'JOUR' ? per.short : per.short[0].toUpperCase() + per.short.slice(1) + ' ' + PP.toDate(per.a).getUTCFullYear())}</button><button data-act="next" aria-label="Période suivante">${ic('right')}</button></div>
+    ${extra}
+  </div>`;
+}
+
+/* ════════════ ACCUEIL ════════════ */
+function accueil() {
+  const M = S.M, P = M.P, X = PP.accueil(M, S.mode, S.date, todaySer()); S._acc = X;
+  const { per, D, E } = X;
+  const ser = PP.series(M, S.mode, S.date, 12);
+  const sv = f => ser.map(s => f(s.D));
+  const h = new Date().getHours(), salut = h >= 18 || h < 5 ? 'Bonsoir' : 'Bonjour';
+  const nom = S.nom ? S.nom.split(/\s+/)[0] : 'Pick & Pack';
+  const today = PP.toDate(todaySer());
+  const eyebrow = `${PP.JL[(today.getUTCDay() + 6) % 7]} ${today.getUTCDate()} ${PP.MO[today.getUTCMonth()]}  /  ${per.lbl}`;
+
+  /* KPI */
+  const delta = (v, pv, up, unit, d = 1) => {
+    if (v == null || pv == null) return '';
+    const x = v - pv, good = up ? x >= 0 : x <= 0;
+    return `<span class="pill ${good ? 's1' : 's3'}" title="vs ${esc(per.prevShort)}">${ic(x >= 0 ? 'up' : 'down')}${fr(Math.abs(x), d)}${unit}</span>`;
+  };
+  const sq = PP.stQ(P, D.quota);
+  const kq = D.quota;
+  const ecq = kq == null ? 'pas de quota calculable' : kq >= P.qVert ? `${fr(kq - P.qVert, 1)} pt au-dessus de l'objectif (${fr(P.qVert)} %)` : `${fr(P.qVert - kq, 1)} pt sous l'objectif (${fr(P.qVert)} %)`;
+  const lj = (D.jt && E.jt) ? (S.mode === 'JOUR' ? D.lig / E.lig : (D.lig / D.jt) / (E.lig / E.jt)) : null;
+  const kpis = [
+    { hl: 1, k: 'Quota équipe', i: 'target', v: fr(kq, 1), u: '%', d: delta(kq, E.quota, true, ' pt'), sub: `${ecq} · ${X.classQ.length} ${plural(X.classQ.length, 'classé')}`, sp: sv(d => d.quota), st: sq },
+    { k: 'Lignes préparées', i: 'box', v: fr(D.lig), u: '', d: lj == null ? '' : `<span class="pill ${lj >= 1 ? 's1' : 's3'}">${ic(lj >= 1 ? 'up' : 'down')}${fr(Math.abs(lj - 1) * 100, 1)} %${S.mode === 'JOUR' ? '' : '/j'}</span>`, sub: `${S.mode === 'JOUR' ? fr(D.pres) + ' ' + plural(D.pres, 'présent') : fr(D.etp, 1) + ' ETP moyen'} · ${fr(D.cmd)} commandes`, sp: sv(d => d.jt ? d.lig / d.jt : null) },
+    { k: 'Cadence', i: 'gauge', v: fr(D.cad, 1), u: 'l/h', d: delta(D.cad, E.cad, true, '', 1), sub: D.cad == null ? 'pas de cadence calculable' : `objectif ${fr(P.cadObj, 1)} l/h · ${per.prevShort} : ${fr(E.cad, 1)}`, sp: sv(d => d.cad) },
+    { k: 'PPM décelée', i: 'scan', v: fr(D.ppmD), u: '', d: delta(D.ppmD, E.ppmD, false, '', 0), sub: `${fr(D.dec)} ${plural(D.dec, 'erreur')} · seuils ${fr(P.dOrange)} / ${fr(P.dRouge)}`, sp: sv(d => d.ppmD), st: PP.stD(P, D.ppmD), stt: ST_PPM },
+    { k: 'PPM avérée', i: 'truck', v: fr(D.ppmA), u: '', d: delta(D.ppmA, E.ppmA, false, '', 0), sub: `${fr(D.ave)} ${plural(D.ave, 'litige')} · seuils ${fr(P.aOrange)} / ${fr(P.aRouge)}`, sp: sv(d => d.ppmA), st: PP.stA(P, D.ppmA), stt: ST_PPM },
+    { k: 'Heures supp.', i: 'clock', v: fr(D.hs, 1), u: 'h', d: delta(D.hs, E.hs, false, ' h', 1), sub: `${fr(D.hsN)} ${plural(D.hsN, S.mode === 'JOUR' ? 'personne' : 'journée')} au-delà de ${fr(P.href, 1)} h`, sp: sv(d => d.hs) }
+  ];
+  const kpiH = kpis.map(k => `<article class="card kpi ${k.hl ? 'hl' : ''}">
+      <div class="k-top"><span class="k-ic">${ic(k.i)}</span>${k.k}<button class="k-go" data-act="goperf" data-k="${k.i}" aria-label="Voir la courbe ${esc(k.k)}">${ic('arrow')}</button></div>
+      <div class="k-val"><strong class="num">${k.v}</strong>${k.u ? `<span class="u">${k.u}</span>` : ''}${k.d}</div>
+      ${k.st ? `<div>${pill(k.st, (k.stt || ST_TXT)[k.st])}</div>` : ''}
+      <div class="k-foot"><div class="k-sub">${k.sub}</div>${spark(k.sp, k.hl ? 'var(--lime-ink)' : 'var(--ink)')}</div>
+    </article>`).join('');
+
+  /* performance (30 jours jusqu'à l'ancre) */
+  const days = PP.daily(M, per.anchor, 30);
+  const PERF = {
+    quota: { t: 'Quota équipe', v: D.quota, pv: E.quota, f: d => d.quota, u: '%', d: 1, ref: P.qVert, refLbl: `objectif ${fr(P.qVert)} %`, fmt: (v, ax) => fr(v, 0) + (ax ? '' : ' %') },
+    lig: { t: 'Lignes / jour', v: D.jt ? D.lig / D.jt : null, pv: E.jt ? E.lig / E.jt : null, f: d => d.lig, u: '', d: 0, fmt: (v, ax) => ax && v >= 1000 ? fr(v / 1000, v % 1000 ? 1 : 0) + ' k' : fr(v) },
+    cad: { t: 'Cadence l/h', v: D.cad, pv: E.cad, f: d => d.cad, u: 'l/h', d: 1, ref: P.cadObj, refLbl: `objectif ${fr(P.cadObj, 1)}`, fmt: v => fr(v, 0) },
+    ppmD: { t: 'PPM décelée', v: D.ppmD, pv: E.ppmD, f: d => d.ppmD, u: '', d: 0, ref: P.dOrange, refLbl: `seuil orange ${fr(P.dOrange)}`, fmt: (v, ax) => ax && v >= 1000 ? fr(v / 1000, v % 1000 ? 1 : 0) + ' k' : fr(v), min: 0 }
+  };
+  const pf = PERF[S.perf] || PERF.quota;
+  const pfPts = days.map(x => ({ v: pf.f(x.D), lbl: PP.dm(x.d), band: x.d >= per.a && x.d <= per.b, tip: `${PP.jdm(x.d)}\n${pf.t} : ${pf.f(x.D) == null ? '—' : fr(pf.f(x.D), pf.d) + (pf.u ? ' ' + pf.u : '')}\n${fr(x.D.lig)} lignes · ${x.D.pres} présents\nDécelées ${x.D.dec} · avérées ${x.D.ave}` }));
+  const pvx = pf.v != null && pf.pv != null ? pf.v - pf.pv : null;
+  const perf = `<article class="card">
+      <div class="c-head"><div><div class="c-title"><span class="n">01</span>Performance de l'équipe</div><div class="c-sub">30 derniers jours au ${PP.dm(per.anchor)} · bande verte = ${esc(per.short)}</div></div>
+      <div class="mini-seg" role="group" aria-label="Indicateur">${[['quota', 'Quota'], ['lig', 'Lignes'], ['cad', 'Cadence'], ['ppmD', 'Décelées']].map(([k, l]) => `<button data-act="perf" data-k="${k}" class="${S.perf === k ? 'on' : ''}">${l}</button>`).join('')}</div></div>
+      <div class="perf-val"><strong class="num">${fr(pf.v, pf.d)}</strong>${pf.u ? `<span class="u">${pf.u}</span>` : ''}${pvx == null ? '' : `<span class="pill ${(S.perf === 'ppmD' ? pvx <= 0 : pvx >= 0) ? 's1' : 's3'}">${ic(pvx >= 0 ? 'up' : 'down')}${fr(Math.abs(pvx), pf.d)} vs ${esc(per.prevShort)}</span>`}
+        <span class="legend" style="margin-left:auto"><span><i></i>${esc(pf.t)} par jour</span>${pf.ref != null ? `<span><i style="background:var(--ink-3);height:1px"></i>${esc(pf.refLbl)}</span>` : ''}</span></div>
+      ${chart(lineChart(pfPts, pf), 220, pf.t + ' sur 30 jours')}
+    </article>`;
+
+  /* carte sombre : effectif */
+  const dP = M.wd.filter(d => d >= per.a && d <= per.b);
+  const effDays = (dP.length > 1 ? dP : M.wd.filter(d => d <= per.anchor).slice(-7)).slice(-23);
+  const effItems = effDays.map(d => { const a = PP.agg(M, d, d); return { v: a.pres, c: d === per.anchor ? 'var(--lime)' : '#3a3a3a', lbl: dP.length > 8 ? String(PP.toDate(d).getUTCDate()) : PP.J[PP.wdi(d)].slice(0, 3), tip: `${PP.jdm(d)}\n${a.pres} présents · ${fr(a.hp, 1)} h pointées\n${fr(a.lig)} lignes` }; });
+  const live = `<article class="card live">
+      <span class="badge"><i></i>EFFECTIF · ${esc(per.short.toUpperCase())}</span>
+      <div class="big num">${S.mode === 'JOUR' ? fr(D.pres) : fr(D.etp, 1)}<small>${S.mode === 'JOUR' ? plural(D.pres, 'présent') : 'ETP moyen'}</small></div>
+      <div class="lsub">${fr(D.pres)} ${plural(D.pres, 'présence')} sur ${fr(D.jt)} ${plural(D.jt, 'jour travaillé', 'jours travaillés')} · ${S.mode === 'JOUR' || dP.length <= 1 ? '7 derniers jours ci-dessous' : 'présents par jour'}</div>
+      ${chart(columns(effItems, { dark: 1 }), 120, 'Présents par jour')}
+      <dl class="num"><dt>Heures pointées</dt><dd>${fr(D.hp, 1)} h</dd><dt>Heures de picking</dt><dd>${fr(D.hpk, 1)} h</dd><dt>Commandes</dt><dd>${fr(D.cmd)}</dd><dt>Contenants</dt><dd>${fr(D.cont)}</dd></dl>
+    </article>`;
+
+  /* donut erreurs décelées par type */
+  const COLS = ['#141414', '#BFE33C', '#86867F', '#C9C9C2', '#E6E6E0'];
+  const tSegs = X.types.map((t, i) => ({ ...t, c: COLS[i] }));
+  const donutC = `<article class="card">
+      <div class="c-head"><div><div class="c-title"><span class="n">02</span>Erreurs décelées</div><div class="c-sub">par type · ${esc(per.short)}</div></div>${pill(PP.stD(P, D.ppmD) || 0, fr(D.ppmD) + ' ppm')}</div>
+      <div class="split">${donut(tSegs, D.dec, 150)}
+        <ul class="lst">${tSegs.map(s => `<li class="${s.v ? '' : 'z'}"><span class="sw" style="background:${s.c}"></span><span>${esc(s.label)}</span><span class="v num">${s.v}</span><span class="p num">${D.dec ? fr(s.v / D.dec * 100) + ' %' : ''}</span></li>`).join('')}</ul></div>
+      <div class="minirow"><b>Avérées</b> par motif :${X.motifs.filter(m => m.v).map(m => `<span class="pill">${esc(m.label)} ${m.v}</span>`).join('') || ' <span class="muted">aucun litige</span>'}</div>
+    </article>`;
+
+  /* colonnes lignes par jour */
+  const ligDays = (dP.length ? dP : [per.anchor]).length > 1 ? dP : M.wd.filter(d => d <= per.anchor).slice(-7);
+  const ligItems = ligDays.map(d => { const a = PP.agg(M, d, d); return { d, v: a.lig, a }; });
+  const mxL = Math.max(...ligItems.map(x => x.v), 0);
+  const colC = `<article class="card">
+      <div class="c-head"><div><div class="c-title"><span class="n">03</span>Lignes par jour</div><div class="c-sub">${ligDays === dP ? esc(per.short) : '7 derniers jours travaillés'} · ${fr(sumv(ligItems, x => x.v))} lignes</div></div><span class="pill dark">${fr(D.jt ? D.lig / D.jt : null)} / jour</span></div>
+      ${chart(columns(ligItems.map(x => ({ v: x.v, c: x.d === per.anchor ? 'var(--lime-2)' : x.v === mxL ? 'var(--ink)' : '#9C9C95', top: x.v === mxL ? fr(x.v / 1000, 1) + ' k' : '', lbl: ligItems.length > 8 ? String(PP.toDate(x.d).getUTCDate()) : PP.J[PP.wdi(x.d)], tip: `${PP.jdm(x.d)}\n${fr(x.v)} lignes · ${x.a.pres} présents\nQuota équipe ${x.a.quota == null ? '—' : fr(x.a.quota, 1) + ' %'}` }))), 168, 'Lignes par jour')}
+      <div class="legend" style="margin-top:6px"><span><i class="sq" style="background:var(--ink)"></i>meilleure journée</span><span><i class="sq" style="background:var(--lime-2)"></i>dernière journée lue</span></div>
+    </article>`;
+
+  /* anneau : part des classés à l'objectif */
+  const nC = X.classQ.length, pOk = nC ? X.dist.ok.length / nC * 100 : null;
+  const ringC = `<article class="card">
+      <div class="c-head"><div><div class="c-title"><span class="n">04</span>Atteinte de l'objectif</div><div class="c-sub">${nC} ${plural(nC, 'classé')} · soumis au quota, ≥ ${fr(P.hMin)} h de picking</div></div></div>
+      <div class="split">${ring(pOk, 130, 'var(--ink)', 'à l\'objectif', 'var(--lime)')}
+        <ul class="lst">
+          <li><span class="sw" style="background:var(--good)"></span><span>≥ ${fr(P.qVert)} %</span><span class="v num">${X.dist.ok.length}</span><span class="p num">${nC ? fr(X.dist.ok.length / nC * 100) + ' %' : ''}</span></li>
+          <li><span class="sw" style="background:var(--warn)"></span><span>${fr(P.qRouge)} – ${fr(P.qVert)} %</span><span class="v num">${X.dist.warn.length}</span><span class="p num">${nC ? fr(X.dist.warn.length / nC * 100) + ' %' : ''}</span></li>
+          <li><span class="sw" style="background:var(--crit)"></span><span>&lt; ${fr(P.qRouge)} %</span><span class="v num">${X.dist.low.length}</span><span class="p num">${nC ? fr(X.dist.low.length / nC * 100) + ' %' : ''}</span></li>
+        </ul></div>
+      <div class="minirow">${X.horsQ.length} hors classement (pilotes, non soumis, &lt; ${fr(P.hMin)} h)</div>
+    </article>`;
+
+  /* classement */
+  const lbDefs = {
+    q: { list: X.classQ, t: 'Quota', v: o => fr(o.quota, 1) + ' %', st: o => o.stQ, bar: o => Math.min(o.quota, P.plafond) / P.plafond * 100, tick: P.qVert / P.plafond * 100, sub: o => `${fr(o.lig)} lignes · ${fr(o.hpk, 1)} h`, note: `${X.classQ.length} ${plural(X.classQ.length, 'classé')} · ${X.horsQ.length} hors classement · barre 0 → ${fr(P.plafond)} %, repère = objectif` },
+    d: { list: X.classD, t: 'PPM décelée', v: o => fr(o.ppmD), st: o => o.stD, bar: o => Math.min(o.ppmD, P.dRouge * 2) / (P.dRouge * 2) * 100, tick: P.dOrange / (P.dRouge * 2) * 100, sub: o => `${o.dec} ${plural(o.dec, 'erreur')} · ${fr(o.lig)} lignes`, note: `Du taux le plus élevé au plus bas · classés : soumis au quota et ≥ ${fr(per.minLig)} lignes · repère = seuil orange` },
+    a: { list: X.classA, t: 'PPM avérée', v: o => fr(o.ppmA), st: o => o.stA, bar: o => Math.min(o.ppmA, P.aRouge * 2) / (P.aRouge * 2) * 100, tick: P.aOrange / (P.aRouge * 2) * 100, sub: o => `${o.ave} ${plural(o.ave, 'litige')} · ${fr(o.lig)} lignes`, note: `Du taux le plus élevé au plus bas · litiges remontés en décalé · repère = seuil orange` }
+  };
+  const L0 = lbDefs[S.lb] || lbDefs.q;
+  const lbC = `<article class="card">
+      <div class="c-head"><div><div class="c-title"><span class="n">05</span>Classement de l'équipe</div><div class="c-sub">${esc(per.short)} · ${esc(per.plage)}</div></div>
+      <div class="mini-seg" role="group" aria-label="Classement">${[['q', 'Quota'], ['d', 'Décelées'], ['a', 'Avérées']].map(([k, l]) => `<button data-act="lb" data-k="${k}" class="${S.lb === k ? 'on' : ''}">${l}</button>`).join('')}</div></div>
+      ${L0.list.length ? `<div class="scroll"><table class="lb"><thead><tr><th>#</th><th>Opérateur</th><th class="hide-s">${L0.t}</th><th class="r">Valeur</th></tr></thead><tbody>
+      ${L0.list.map((o, i) => `<tr class="click" data-act="op" data-op="${esc(o.np)}" tabindex="0"><td class="rk num">${i + 1}</td><td><div class="who">${av(o.op)}<div style="min-width:0"><b>${esc(PP.joli(o.op))}</b><small class="num">${L0.sub(o)}</small></div></div></td>
+        <td class="hide-s" style="width:34%"><div class="track"><i style="width:${L0.bar(o)}%;background:${['', 'var(--good)', 'var(--warn)', 'var(--crit)'][L0.st(o)] || 'var(--ink)'}"></i><u style="left:${L0.tick}%"></u></div></td>
+        <td class="r">${pill(L0.st(o), L0.v(o))}</td></tr>`).join('')}</tbody></table></div>` : `<div class="empty">Personne n'est classé sur cette période.</div>`}
+      <div class="c-foot">${L0.note}</div>
+    </article>`;
+
+  /* actions à réaliser */
+  const actC = `<article class="card">
+      <div class="c-head"><div><div class="c-title"><span class="n">06</span>Actions à réaliser</div><div class="c-sub">au ${PP.jdm(per.anchor)} · ${X.actions.filter(a => a.sev >= 2 && a.sev <= 3).length} ${plural(X.actions.filter(a => a.sev >= 2 && a.sev <= 3).length, 'point')} à traiter</div></div></div>
+      ${X.actions.length ? `<ul class="acts">${X.actions.map(a => {
+        const st = SEV_ST[a.sev], lbl = SEV_LBL[a.sev];
+        const o = a.who && M.opBy.get(a.who);
+        return `<li class="s${st}"><span class="a-ic">${ic(SEV_IC[a.sev])}</span><div class="a-t">${o ? `<button data-act="op" data-op="${esc(o.np)}">${esc(PP.joli(o))}</button> : ` : ''}${esc(a.txt)}${a.ou ? `<small>à voir dans l'onglet ${esc(a.ou)}</small>` : ''}</div>${pill(st, lbl)}</li>`;
+      }).join('')}</ul>` : `<div class="empty">${ic('check')} Rien d'urgent : aucune alerte en cours.</div>`}
+    </article>`;
+
+  /* tableau d'équipe par niveau */
+  const colOp = (o, st) => `<button class="opc" data-act="op" data-op="${esc(o.np)}">${av(o.op)}<span style="min-width:0"><b>${esc(PP.joli(o.op))}</b><small class="num">${fr(o.lig)} l. · ${fr(o.hpk, 1)} h${o.eE ? ' · ' + fr(o.ppmD) + ' ppm' : ''}</small></span><span class="q num">${o.quota == null ? '—' : fr(o.quota, 1) + ' %'}</span></button>`;
+  const sortQ = a => a.slice().sort((x, y) => (y.quota || 0) - (x.quota || 0));
+  const boardCols = [
+    { st: 1, t: `≥ ${fr(P.qVert)} %`, l: X.dist.ok }, { st: 2, t: `${fr(P.qRouge)} – ${fr(P.qVert)} %`, l: X.dist.warn }, { st: 3, t: `< ${fr(P.qRouge)} %`, l: X.dist.low },
+    { st: 0, t: 'Hors classement', l: X.horsQ }
+  ];
+  const board = `<article class="card" style="margin-bottom:14px">
+      <div class="c-head"><div><div class="c-title"><span class="n">07</span>L'équipe <span class="serif" style="font-size:19px">par niveau de quota</span></div><div class="c-sub">${esc(per.short)} · cliquer sur une personne ouvre sa fiche</div></div></div>
+      <div class="board">${boardCols.map(c => `<section class="col"><div class="col-h">${c.st ? pill(c.st, c.t) : `<span class="pill">${c.t}</span>`}<b class="num">${c.l.length} · ${fr(sumv(c.l, o => o.lig))} l.</b></div>${c.l.length ? sortQ(c.l).map(o => colOp(o, c.st)).join('') : '<div class="empty" style="padding:12px">—</div>'}</section>`).join('')}</div>
+    </article>`;
+
+  /* RH + essentiel */
+  const RH = X.RH;
+  const rhC = `<article class="card">
+      <div class="c-head"><div><div class="c-title"><span class="n">08</span>Suivi RH</div><div class="c-sub">${S.mode === 'JOUR' ? '30 derniers jours au ' + PP.dm(per.anchor) : esc(per.short + ' · ' + per.plage)}</div></div></div>
+      <div class="rh-n"><div><b class="num">${RH.ecarts}</b><small>écarts</small></div><div><b class="num">${RH.secu}</b><small>dont sécurité</small></div><div><b class="num">${RH.positifs}</b><small>points positifs</small></div><div><b class="num">${RH.sansSuite}</b><small>sans suite</small></div></div>
+      <div class="two">
+        <div><div class="h4" style="margin-top:0">Top 5 · points positifs</div><ul class="mini-l">${X.topPos.length ? X.topPos.map(x => `<li><button data-act="op" data-op="${esc(x.n)}">${esc(PP.joli(M.opBy.get(x.n) || { np: x.n }))}</button><b class="num">${x.pos}</b></li>`).join('') : '<li class="muted">Aucun point positif saisi</li>'}</ul></div>
+        <div><div class="h4" style="margin-top:0">Flop 5 · écarts</div><ul class="mini-l">${X.flopEc.length ? X.flopEc.map(x => `<li><button data-act="op" data-op="${esc(x.n)}">${esc(PP.joli(M.opBy.get(x.n) || { np: x.n }))}</button><span class="num"><b>${x.ec}</b>${x.secu ? ` <span class="muted">dont ${x.secu} sécu.</span>` : ''}</span></li>`).join('') : '<li class="muted">Aucun écart saisi</li>'}</ul></div>
+      </div>
+      <div class="c-foot">Compteurs CP / RTT : ${M.comptASaisir} à saisir · détail et saisie dans l'onglet SUIVI RH</div>
+    </article>`;
+  const C = X.cols, ml = PP.moisNom(per.anchor);
+  const ess = [
+    ['ETP moyen (présents par jour)', c => fr(c.etp, 1)], ['Jours travaillés', c => fr(c.jt)], ['Heures pointées', c => fr(c.hp, 1)], ['Heures de picking', c => fr(c.hpk, 1)],
+    ['Heures supplémentaires', c => fr(c.hs, 1)], ['Lignes préparées', c => fr(c.lig)], ['Commandes', c => fr(c.cmd)], ['Contenants', c => fr(c.cont)],
+    ['Cadence l/h (soumis)', c => fr(c.cad, 1)], ['Quota équipe % (soumis)', c => fr(c.quota, 1)], ['Erreurs décelées / avérées', c => c.dec + ' / ' + c.ave],
+    ['PPM décelée', c => fr(c.ppmD)], ['PPM avérée', c => fr(c.ppmA)]
+  ];
+  const essC = `<article class="card">
+      <div class="c-head"><div><div class="c-title"><span class="n">09</span>L'essentiel <span class="serif" style="font-size:19px">du mois</span></div><div class="c-sub">au ${PP.jdm(per.anchor)} · dernière journée travaillée de la période</div></div></div>
+      <div style="overflow-x:auto"><table class="tbl num"><thead><tr><th>Indicateur</th><th class="hl">Le jour</th><th>7 jours</th><th>30 jours</th><th>${esc(ml[0].toUpperCase() + ml.slice(1))}</th></tr></thead>
+      <tbody>${ess.map(([l, f]) => `<tr><td>${l}</td><td class="hl">${f(C.jour)}</td><td>${f(C.j7)}</td><td>${f(C.j30)}</td><td>${f(C.mois)}</td></tr>`).join('')}</tbody></table></div>
+    </article>`;
+
+  return `<section class="head">
+      <div><div class="eyebrow"><span class="dot"></span>${esc(eyebrow)}</div>
+      <h1>${salut}, <span class="serif">${esc(nom)}</span></h1>
+      <p class="sub">${esc(per.plage)} · ${fr(per.jt)} ${plural(per.jt, 'jour travaillé', 'jours travaillés')} · comparé à ${esc(per.prevShort)}</p></div>
+      ${periodCtrls(per, `<button class="btn" data-act="print">${ic('print')}Exporter</button><button class="btn lime" data-act="reload">${ic('refresh')}Actualiser</button>`)}
+    </section>
+    <section class="grid kpis" aria-label="Indicateurs clés">${kpiH}</section>
+    <section class="grid g-perf">${perf}${live}</section>
+    <section class="grid g-3">${donutC}${colC}${ringC}</section>
+    <section class="grid g-lb">${lbC}${actC}</section>
+    ${board}
+    <section class="grid g-rh">${rhC}${essC}</section>
+    ${footer(P)}`;
+}
+const sumv = (a, f) => a.reduce((s, x) => s + (f(x) || 0), 0);
+function footer(P) {
+  const M = S.M;
+  return `<p class="foot">Seuils · quota : vert ≥ ${fr(P.qVert)} %, orange ${fr(P.qRouge)} – ${fr(P.qVert)} %, rouge &lt; ${fr(P.qRouge)} % · PPM décelée : vert &lt; ${fr(P.dOrange)}, rouge ≥ ${fr(P.dRouge)} · PPM avérée : vert &lt; ${fr(P.aOrange)}, rouge ≥ ${fr(P.aRouge)} (onglet PARAMETRES).<br>
+  Données : PROD au ${PP.dm(M.maxProd)} · décelées au ${M.maxErr ? PP.dm(M.maxErr) : '—'} · avérées au ${M.maxAve ? PP.dm(M.maxAve) : '—'}. Le classeur est lu dans ce navigateur : rien n'est envoyé ni enregistré en ligne.</p>`;
+}
+
+/* ════════════ FICHE ════════════ */
+function opsOrder() {
+  const M = S.M;
+  return M.ops.slice().sort((a, b) => ((a.actif === 'NON') - (b.actif === 'NON')) || a.np.localeCompare(b.np, 'fr'));
+}
+function fiche() {
+  const M = S.M, P = M.P, list = opsOrder();
+  if (!S.op || !M.opBy.has(S.op)) {
+    const per0 = PP.period(M, S.mode, S.date);
+    const best = PP.perOp(M, per0.a, per0.b, 1).filter(o => o.lig > 0 && o.op.actif === 'OUI').sort((x, y) => y.lig - x.lig)[0];
+    S.op = best ? best.np : (list[0] && list[0].np);
+  }
+  const F = PP.fiche(M, S.op, S.mode, S.date, todaySer());
+  const { op, per, G, Dt, H, I, rk, X } = F;
+  const ix = list.findIndex(o => o.np === op.np);
+
+  const rail = `<nav class="rail" aria-label="Opérateurs">
+      <span class="r-logo">${ic('users')}</span>
+      <div class="r-list">${list.map(o => `<button class="r-op ${o.np === op.np ? 'on' : ''} ${o.actif === 'NON' ? 'off' : ''}" data-act="op" data-op="${esc(o.np)}" style="${o.np === op.np ? '' : ''}" ${tipA(PP.joli(o) + '\n' + (o.role || '') + (o.actif === 'NON' ? ' · sorti' : ''))} aria-label="${esc(PP.joli(o))}" aria-current="${o.np === op.np}">${esc(initials(o))}</button>`).join('')}</div>
+      <div class="r-nav"><button data-act="oprev" aria-label="Opérateur précédent">${ic('left')}</button><button data-act="onext" aria-label="Opérateur suivant">${ic('right')}</button></div>
+    </nav>`;
+
+  /* profil */
+  const anc = op.entree ? (() => { const t = PP.toDate(todaySer()), e = PP.toDate(op.entree); let m = (t.getUTCFullYear() - e.getUTCFullYear()) * 12 + t.getUTCMonth() - e.getUTCMonth() - (t.getUTCDate() < e.getUTCDate() ? 1 : 0); return PP.dmy(op.entree) + ' · ' + (m >= 12 ? Math.floor(m / 12) + ' an' + (m >= 24 ? 's' : '') + (m % 12 ? ' ' + (m % 12) + ' mois' : '') : m + ' mois'); })() : 'date d\'entrée non renseignée';
+  const actif = op.actif === 'NON' ? `<span class="status off"><span class="dot"></span>Sorti${op.sortie ? ' le ' + PP.dm(op.sortie) : ''}</span>` : `<span class="status"><span class="dot"></span>Actif</span>`;
+  const soumis = op.soumis === 'OUI' ? `<span class="status"><span class="dot"></span>Soumis au quota</span>` : op.soumis === 'NON' ? `<span class="status off"><span class="dot"></span>Hors quota</span>` : `<span class="status mid"><span class="dot"></span>Quota à renseigner</span>`;
+  const prof = `<article class="card prof">
+      <div class="banner">${flower()}</div>
+      <div class="prof-b">
+        <span class="av-xl" style="background:linear-gradient(135deg,${avBg(op)},#F2C1E1)">${esc(initials(op))}</span>
+        <div class="who"><h2>${esc(op.nom || op.np)} <span class="serif">${esc(PP.joli(op).replace(op.nom, '').trim())}</span></h2>
+          <p>${esc([op.role, op.poste, op.contrat].filter(Boolean).join(' · ') || '—')}</p>
+          <div class="meta"><span>${ic('id')}matricule ${esc(op.mat || '—')}</span><span>${ic('cal')}${esc(anc)}</span><span>${ic('shield')}${esc(op.habil || 'aucune habilitation saisie')}</span></div></div>
+        <div class="acts-r">${actif}${soumis}<button class="btn dark sm" data-act="print">${ic('print')}Imprimer la fiche</button></div>
+      </div>
+      <div class="facts num"><div><b>${G.pres} / ${per.jt}</b>jours produits</div><div><b>${fr(G.ligJ)}</b>lignes / jour</div><div><b>${rkTxt(rk.q)}</b>rang quota · ${esc(F.wTxt.split(' · ')[0])}</div><div><b>${X.score == null ? '—' : X.score + ' / 100'}</b>score fiabilité</div></div>
+    </article>`;
+
+  /* calendrier (semaine de la date) */
+  const lun = PP.monday(S.date), myDays = new Set((M.pBy.get(op.np) || []).filter(r => r.l > 0).map(r => r.d));
+  const cal = `<article class="card">
+      <div class="cal-h"><h3>${esc(cap(PP.moisNom(S.date)))}, ${PP.toDate(S.date).getUTCFullYear()}</h3><div class="nv"><button data-act="prev" aria-label="Période précédente">${ic('left')}</button><button data-act="next" aria-label="Période suivante">${ic('right')}</button></div></div>
+      <div class="days">${[0, 1, 2, 3, 4, 5].map(k => { const d = lun + k; const inP = d >= per.a && d <= per.b; return `<button class="${d === S.date ? 'on' : inP ? 'in' : ''}" data-act="day" data-d="${d}" aria-label="${PP.jdm(d)}">${PP.J[k].slice(0, 3)}<b>${PP.toDate(d).getUTCDate()}</b><i class="${myDays.has(d) ? '' : 'no'}"></i></button>`; }).join('')}</div>
+      <div class="cal-seg"><div class="seg" role="group" aria-label="Période">${['JOUR', 'SEMAINE', 'MOIS'].map(m => `<button data-act="mode" data-m="${m}" class="${S.mode === m ? 'on' : ''}" aria-pressed="${S.mode === m}">${m[0] + m.slice(1).toLowerCase()}</button>`).join('')}</div></div>
+      <div class="score">${ring(X.score, 74, X.score == null ? 'var(--ink-4)' : X.score >= 70 ? 'var(--lav-4)' : X.score >= 50 ? 'var(--warn)' : 'var(--crit)', '/100', 'var(--lav-2)')}
+        <div><b>Score fiabilité</b><small>au ${PP.dm(per.anchor)} · quota ${fr(P.wQ)} %, qualité ${fr(P.wA)} %, régularité ${fr(P.wR)} %</small>
+        <small>Tendance 7 j / 30 j : <b style="display:inline">${X.tend ? { hausse: '▲ en hausse', baisse: '▼ en baisse', stable: '= stable' }[X.tend] : '—'}</b>${X.varcad != null ? ` (${sign(X.varcad, 1, ' %')})` : ''}</small></div></div>
+    </article>`;
+
+  /* chiffres */
+  const vsT = (v, t, up, d, unit = '') => v == null || t == null ? '' : `<span class="ar ${(up ? v >= t : v <= t) ? 'up' : 'dn'}">${v >= t ? '▲' : '▼'}</span> ${fr(Math.abs(v - t), d)}${unit} vs équipe`;
+  const stats = [
+    { k: 'Lignes préparées', i: 'box', v: G.presAll ? fr(G.lig) : '—', d: G.jt && H.lig && G.pres ? `<span class="ar ${G.lig / G.pres >= H.lig / Math.max(1, H.pres) ? 'up' : 'dn'}">${G.lig / G.pres >= H.lig / Math.max(1, H.pres) ? '▲' : '▼'}</span> ${fr(Math.abs((G.lig / G.pres) / (H.lig / Math.max(1, H.pres)) - 1) * 100, 1)} % /j vs ${esc(F.prevShort)}` : '', sub: `${G.pres} ${plural(G.pres, 'jour produit', 'jours produits')} · ${fr(G.ligJ)} lignes / jour` },
+    { k: 'Cadence', i: 'gauge', v: fr(G.cad, 1), u: 'l/h', d: vsT(G.cad, Dt.cad, true, 1), sub: `objectif ${fr(P.cadObj, 1)} · ${esc(F.prevShort)} : ${fr(H.cad, 1)}` },
+    { k: 'Quota', i: 'target', v: fr(G.quota, 1), u: '%', d: vsT(G.quota, Dt.quota, true, 1, ' pt'), sub: `${PP.stQ(P, G.quota) ? ST_TXT[PP.stQ(P, G.quota)] : 'pas de quota'} · ${esc(F.prevShort)} : ${H.quota == null ? '—' : fr(H.quota, 1) + ' %'}` },
+    { k: 'PPM décelée', i: 'scan', v: fr(G.ppmD), d: vsT(G.ppmD, Dt.ppmD, false, 0), sub: `${G.dec} ${plural(G.dec, 'erreur')} · seuils ${fr(P.dOrange)} / ${fr(P.dRouge)}` },
+    { k: 'PPM avérée', i: 'truck', v: fr(G.ppmA), d: vsT(G.ppmA, Dt.ppmA, false, 0), sub: `${G.ave} ${plural(G.ave, 'litige')} · seuils ${fr(P.aOrange)} / ${fr(P.aRouge)}` },
+    { k: 'Heures pointées', i: 'clock', v: G.presAll ? fr(G.hp, 1) : '—', u: 'h', d: `${fr(G.hs, 1)} h supp. · ${fr(G.hhp, 1)} h hors prép.`, sub: `${fr(G.hpk, 1)} h de picking · ${esc(F.prevShort)} : ${H.presAll ? fr(H.hp, 1) + ' h' : '—'}` }
+  ];
+  const statH = stats.map(s => `<article class="card stat"><div class="s-top"><span class="s-ic">${ic(s.i)}</span>${s.k}</div><strong class="num">${s.v}${s.u && s.v !== '—' ? `<span class="u">${s.u}</span>` : ''}</strong><div class="s-d">${s.d || '&nbsp;'}</div><div class="s-sub">${s.sub}</div></article>`).join('');
+
+  /* profil texte */
+  const about = `<article class="card about">
+      <div class="c-head"><div class="c-title">Profil</div>${PP.stQ(P, G.quota) ? pill(PP.stQ(P, G.quota), 'quota ' + fr(G.quota, 1) + ' %') : ''}</div>
+      <p>${esc(PP.joli(op))}${op.role ? ', ' + esc(op.role.toLowerCase()) : ''}${op.poste ? ' au poste ' + esc(op.poste) : ''}. ${G.presAll ? `Sur ${esc(per.short)} : <b>${fr(G.lig)} lignes</b> en ${G.pres} ${plural(G.pres, 'jour')}, quota <b>${G.quota == null ? '—' : fr(G.quota, 1) + ' %'}</b> (équipe ${Dt.quota == null ? '—' : fr(Dt.quota, 1) + ' %'}), ${G.dec} ${plural(G.dec, 'erreur décelée', 'erreurs décelées')} et ${G.ave} ${plural(G.ave, 'litige')}.` : `Aucune journée dans PROD sur ${esc(per.short)}.`}</p>
+      <div class="chips"><span>Rôle <b>${esc(op.role || '—')}</b></span><span>Poste <b>${esc(op.poste || '—')}</b></span><span>Contrat <b>${esc(op.contrat || '—')}</b></span><span>Quota <b>${esc(op.soumis || 'à renseigner')}</b></span></div>
+      <dl class="kv num"><dt>Rang quota</dt><dd>${rkTxt(rk.q)}</dd><dt>Rang cadence</dt><dd>${rkTxt(rk.c)}</dd><dt>Rang lignes / jour</dt><dd>${rkTxt(rk.l)}</dd><dt>Régularité (journées ≥ objectif)</dt><dd>${I.reg == null ? '—' : fr(I.reg) + ' %'}</dd></dl>
+      ${op.notes ? `<p class="c-foot">Note : ${esc(op.notes)}</p>` : ''}
+    </article>`;
+
+  /* production jour par jour (étiquette sur la journée la plus récente) */
+  const lastDay = F.days.length ? F.days[F.days.length - 1].d : null;
+  const dItems = F.days.map(d => ({
+    v: d.q, top: d.q == null ? '' : fr(d.q) + ' %', hi: d.d === lastDay, lbl: F.days.length > 8 ? String(PP.toDate(d.d).getUTCDate()) : PP.J[PP.wdi(d.d)].slice(0, 3),
+    c: d.st === 1 ? 'var(--lav-3)' : d.st === 2 ? 'var(--warn)' : d.st === 3 ? 'var(--crit)' : 'var(--ink-4)',
+    tip: `${PP.jdm(d.d)}\nQuota : ${d.q == null ? '—' : fr(d.q, 1) + ' %'}${d.st ? ' (' + ST_TXT[d.st] + ')' : d.q != null ? ' (moins de ' + fr(P.hMin) + ' h de picking)' : ''}\n${fr(d.l)} lignes · ${fr(d.t, 2)} h de picking · ${d.cad == null ? '—' : fr(d.cad)} l/h\nDécelées ${d.dec} · avérées ${d.ave}${d.hs ? ' · ' + fr(d.hs, 2) + ' h supp.' : ''}${d.code ? '\nCode pointage : ' + d.code : ''}`
+  }));
+  const prodC = `<article class="card">
+      <div class="focus-h"><div><div class="c-title">Production jour par jour</div><div class="c-sub flat">${S.mode === 'JOUR' ? `ses ${Math.min(24, F.nDays)} dernières journées au ${PP.dm(S.date)}` : `${F.nDays} ${plural(F.nDays, 'journée')} sur ${esc(per.short)}`}</div></div><strong class="num">${fr(G.hpk, 1)} h</strong></div>
+      ${F.days.length ? chart(pills(dItems, { max: P.plafond, ref: P.qVert, refLbl: `objectif ${fr(P.qVert)} %` }), 200, 'Quota par journée') : '<div class="empty">Aucune journée sur la période.</div>'}
+      <div class="legend"><span><i class="sq" style="background:var(--lav-3)"></i>≥ ${fr(P.qVert)} %</span><span><i class="sq" style="background:var(--warn)"></i>${fr(P.qRouge)} – ${fr(P.qVert)} %</span><span><i class="sq" style="background:var(--crit)"></i>&lt; ${fr(P.qRouge)} %</span><span><i class="sq" style="background:var(--ink-4)"></i>&lt; ${fr(P.hMin)} h de picking</span><span><i style="background:var(--ink);opacity:.35;height:1px"></i>objectif ${fr(P.qVert)} %</span></div>
+      ${F.days.length ? `<details class="tv"><summary>Voir le tableau</summary><div style="overflow-x:auto"><table class="tbl num"><thead><tr><th>Jour</th><th>H pick</th><th>Lignes</th><th>l/h</th><th>Quota</th><th>Déc.</th><th>Avé.</th><th>HS</th></tr></thead><tbody>${F.days.slice().reverse().map(d => `<tr><td>${PP.jdm(d.d)}</td><td>${fr(d.t, 2)}</td><td>${fr(d.l)}</td><td>${fr(d.cad)}</td><td>${d.q == null ? '—' : pill(d.st, fr(d.q, 1) + ' %')}</td><td>${d.dec}</td><td>${d.ave}</td><td>${d.hs ? fr(d.hs, 2) : '—'}</td></tr>`).join('')}</tbody></table></div></details>` : ''}
+    </article>`;
+
+  /* à retenir */
+  const nReg = F.ret.filter(r => r.sev !== 4).length;
+  const promo = `<article class="card promo">
+      <svg class="swirl" viewBox="0 0 200 200" aria-hidden="true"><defs><linearGradient id="sw" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".9"/><stop offset="1" stop-color="#B9A9F4"/></linearGradient></defs>${[0, 1, 2, 3, 4].map(k => `<ellipse cx="100" cy="${60 + k * 22}" rx="${70 - k * 6}" ry="16" fill="url(#sw)" opacity="${.85 - k * .1}" transform="rotate(${-18 + k * 9} 100 100)"/>`).join('')}</svg>
+      <h3>À retenir</h3><div class="c-sub">${nReg ? nReg + ' ' + plural(nReg, 'point') + ' à regarder' : 'rien à signaler'} · ${esc(F.wTxt)}</div>
+      ${F.ret.length ? `<ul>${F.ret.slice(0, 7).map(r => `<li class="s${SEV_ST[r.sev]}">${ic(SEV_IC[r.sev])}<span>${esc(r.txt)}</span></li>`).join('')}</ul>` : `<ul><li class="s1">${ic('check')}<span>Rien à signaler pour cette personne.</span></li></ul>`}
+      <a class="btn sm" href="index.html">${ic('book')}Revoir les standards</a>
+    </article>`;
+
+  /* qualité */
+  const qmax = Math.max(1, ...F.types.map(t => t.v)), amax = Math.max(1, ...F.motifs.map(t => t.v));
+  const qualC = `<article class="card">
+      <div class="c-head"><div><div class="c-title">Qualité</div><div class="c-sub flat">décelées et avérées · ${esc(F.wTxt)}</div></div></div>
+      <div class="qual">
+        <div><small>PPM décelée</small><strong class="num">${fr(I.ppmD)}</strong>${PP.stD(P, I.ppmD) ? pill(PP.stD(P, I.ppmD), ST_PPM[PP.stD(P, I.ppmD)]) : ''}<div class="q-l num">${I.dec} ${plural(I.dec, 'erreur')} / ${fr(I.lig)} l.<br>équipe : ${fr(F.F.ppmD)} ppm<br>rang : ${rkTxt(rk.d, F.minW, I.lig)}</div></div>
+        <div><small>PPM avérée</small><strong class="num">${fr(I.ppmA)}</strong>${PP.stA(P, I.ppmA) ? pill(PP.stA(P, I.ppmA), ST_PPM[PP.stA(P, I.ppmA)]) : ''}<div class="q-l num">${I.ave} ${plural(I.ave, 'litige')} / ${fr(I.lig)} l.<br>équipe : ${fr(F.F.ppmA)} ppm<br>rang : ${rkTxt(rk.a, F.minW, I.lig)}</div></div>
+      </div>
+      <div class="h4">Décelées par type</div>
+      ${F.types.map(t => `<div class="hb ${t.v ? '' : 'z'}"><span>${esc(t.label)}</span><span class="t"><i style="width:${t.v / qmax * 100}%"></i></span><b class="num">${t.v}</b></div>`).join('')}
+      <div class="h4">Avérées par motif</div>
+      ${F.motifs.map(t => `<div class="hb ${t.v ? '' : 'z'}"><span>${esc(t.label)}</span><span class="t"><i class="a" style="width:${t.v / amax * 100}%"></i></span><b class="num">${t.v}</b></div>`).join('')}
+      <div class="c-foot">Rang 1 = le moins d'erreurs · classés : soumis au quota et ≥ ${fr(F.minW)} lignes · litiges remontés avec quelques jours de décalage</div>
+    </article>`;
+
+  /* face à l'équipe */
+  const T = F.F;
+  const cmpRows = [
+    ['Quota %', I.quota, T.quota, 1, ' pt', true, rk.q], ['Cadence l/h', I.cad, T.cad, 1, '', true, rk.c],
+    ['Lignes / journée de picking', I.ligPickJ, T.ligPickJ, 0, '%', true, rk.l], ['Heures de picking / journée', I.hPickJ, T.hPickJ, 1, ' h', null],
+    ['Régularité (% journées ≥ objectif)', I.reg, T.reg, 1, ' pt', true], ['PPM décelée', I.ppmD, T.ppmD, 0, '', false, rk.d],
+    ['PPM avérée', I.ppmA, T.ppmA, 0, '', false, rk.a], ['Heures supp. / présence', I.hsPres, T.hsPres, 1, ' h', null],
+    ['Part du temps hors préparation', I.partHors, T.partHors, 1, ' pt', null]
+  ];
+  const ec = (a, b, d, u, up) => {
+    if (a == null || b == null) return '—';
+    if (u === '%') { if (!b) return '—'; const r = a / b - 1; return `<span class="ec ${up == null ? '' : (r >= 0) === up ? 'up' : 'dn'}">${sign(r * 100, 0, ' %')}</span>`; }
+    const x = a - b; return `<span class="ec ${up == null ? '' : (x >= 0) === up ? 'up' : 'dn'}">${sign(x, d, u)}</span>`;
+  };
+  const cmpC = `<article class="card cmp">
+      <div class="c-head"><div><div class="c-title">Face à l'équipe</div><div class="c-sub flat">${esc(F.wTxt)} · vert = mieux que l'équipe</div></div></div>
+      <div style="overflow-x:auto"><table class="tbl num"><thead><tr><th>Indicateur</th><th>Lui / elle</th><th>Équipe</th><th>Écart</th><th>Rang</th></tr></thead><tbody>
+      ${cmpRows.map(([l, a, b, d, u, up, r]) => `<tr><td>${l}</td><td><b>${fr(a, d)}</b></td><td>${fr(b, d)}</td><td>${ec(a, b, d, u, up)}</td><td>${r ? rkTxt(r) : '—'}</td></tr>`).join('')}
+      <tr><td>Journées produites</td><td><b>${I.pres}</b></td><td>${T.jt}</td><td>${I.pres} / ${T.jt} ${plural(T.jt, 'jour')}</td><td>—</td></tr>
+      <tr><td>Lignes préparées</td><td><b>${fr(I.lig)}</b></td><td>${fr(T.lig)}</td><td>${T.lig ? fr(I.lig / T.lig * 100, 1) + ' % de l\'équipe' : '—'}</td><td>—</td></tr>
+      <tr><td>Erreurs décelées / avérées</td><td><b>${I.dec} / ${I.ave}</b></td><td>${T.dec} / ${T.ave}</td><td>—</td><td>—</td></tr>
+      </tbody></table></div>
+      <div class="c-foot">Équipe = soumis au quota, ≥ ${fr(P.hMin)} h de picking par jour (PPM : toute l'équipe) · rang 1 = meilleur</div>
+    </article>`;
+
+  /* dernières erreurs */
+  const lastF = F.last.filter(e => S.errTab === 'all' || e.k === S.errTab);
+  const errC = `<article class="card">
+      <div class="c-head"><div><div class="c-title">Dernières erreurs</div><div class="c-sub flat">${esc(F.wTxt)}</div></div>
+      <div class="mini-seg" role="group" aria-label="Filtre">${[['all', 'Toutes'], ['D', 'Décelées'], ['A', 'Avérées']].map(([k, l]) => `<button data-act="errtab" data-k="${k}" class="${S.errTab === k ? 'on' : ''}">${l}</button>`).join('')}</div></div>
+      ${lastF.length ? `<ul class="notif">${lastF.slice(0, 8).map(e => `<li><span class="n-ic ${e.k === 'D' ? 'd' : 'a'}">${e.k}</span><div><b>${esc(typeLbl(e.type))}</b> · <span class="num">${PP.jdm(e.d)}</span><small>${esc(e.det || (e.k === 'D' ? 'décelée au contrôle' : 'litige client'))}</small></div></li>`).join('')}</ul>` : `<div class="empty">Aucune erreur enregistrée (${esc(F.wTxt)}).</div>`}
+      <div class="c-foot">D = décelée (arrêtée au contrôle) · A = avérée (partie chez le client)</div>
+    </article>`;
+
+  /* 8 semaines */
+  const tr = F.q4 != null && F.q4p != null ? F.q4 - F.q4p : null;
+  const wkC = `<article class="card">
+      <div class="c-head"><div><div class="c-title">Ses 8 dernières semaines</div><div class="c-sub flat">${tr == null ? 'tendance : pas assez de semaines comparables' : `${tr >= 0 ? '▲ +' : '▼ −'}${fr(Math.abs(tr), 1)} pt de quota · 4 dernières semaines vs 4 précédentes`}</div></div></div>
+      ${chart(weeksChart(F.weeks, P), 170, 'Quota par semaine')}
+      <div class="legend" style="margin-top:6px"><span><i class="sq" style="background:var(--lav-3)"></i>son quota</span><span><i class="rg"></i>quota moyen de l'équipe</span><span><i style="background:var(--ink-3);height:1px"></i>objectif ${fr(P.qVert)} %</span></div>
+      <details class="tv"><summary>Voir le tableau</summary><div style="overflow-x:auto"><table class="tbl num"><thead><tr><th>Semaine</th><th>Jours</th><th>Lignes</th><th>l/h</th><th>Quota</th><th>Équipe</th><th>PPM déc.</th><th>Déc.</th><th>Avé.</th></tr></thead><tbody>${F.weeks.slice().reverse().map(w => `<tr><td>${w.lbl} · ${PP.dm(w.a)}</td><td>${w.jours}</td><td>${fr(w.lig)}</td><td>${fr(w.cad, 1)}</td><td>${w.q == null ? '—' : fr(w.q, 1)}</td><td>${fr(w.qEq, 1)}</td><td>${fr(w.ppmD)}</td><td>${w.dec}</td><td>${w.ave}</td></tr>`).join('')}</tbody></table></div></details>
+    </article>`;
+
+  /* vie au poste (RH) */
+  const cp = F.comp;
+  const rhC = `<article class="card">
+      <div class="c-head"><div><div class="c-title">Vie au poste</div><div class="c-sub flat">compteurs à date · événements : ${esc(F.wTxt)}</div></div></div>
+      <div class="rh-n"><div><b class="num">${F.RH.positifs}</b><small>positifs</small></div><div><b class="num">${F.RH.ecarts}</b><small>écarts</small></div><div><b class="num">${F.RH.secu}</b><small>dont sécu.</small></div><div><b class="num">${F.RH.sansSuite}</b><small>sans suite</small></div></div>
+      <div class="chips" style="margin-top:0"><span>CP <b>${cp && cp.cp != null ? fr(cp.cp, 1) : '—'}</b></span><span>RTT <b>${cp && cp.rtt != null ? fr(cp.rtt, 1) : '—'}</b></span><span>Récup <b>${cp && cp.rec != null ? fr(cp.rec, 1) + ' h' : '—'}</b></span></div>
+      <p class="c-foot" style="margin-top:8px">${cp ? 'Compteurs : ' + esc(cp.sit || '—') + (cp.maj ? ' · mis à jour le ' + PP.dm(cp.maj) : '') : 'Pas de compteur suivi pour cette personne (onglet SUIVI RH)'}</p>
+      <div class="h4">Derniers événements · tout l'historique</div>
+      ${F.events.length ? `<ul class="notif">${F.events.slice(0, 5).map(e => { const pos = e.sens.includes('POSITIF'), neg = e.sens.includes('CART'); return `<li><span class="n-ic ${pos ? 'pos' : neg ? 'neg' : 'neu'}">${ic(pos ? 'up' : neg ? 'down' : 'minus')}</span><div><b>${esc(e.type || '—')}</b> · <span class="num">${PP.dm(e.d)}</span><small>${esc([pos ? 'Positif' : neg ? 'Écart' : e.sens, cap((e.fam || '').toLowerCase()), e.suite ? 'suite : ' + e.suite : 'sans suite'].filter(Boolean).join(' · '))}${e.det ? ' — ' + esc(e.det) : ''}</small></div></li>`; }).join('')}</ul>` : '<div class="empty">Aucun événement saisi.</div>'}
+    </article>`;
+
+  /* temps hors préparation */
+  const amx = Math.max(1, ...F.acts.map(a => a.h));
+  const timeC = `<article class="card">
+      <div class="c-head"><div><div class="c-title">Temps hors préparation</div><div class="c-sub flat">${esc(F.wTxt)}</div></div></div>
+      <div class="tvals"><div><b class="num">${fr(I.actH, 1)}</b><small>heures déclarées</small></div><div><b class="num">${I.actN}</b><small>interventions</small></div><div><b class="num">${I.hp ? fr(I.actH / I.hp * 100, 1) : '—'}${I.hp ? '<span class="muted" style="font-size:12px"> %</span>' : ''}</b><small>du temps pointé</small></div></div>
+      ${F.acts.length ? F.acts.map(a => `<div class="hb" ${tipA(`${cap(a.type.toLowerCase())}\n${fr(a.h, 2)} h · ${a.n} ${plural(a.n, 'fois', 'fois')}${a.last ? '\ndernière fois le ' + PP.dm(a.last) : ''}`)}><span>${esc(cap(a.type.toLowerCase()))}</span><span class="t"><i style="width:${a.h / amx * 100}%;background:var(--ink)"></i></span><b class="num">${fr(a.h, 1)}</b></div>`).join('') : `<div class="empty">Aucune activité hors préparation saisie.</div>`}
+      <div class="c-foot">Saisie dans ACTIVITES · ces heures sont retirées du temps de picking (cadence et quota)</div>
+    </article>`;
+
+  return `<div class="f-layout">${rail}<div class="f-main">
+      <section class="f-row f-1">${prof}${cal}</section>
+      <section class="f-row f-stats" aria-label="Chiffres de la période">${statH}</section>
+      <section class="f-row f-3">${about}${prodC}${promo}</section>
+      <section class="f-row f-4">${qualC}${cmpC}${errC}</section>
+      <section class="f-row f-4">${wkC}${rhC}${timeC}</section>
+      <p class="foot">${esc(per.lbl)} · ${esc(per.plage)} · ${G.pres} ${plural(G.pres, 'jour produit', 'jours produits')} sur ${per.jt} ${plural(per.jt, 'travaillé', 'travaillés')} par l'équipe · comparé à ${esc(F.prevShort)}.</p>
+      ${footer(P)}
+    </div></div>`;
+}
+const cap = s => s ? s[0].toUpperCase() + s.slice(1) : s;
+const TYPE_LBL = [[/^ERREUR REF/, 'Erreur de référence'], [/^NON PR.CIS/, 'Non précisée'], [/^QTE \+/, 'Quantité en plus'], [/^QTE -/, 'Quantité en moins'], [/^ORIENTATION/, 'Orientation'], [/^MANQUANT/, 'Manquant'], [/^NON CONFORME/, 'Non conforme'], [/^ENDOMMAG/, 'Endommagé'], [/^COLIS D/, 'Colis dévoyé']];
+const typeLbl = t => { const x = TYPE_LBL.find(([re]) => re.test(t || '')); return x ? x[1] : cap(String(t || 'non précisée').toLowerCase()); };
+function rkTxt(r, minW, lig) { if (!r) return minW && lig < minW ? `non classé (< ${fr(minW)} l.)` : 'non classé'; return `${r.r}${r.r === 1 ? 'er' : 'e'} / ${r.n}`; }
+function flower() {
+  return `<svg viewBox="0 0 300 220" aria-hidden="true"><defs><radialGradient id="fl" cx=".5" cy=".5" r=".6"><stop offset="0" stop-color="#fff" stop-opacity=".95"/><stop offset=".6" stop-color="#C4B6F6" stop-opacity=".8"/><stop offset="1" stop-color="#9C86EE" stop-opacity=".55"/></radialGradient><filter id="bl"><feGaussianBlur stdDeviation="2.2"/></filter></defs>
+  <g transform="translate(170 110)" filter="url(#bl)">${[0, 1, 2, 3, 4, 5, 6].map(k => `<ellipse rx="64" ry="24" cx="40" fill="url(#fl)" transform="rotate(${k * 51.4})" opacity=".85"/>`).join('')}<circle r="14" fill="#fff" opacity=".9"/></g></svg>`;
+}
+
+/* ════════════ ÉCRAN D'OUVERTURE ════════════ */
+function landing() {
+  const h = new Date().getHours(), salut = h >= 18 || h < 5 ? 'Bonsoir' : 'Bonjour';
+  const fs = !!window.showOpenFilePicker;
+  return `<section class="land">
+    <section class="head" style="margin-top:34px"><div><div class="eyebrow"><span class="dot"></span>Pilotage Pick &amp; Pack · CLR Champigneulles 5406</div>
+      <h1>${salut}, <span class="serif">${esc(S.nom ? S.nom.split(/\s+/)[0] : 'Pick & Pack')}</span></h1>
+      <p class="sub">Ouvrez le classeur Suivi Op : l'accueil et les fiches se calculent ici, à partir de vos onglets de saisie.</p></div></section>
+    <div class="drop" id="drop">
+      ${S.loading ? `<div class="spin"></div><h2>Lecture de « ${esc(S.loading)} »…</h2><p>Quelques secondes pour un classeur de 3 Mo.</p>` : `
+      <div class="big-ic">${ic('upload')}</div>
+      <h2>Déposez votre classeur ici</h2>
+      <p>Suivi_Op_PP_OFFICIEL.xlsm (ou .xlsx) · le fichier reste sur votre poste, rien n'est envoyé.</p>
+      <div class="row">
+        ${S.saved ? `<button class="btn lime" data-act="reopen">${ic('refresh')}Rouvrir « ${esc(S.saved.name)} »</button>` : ''}
+        <button class="btn ${S.saved ? '' : 'lime'}" data-act="open">${ic('file')}Choisir le classeur…</button>
+      </div>
+      ${fs ? '' : `<p style="margin-top:14px">Astuce : avec Edge ou Chrome, la page se souvient du classeur et le relit en un clic.</p>`}`}
+      ${S.error ? `<div class="err">${esc(S.error)}</div>` : ''}
+    </div>
+    <div class="steps">
+      <div><b>1</b>Saisissez comme d'habitude dans Excel (PROD, ERREURS, SUIVI RH…) puis <strong>enregistrez</strong> (Ctrl + S).</div>
+      <div><b>2</b>Ouvrez le classeur ici une fois. Ensuite, le bouton <strong>Actualiser</strong> relit la dernière version enregistrée.</div>
+      <div><b>3</b>Lisez l'<strong>Accueil</strong> et les <strong>Fiches</strong> par jour, semaine ou mois. Exporter = impression ou PDF.</div>
+    </div>
+  </section>`;
+}
+
+/* ════════════ RENDU ════════════ */
+function render() {
+  CH = []; tip.classList.remove('on');
+  if (!S.M) { app.innerHTML = `<div class="wrap">${landing()}</div>`; bindDrop(); return; }
+  const body = S.view === 'fiche' ? fiche() : accueil();
+  app.innerHTML = `<div class="wrap">${topbar()}${body}</div>`;
+  drawCharts();
+  store.set('view', S.view); store.set('mode', S.mode); if (S.op) store.set('op', S.op);
+  document.title = (S.view === 'fiche' && S.op ? PP.joli(S.M.opBy.get(S.op) || { np: S.op }) + ' · ' : '') + 'Pilotage Pick & Pack';
+}
+function go(fn) { fn(); render(); }
+
+app.addEventListener('click', e => {
+  const b = e.target.closest('[data-act]'); if (!b) return;
+  const a = b.dataset.act, M = S.M;
+  if (a === 'open') return pickFile();
+  if (a === 'reopen') return reopen();
+  if (a === 'reload') return reload();
+  if (a === 'print') return print();
+  if (a === 'name') { const n = prompt('Votre prénom (affiché dans l\'accueil) :', S.nom || ''); if (n != null) { S.nom = n.trim(); store.set('nom', S.nom); render(); } return; }
+  if (!M) return;
+  if (a === 'view') return go(() => { S.view = b.dataset.v; scrollTo(0, 0); });
+  if (a === 'mode') return go(() => { S.mode = b.dataset.m; if (S.mode === 'JOUR' && !M.wdSet.has(S.date)) { const i = M.wd.filter(x => x <= S.date).pop(); if (i) S.date = i; } });
+  if (a === 'prev' || a === 'next') return go(() => { S.date = PP.step(M, S.mode, S.mode === 'JOUR' ? S.date : S.date, a === 'prev' ? -1 : 1); });
+  if (a === 'pick') { const dp = $('#datePick'); const d = PP.toDate(S.date); dp.value = d.toISOString().slice(0, 10); try { dp.showPicker(); } catch (er) { dp.click(); } return; }
+  if (a === 'day') return go(() => { S.date = +b.dataset.d; });
+  if (a === 'op') return go(() => { S.op = b.dataset.op; S.view = 'fiche'; scrollTo(0, 0); });
+  if (a === 'oprev' || a === 'onext') return go(() => { const l = opsOrder(), i = l.findIndex(o => o.np === S.op); S.op = l[(i + (a === 'onext' ? 1 : -1) + l.length) % l.length].np; });
+  if (a === 'lb') return go(() => { S.lb = b.dataset.k; });
+  if (a === 'perf') return go(() => { S.perf = b.dataset.k; });
+  if (a === 'goperf') return go(() => { S.perf = { target: 'quota', box: 'lig', gauge: 'cad', scan: 'ppmD' }[b.dataset.k] || S.perf; setTimeout(() => { const c = document.querySelector('.g-perf'); c && c.scrollIntoView({ behavior: 'smooth', block: 'center' }); }, 30); });
+  if (a === 'errtab') return go(() => { S.errTab = b.dataset.k; });
+});
+app.addEventListener('keydown', e => { if (e.key === 'Enter' && e.target.matches('tr[data-act]')) e.target.click(); });
+app.addEventListener('change', e => {
+  if (e.target.id === 'q') {
+    const v = e.target.value.trim().toUpperCase(); const M = S.M; if (!M) return;
+    const o = M.ops.find(x => x.np === v || PP.joli(x).toUpperCase() === v) || M.ops.find(x => x.np.includes(v));
+    e.target.value = '';
+    /* rendu différé : remplacer le champ pendant son propre « change » casse le DOM */
+    if (o) setTimeout(() => go(() => { S.op = o.np; S.view = 'fiche'; scrollTo(0, 0); }), 0);
+  }
+});
+$('#datePick').addEventListener('change', e => { const v = e.target.value; if (!v || !S.M) return; const [y, m, d] = v.split('-').map(Number); go(() => { S.date = PP.ser(y, m - 1, d); }); });
+addEventListener('keydown', e => {
+  if (!S.M || e.target.matches('input,textarea')) return;
+  if (e.key === 'ArrowLeft' && e.altKey) { e.preventDefault(); go(() => { S.date = PP.step(S.M, S.mode, S.date, -1); }); }
+  if (e.key === 'ArrowRight' && e.altKey) { e.preventDefault(); go(() => { S.date = PP.step(S.M, S.mode, S.date, 1); }); }
+});
+
+/* ════════════ FICHIER : ouverture, mémoire, relecture ════════════ */
+const fileIn = $('#fileIn');
+fileIn.addEventListener('change', () => { const f = fileIn.files[0]; if (f) { S.handle = null; loadFile(f); } fileIn.value = ''; });
+function bindDrop() {
+  const z = $('#drop'); if (!z) return;
+  ['dragenter', 'dragover'].forEach(t => z.addEventListener(t, e => { e.preventDefault(); z.classList.add('over'); }));
+  ['dragleave', 'drop'].forEach(t => z.addEventListener(t, e => { e.preventDefault(); z.classList.remove('over'); }));
+  z.addEventListener('drop', async e => {
+    const it = e.dataTransfer.items && e.dataTransfer.items[0];
+    if (it && it.getAsFileSystemHandle) { try { const h = await it.getAsFileSystemHandle(); if (h && h.kind === 'file') return useHandle(h); } catch (er) { /* repli sur le fichier simple */ } }
+    const f = e.dataTransfer.files[0]; if (f) { S.handle = null; loadFile(f); }
+  });
+}
+document.addEventListener('dragover', e => e.preventDefault());
+document.addEventListener('drop', e => { if (!e.target.closest('#drop')) { e.preventDefault(); const f = e.dataTransfer.files[0]; if (f && /\.xls[xmb]$/i.test(f.name)) { S.handle = null; loadFile(f); } } });
+
+const DB = 'pp-pilotage';
+function idb(mode, fn) {
+  return new Promise((res, rej) => {
+    try {
+      const rq = indexedDB.open(DB, 1);
+      rq.onupgradeneeded = () => rq.result.createObjectStore('kv');
+      rq.onsuccess = () => { const tx = rq.result.transaction('kv', mode), st = tx.objectStore('kv'), r = fn(st); tx.oncomplete = () => res(r && r.result); tx.onerror = () => rej(tx.error); };
+      rq.onerror = () => rej(rq.error);
+    } catch (e) { rej(e); }
+  });
+}
+const idbGet = k => idb('readonly', s => s.get(k)).catch(() => null);
+const idbSet = (k, v) => idb('readwrite', s => s.put(v, k)).catch(() => null);
+
+async function pickFile() {
+  if (window.showOpenFilePicker) {
+    try {
+      const [h] = await showOpenFilePicker({ multiple: false, types: [{ description: 'Classeur Excel', accept: { 'application/vnd.ms-excel.sheet.macroEnabled.12': ['.xlsm'], 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': ['.xlsx'], 'application/vnd.ms-excel.sheet.binary.macroEnabled.12': ['.xlsb'] } }] });
+      return useHandle(h);
+    } catch (e) { if (e && e.name === 'AbortError') return; }
+  }
+  fileIn.click();
+}
+async function useHandle(h) {
+  try {
+    S.handle = h; idbSet('handle', h); S.saved = h;
+    const f = await h.getFile(); await loadFile(f);
+  } catch (e) { fail(e); }
+}
+async function reopen() {
+  const h = S.saved; if (!h) return pickFile();
+  try {
+    let p = await h.queryPermission({ mode: 'read' });
+    if (p !== 'granted') p = await h.requestPermission({ mode: 'read' });
+    if (p === 'granted') return useHandle(h);
+  } catch (e) { /* poignée périmée */ }
+  pickFile();
+}
+async function reload() { if (S.handle) return useHandle(S.handle); return pickFile(); }
+function fail(e) {
+  S.loading = '';
+  const m = String((e && e.message) || e || '');
+  S.error = /NotReadable|could not be read|NotFound/i.test(m) ? "Le classeur n'a pas pu être lu. S'il est ouvert dans Excel, enregistrez-le (Ctrl + S) puis réessayez, ou choisissez-le à nouveau." : m || 'Lecture impossible.';
+  if (S.M) { alert(S.error); S.error = ''; render(); } else render();
+}
+async function ensureXLSX() {
+  if (window.XLSX) return;
+  await new Promise((res, rej) => { const s = document.createElement('script'); s.src = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js'; s.onload = res; s.onerror = () => rej(new Error('Bibliothèque de lecture Excel introuvable (dossier vendor/ manquant et pas d\'accès internet).')); document.head.appendChild(s); });
+}
+async function loadFile(f) {
+  const keep = !!S.M;
+  S.loading = f.name; S.error = '';
+  if (!keep) render(); else document.body.style.cursor = 'progress';
+  await new Promise(r => setTimeout(r, 30));
+  try {
+    const buf = await f.arrayBuffer();
+    await ensureXLSX();
+    const wb = XLSX.read(new Uint8Array(buf), PP.readOptions());
+    const M = PP.build(XLSX, wb, f.name);
+    if (!M.prod.length) throw new Error('Aucune ligne de production dans PROD.');
+    S.M = M; S.loading = ''; S.loadedAt = new Date();
+    if (!keep || S.date == null) S.date = M.maxProd;
+    $('#opsList').innerHTML = M.ops.map(o => `<option value="${esc(PP.joli(o))}">${esc(o.np)}</option>`).join('');
+    document.body.style.cursor = '';
+    render();
+  } catch (e) { document.body.style.cursor = ''; fail(e); }
+}
+
+/* démarrage */
+(async () => {
+  render();
+  const h = await idbGet('handle');
+  if (h && h.getFile) { S.saved = h; render(); }
+})();
+})();
+</script>
+</body>
+</html>
