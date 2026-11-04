@@ -3,3 +3,5 @@ bilan/
 *.xlsx
 *.xlsm
 __pycache__/
+# modèle vierge du dashboard préparation : aucune donnée personnelle
+!dashboard_prepa/Dashboard_Prepa_CLR.xlsx

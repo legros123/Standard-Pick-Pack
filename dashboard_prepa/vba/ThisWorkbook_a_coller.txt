@@ -1,0 +1,17 @@
+' =====================================================================
+'  À COLLER dans le module ThisWorkbook du classeur (Alt+F11, double-clic
+'  sur « ThisWorkbook » dans l'arborescence), puis enregistrer en .xlsm.
+'  Ce code ne s'importe pas comme un module : il se colle.
+' =====================================================================
+Option Explicit
+
+Private Sub Workbook_Open()
+    ' Démarrage automatique de l'actualisation à l'ouverture du classeur :
+    ' retirer l'apostrophe devant la ligne suivante pour l'activer.
+    ' DemarrerAutoActualisation
+End Sub
+
+Private Sub Workbook_BeforeClose(Cancel As Boolean)
+    ' Sans cela, Excel rouvrirait le classeur pour lancer l'actualisation planifiée.
+    ArreterAutoActualisation
+End Sub
