@@ -14,9 +14,9 @@ importer à la main (Alt+F11) si Excel refusait le projet VBA intégré.
 
 | Onglet | Rôle |
 |---|---|
-| **SAISIE** | Scan du contenant → date + heure auto. Type (liste ou 1-6), **2e colis** si Orientation (2 colis, 1 seule erreur), réf, allée, opérateur (liste ou matricule), commentaire. La prochaine case à remplir est toujours **jaune**. |
-| **TABLEAU DE BORD** | Période + opérateur (cases jaunes). KPI, types (vs période précédente), top 20 opérateurs × types, allées, tranches horaires, tendance 25 jours ouvrés, top 10 réf, 12 mois. Formules, sauf le top réf (macro). |
-| **HISTORIQUE** | Tableau `T_REJETS` : 1 ligne = 1 erreur. Case RECHERCHE (plusieurs mots). Chaque début de journée, la veille y est rangée seule. |
+| **SAISIE** | Scan du contenant → date + heure auto. Type (liste ou 1-6), **2e colis** si Orientation (2 colis, 1 seule erreur), réf, **emplacement précis `06-121-05 A`** (2-3-2 chiffres + lettre A à H ; `0612105a` est remis en forme, un format faux passe en rouge), opérateur (liste ou matricule), commentaire. La prochaine case à remplir est toujours **jaune**. |
+| **TABLEAU DE BORD** | Période + opérateur (cases jaunes). KPI, types (vs période précédente), top 20 opérateurs × types, allées (2 premiers chiffres de l'emplacement), tranches horaires, tendance 25 jours ouvrés, top 10 réf, 12 mois. Formules, sauf le top réf (macro). |
+| **HISTORIQUE** | Tableau `T_REJETS` : 1 ligne = 1 erreur (colonnes Emplacement et Allée). Case RECHERCHE (plusieurs mots). Chaque début de journée, la veille y est rangée seule. |
 | **SYNTHESE** | Tableau `T_SYNTHESE` : 1 ligne = 1 opérateur × 1 jour (erreurs, colis, détail par type). |
 | **OPERATEURS** | Tableau `T_OPE`. `NOM PRÉNOM` = clé commune avec le Suivi Op. Actif = NON → retiré de la liste. |
 | **REGLAGES** | Site, seuils, options, types d'erreur, allées, actions, aide Power Query. |
@@ -40,4 +40,5 @@ importer à la main (Alt+F11) si Excel refusait le projet VBA intégré.
 
 Reprise v3 → v4 : « Manquant (qté −) » devient **Quantité -** (l'ancien fichier ne distinguait pas
 ligne manquante et quantité manquante) ; « Surplus (qté +) » → Quantité + ; « Erreur de référence » →
-Référence ; « Article abîmé » → Casse ; emplacement, réf trouvée et écart passent dans le commentaire.
+Référence ; « Article abîmé » → Casse ; l'emplacement est repris dans sa colonne (sans lettre s'il n'en avait pas) ;
+réf trouvée et écart passent dans le commentaire.

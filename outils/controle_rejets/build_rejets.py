@@ -95,9 +95,9 @@ REPRISE_TYPES = {
 # SAISIE
 S_L1, S_LN = 7, 306
 # T_REJETS (même ordre que le VBA)
-COL_H = ["Date", "Heure", "Contenant", "Contenant 2", "Colis", "Type", "Réf", "Allée", "Opérateur",
+COL_H = ["Date", "Heure", "Contenant", "Contenant 2", "Colis", "Type", "Réf", "Emplacement", "Allée", "Opérateur",
          "Matricule", "Commentaire", "Année", "Mois", "Semaine", "Jour", "Tranche", "Saisi par", "Source", "ID"]
-LARG_H = [11, 7, 15, 15, 6, 13, 13, 7, 26, 10, 44, 7, 6, 8, 6, 8, 12, 12, 9]
+LARG_H = [11, 7, 15, 15, 6, 13, 13, 13, 7, 26, 10, 40, 7, 6, 8, 6, 8, 12, 12, 9]
 COL_SY = ["Date", "Opérateur", "Matricule", "Erreurs", "Colis"] + [t[0] for t in TYPES] + ["Autre", "Année", "Mois", "Semaine"]
 COL_OPE = ["Matricule", "Nom", "Prénom", "NOM PRÉNOM", "Fonction", "Actif"]
 OPE_LIGNES = 120
@@ -294,6 +294,39 @@ def lire_ancien(chemin: Path):
     return ops, histo, site
 
 
+def emplacement(s, lettre_obligatoire=True):
+    """« 0612105a », « 6-121-5 A », « PICK0612105A » -> « 06-121-05 A » ; "" si invalide.
+    Format : 2-3-2 chiffres + une lettre de A à H."""
+    s = texte(s).upper()
+    while s and not s[0].isdigit():
+        s = s[1:]
+    lettre = ""
+    if s and s[-1].isalpha():
+        lettre, s = s[-1], s[:-1]
+    if lettre and lettre > "H":
+        return ""
+    if lettre_obligatoire and not lettre:
+        return ""
+    groupes, nouveau = [""], False
+    for ch in s:
+        if ch.isdigit():
+            if nouveau:
+                groupes.append("")
+                nouveau = False
+            groupes[-1] += ch
+        elif ch in "-./_ ":
+            nouveau = groupes[-1] != ""
+        else:
+            return ""
+    if len(groupes) == 1 and len(groupes[0]) == 7:
+        g = groupes[0]
+        groupes = [g[:2], g[2:5], g[5:]]
+    if len(groupes) != 3 or not all(groupes) or len(groupes[0]) > 2 or len(groupes[1]) > 3 or len(groupes[2]) > 2:
+        return ""
+    e = f"{groupes[0].zfill(2)}-{groupes[1].zfill(3)}-{groupes[2].zfill(2)}"
+    return f"{e} {lettre}" if lettre else e
+
+
 def np_operateur(ops_par_mat, mat, libelle):
     """« 123 - DUPONT Jean » -> « DUPONT JEAN » (clé du Suivi Op)."""
     m = texte(mat).lstrip("0")
@@ -314,7 +347,8 @@ def reprendre(histo, ops):
         h = r[1] if isinstance(r[1], dt.time) else None
         cont, cont2 = texte(r[2]), texte(r[12])
         typ = REPRISE_TYPES.get(texte(r[3]), texte(r[3]) or "Non précisé")
-        emp, allee = texte(r[6]).upper(), texte(r[7])
+        emp_brut, allee = texte(r[6]).upper(), texte(r[7])
+        emp = emplacement(emp_brut, lettre_obligatoire=False) or emp_brut
         if allee.isdigit():
             allee = allee.zfill(2)
         if not allee and emp[:2].isdigit():
@@ -327,11 +361,9 @@ def reprendre(histo, ops):
             com.append(f"Réf trouvée {texte(r[11])}")
         if texte(r[10]):
             com.append(f"Écart {texte(r[10])}")
-        if emp:
-            com.append(f"Empl. {emp}")
         lignes.append(dict(
             date=d, heure=h, cont=cont, cont2=cont2, colis=2 if cont2 else 1, type=typ,
-            ref=texte(r[4]).upper(), allee=allee, ope=np_operateur(ops_par_mat, r[9], r[8]),
+            ref=texte(r[4]).upper(), emp=emp, allee=allee, ope=np_operateur(ops_par_mat, r[9], r[8]),
             mat=texte(r[9]), com=" · ".join(com), user=texte(r[18]), src="Reprise v3"))
     for i, x in enumerate(lignes, 1):
         x["id"] = f"R{i:06d}"
@@ -364,7 +396,7 @@ def synthese(lignes):
 # ─────────────────────────── formules de comptage ───────────────────────────
 H_COL = {"date": "T_REJETS[Date]", "type": "T_REJETS[Type]", "ope": "T_REJETS[Opérateur]",
          "allee": "T_REJETS[Allée]", "cont2": "T_REJETS[Contenant 2]", "tranche": "T_REJETS[Tranche]"}
-S_COL = {"date": "S_DATE", "type": "S_TYPE", "ope": "S_OPE", "allee": "S_ALLEE", "cont2": "S_CONT2"}
+S_COL = {"date": "S_DATE", "type": "S_TYPE", "ope": "S_OPE", "allee": "S_EMP", "cont2": "S_CONT2"}
 
 
 def compte(crit=(), debut="P_DEBUT", fin="P_FIN", ope="OPCRIT"):
@@ -376,7 +408,7 @@ def compte(crit=(), debut="P_DEBUT", fin="P_FIN", ope="OPCRIT"):
         s.append(f'{S_COL["ope"]},{ope}')
     for champ, valeur in crit:
         h.append(f"{H_COL[champ]},{valeur}")
-        s.append(f"{S_COL[champ]},{valeur}")
+        s.append(f'{S_COL[champ]},{valeur}&"-*"' if champ == "allee" else f"{S_COL[champ]},{valeur}")
     return f"COUNTIFS({','.join(h)})+COUNTIFS({','.join(s)})"
 
 
@@ -508,11 +540,11 @@ def construire(ancien: Path, sortie: Path, aujourdhui: dt.date, dossier_bas: Pat
     refs["SEUIL_O"] = param("SEUIL_O", "Seuil orange", seuil_o, "À partir de ce nombre d'erreurs, la journée passe en alerte (orange).")
     refs["SEUIL_R"] = param("SEUIL_R", "Seuil rouge", seuil_r, "À partir de ce nombre, la journée passe en rouge.")
     section("FONCTIONNEMENT")
-    param("NAV_AUTO", "Le curseur va seul à la case suivante", "OUI", "Contenant → type → (2e colis) → réf → allée → opérateur → contenant suivant.", liste="OUI,NON")
+    param("NAV_AUTO", "Le curseur va seul à la case suivante", "OUI", "Contenant → type → (2e colis) → réf → emplacement → opérateur → contenant suivant.", liste="OUI,NON")
     param("SAUVE_AUTO", "Enregistrer après chaque ligne complète", "OUI", "Rien ne se perd si le poste plante.", liste="OUI,NON")
     param("EXPORT_CSV", "Exporter l'historique en CSV à l'archivage", "OUI", "Fichier CSV posé à côté du classeur : lisible par Power Query même quand le classeur est ouvert.", liste="OUI,NON")
     param("CSV_NOM", "Nom du fichier CSV", "Rejets_historique.csv", "Séparateur « ; », UTF-8, dates AAAA-MM-JJ.")
-    param("LONGUEUR_CONTENANT", "Un n° de contenant fait au moins", 10, "Chiffres. Un contenant scanné dans Type, Allée, Opérateur ou Commentaire part sur la ligne suivante.")
+    param("LONGUEUR_CONTENANT", "Un n° de contenant fait au moins", 10, "Chiffres. Un contenant scanné dans Type, Emplacement, Opérateur ou Commentaire part sur la ligne suivante.")
     section("SUIVI (rempli par le fichier)")
     refs["JOUR_SAISIE"] = param("JOUR_SAISIE", "Journée en cours dans SAISIE", aujourdhui, "Au changement de jour, la saisie part seule dans HISTORIQUE.", False, "dd/mm/yyyy")
     refs["MACROS"] = param("MACROS", "Macros actives le", None, "Vide ou ancien = macros désactivées (bandeau rouge dans SAISIE).", False, "dd/mm/yyyy")
@@ -565,7 +597,7 @@ def construire(ancien: Path, sortie: Path, aujourdhui: dt.date, dossier_bas: Pat
 
     # allées (colonne F)
     put(r, "F5", "ALLÉES", F(JAUNE, 11, True), fond(BETON), AL_C, Border(bottom=cote(JAUNE, "medium")))
-    put(r, "F6", "liste de SAISIE", F(ACIER, 8), fond(BETON), AL_C)
+    put(r, "F6", "tableau de bord", F(ACIER, 8), fond(BETON), AL_C)
     for i in range(40):
         put(r, f"F{7 + i}", ALLEES[i] if i < len(ALLEES) else None, F(BETON, 10, True), fond(JAUNE), AL_C,
             Border(bottom=cote(BETON), left=cote(BETON), right=cote(BETON)), fmt="@", libre=True)
@@ -599,7 +631,7 @@ def construire(ancien: Path, sortie: Path, aujourdhui: dt.date, dossier_bas: Pat
         ("1", "Scanner le contenant dans la case jaune : la date et l'heure se mettent seules."),
         ("2", "Type d'erreur : liste ou taper 1 à 6 (1 Manquante · 2 Qté + · 3 Qté − · 4 Orientation · 5 Référence · 6 Casse)."),
         ("3", "Orientation : la case « 2e colis » s'allume en jaune → scanner l'autre colis. 2 colis, 1 seule erreur."),
-        ("4", "Référence concernée, allée (liste ou n°), opérateur (liste ou matricule), commentaire si besoin."),
+        ("4", "Référence concernée, emplacement précis 06-121-05 A (lettre A à H ; taper 0612105a suffit), opérateur (liste ou matricule), commentaire si besoin."),
         ("5", "Suivez le jaune : la prochaine case à remplir est toujours jaune. Ligne complète = ✔ dans STATUT."),
         ("6", "Chaque début de journée, la veille part seule dans HISTORIQUE (rien à faire). Le fichier s'enregistre seul."),
     ]:
@@ -661,20 +693,20 @@ def construire(ancien: Path, sortie: Path, aujourdhui: dt.date, dossier_bas: Pat
     fond_feuille(h, BETON, 22)
     for j, w in enumerate(LARG_H, 1):
         h.column_dimensions[L(j)].width = w
-    bandeau(h, "HISTORIQUE DES REJETS", "1 ligne = 1 erreur · une orientation = 2 colis mais 1 seule erreur · source du tableau de bord, de la synthèse et du Suivi Op", 19, "HISTORIQUE")
+    bandeau(h, "HISTORIQUE DES REJETS", "1 ligne = 1 erreur · une orientation = 2 colis mais 1 seule erreur · source du tableau de bord, de la synthèse et du Suivi Op", 20, "HISTORIQUE")
     h.merge_cells("A1:F1")
-    h.merge_cells("A2:S2")
-    put(h, "M1", '=COUNT(T_REJETS[Date])&" erreurs archivées"', F(JAUNE, 12, True), align=AL_D, fusion="M1:S1")
-    navigation(h, ["A:B", "C:C", "D:D", "F:G", "I:I", "K:K"], "HISTORIQUE", derniere=19)
+    h.merge_cells("A2:T2")
+    put(h, "M1", '=COUNT(T_REJETS[Date])&" erreurs archivées"', F(JAUNE, 12, True), align=AL_D, fusion="M1:T1")
+    navigation(h, ["A:B", "C:C", "D:D", "F:G", "J:J", "L:L"], "HISTORIQUE", derniere=20)
     h.row_dimensions[3].height = 24
     # recherche
     h.row_dimensions[4].height = 30
     put(h, "A4", "🔍  RECHERCHE", F(ACIER, 9, True), fond(BETON), AL_D, fusion="A4:B4")
     put(h, "C4", None, F(BETON, 12, True, name=MONO), fond(JAUNE), AL_G,
         Border(left=cote(BETON), right=cote(BETON), top=cote(BETON), bottom=cote(BETON)), fusion="C4:F4")
-    put(h, "G4", "contenant, réf, opérateur, allée, type, date (14/10)… plusieurs mots possibles, puis Entrée",
+    put(h, "G4", "contenant, réf, emplacement, opérateur, type, date (14/10)… plusieurs mots possibles, puis Entrée",
         F(ACIER, 8), fond(BETON), AL_GW, fusion="G4:J4")
-    put(h, "K4", f"{len(lignes)} ligne(s) · tout est affiché", F(JAUNE, 9, True), fond(BETON), AL_G, fusion="K4:S4")
+    put(h, "K4", f"{len(lignes)} ligne(s) · tout est affiché", F(JAUNE, 9, True), fond(BETON), AL_G, fusion="K4:T4")
     # table en ligne 6
     h.row_dimensions[5].height = 6
     for j, n in enumerate(COL_H, 1):
@@ -683,25 +715,25 @@ def construire(ancien: Path, sortie: Path, aujourdhui: dt.date, dossier_bas: Pat
         rr = 7 + i
         cal = calendrier(x)
         vals = [x["date"], x["heure"], x["cont"] or None, x["cont2"] or None, x["colis"], x["type"], x["ref"] or None,
-                x["allee"] or None, x["ope"] or None, x["mat"] or None, x["com"] or None] + cal + \
+                x["emp"] or None, x["allee"] or None, x["ope"] or None, x["mat"] or None, x["com"] or None] + cal + \
                [x["user"] or None, x["src"], x["id"]]
         for j, v in enumerate(vals, 1):
             cc = h.cell(rr, j, v)
-            cc.font = F(CRAIE if j not in (1, 2, 12, 13, 14, 15, 16, 17, 18, 19) else ACIER, 10,
-                        name=MONO if j in (3, 4, 7, 10, 19) else POLICE, bold=(j == 6))
-            if j in (3, 4, 7, 8, 10, 19):
+            cc.font = F(CRAIE if j not in (1, 2, 13, 14, 15, 16, 17, 18, 19, 20) else ACIER, 10,
+                        name=MONO if j in (3, 4, 7, 8, 11, 20) else POLICE, bold=(j in (6, 8)))
+            if j in (3, 4, 7, 8, 9, 11, 20):
                 cc.number_format = "@"
             if j == 1:
                 cc.number_format = "dd/mm/yyyy"
             if j == 2:
                 cc.number_format = "hh:mm"
-            if j == 16:
+            if j == 17:
                 cc.number_format = '0"h"'
-            if j in (2, 5, 8, 12, 13, 14, 15, 16):
+            if j in (2, 5, 9, 13, 14, 15, 16, 17):
                 cc.alignment = Alignment(horizontal="center")
     fin_h = 6 + max(1, len(lignes))
-    h.add_table(Table(displayName="T_REJETS", ref=f"A6:S{fin_h}", tableStyleInfo=style_table))
-    tableau_sombre(h, 6, 19, 60000)
+    h.add_table(Table(displayName="T_REJETS", ref=f"A6:T{fin_h}", tableStyleInfo=style_table))
+    tableau_sombre(h, 6, 20, 60000)
     for k, (lab, _, coul, teinte) in enumerate(TYPES, 1):
         h.conditional_formatting.add("F7:F60000", FormulaRule(formula=[f"$F7=TYPE{k}"], font=Font(color=coul, bold=True)))
     h.conditional_formatting.add("D7:D60000", FormulaRule(formula=['$D7<>""'], font=Font(color=BLEU, bold=True)))
@@ -741,8 +773,9 @@ def construire(ancien: Path, sortie: Path, aujourdhui: dt.date, dossier_bas: Pat
 
     # ══════════════════════════ SAISIE ══════════════════════════
     fond_feuille(s, BETON, 14)
-    largeurs(s, {"A": 4.5, "B": 9, "C": 7.5, "D": 19, "E": 19, "F": 16, "G": 16, "H": 10, "I": 27, "J": 40, "K": 13,
-                 "L": 9, "M": 12})
+    largeurs(s, {"A": 4.5, "B": 9, "C": 7.5, "D": 19, "E": 19, "F": 16, "G": 16, "H": 14, "I": 27, "J": 38, "K": 13,
+                 "L": 9, "M": 12, "N": 6})
+    s.column_dimensions["N"].hidden = True
     s.column_dimensions["L"].hidden = True
     s.column_dimensions["M"].hidden = True
     s.row_dimensions[1].height = 34
@@ -784,7 +817,7 @@ def construire(ancien: Path, sortie: Path, aujourdhui: dt.date, dossier_bas: Pat
     s.row_dimensions[6].height = 38
     entetes = [("#", ""), ("DATE", "auto"), ("HEURE", "auto"), ("CONTENANT", "▸ scanner ici"),
                ("2e COLIS", "▸ si orientation"), ("TYPE D'ERREUR", "liste ou 1 à 6"), ("RÉFÉRENCE", "concernée"),
-               ("ALLÉE", "liste ou n°"), ("OPÉRATEUR", "liste ou matricule"), ("COMMENTAIRE", "facultatif"),
+               ("EMPLACEMENT", "06-121-05 A"), ("OPÉRATEUR", "liste ou matricule"), ("COMMENTAIRE", "facultatif"),
                ("STATUT", "auto"), ("Matricule", ""), ("Saisi par", "")]
     for j, (a, b) in enumerate(entetes, 1):
         cc = s.cell(6, j)
@@ -809,13 +842,17 @@ def construire(ancien: Path, sortie: Path, aujourdhui: dt.date, dossier_bas: Pat
             2: (F(ACIER, 9), "dd/mm", AL_C), 3: (F(ACIER, 9), "hh:mm", AL_C),
             4: (F(CRAIE, 11, True, MONO), "@", AL_G), 5: (F(BLEU, 11, True, MONO), "@", AL_G),
             6: (F(CRAIE, 10, True), "General", AL_G), 7: (F(CRAIE, 11, False, MONO), "@", AL_G),
-            8: (F(CRAIE, 10, True), "@", AL_C), 9: (F(CRAIE, 10), "General", AL_G),
+            8: (F(CRAIE, 11, True, MONO), "@", AL_C), 9: (F(CRAIE, 10), "General", AL_G),
             10: (F(ACIER, 9), "General", AL_G), 12: (F(ACIER, 9), "@", AL_C), 13: (F(ACIER, 9), "@", AL_C),
         }.items():
             cc = s.cell(rr, j)
             cc.font, cc.number_format, cc.alignment, cc.protection = font, fmt, al, LIBRE
+        # N : 1 si l'emplacement a le format XX-XXX-XX + lettre A à H, 0 sinon
+        s.cell(rr, 14, f'=IF($H{rr}="","",--AND(LEN($H{rr})=11,ISNUMBER(-LEFT($H{rr},2)),MID($H{rr},3,1)="-",'
+                       f'ISNUMBER(-MID($H{rr},4,3)),MID($H{rr},7,1)="-",ISNUMBER(-MID($H{rr},8,2)),MID($H{rr},10,1)=" ",'
+                       f'ISNUMBER(FIND(RIGHT($H{rr},1),"ABCDEFGH"))))').font = F(ACIER2, 8)
         cc = s.cell(rr, 11, f'=IF($D{rr}="","",IF(AND($F{rr}<>"",$G{rr}<>"",$H{rr}<>"",$I{rr}<>"",'
-                            f'OR($F{rr}<>TYPE_2COLIS,$E{rr}<>"")),"✔ complet","à compléter"))')
+                            f'OR($F{rr}<>TYPE_2COLIS,$E{rr}<>"")),IF($N{rr}=1,"✔ complet","empl. à corriger"),"à compléter"))')
         cc.font, cc.alignment = F(ACIER, 9, True), AL_C
     jaune = dict(fill=fond(JAUNE), font=Font(color=BETON, bold=True))
     suite = f'$D{S_L1}<>"",$F{S_L1}<>"",OR($F{S_L1}<>TYPE_2COLIS,$E{S_L1}<>"")'
@@ -825,7 +862,8 @@ def construire(ancien: Path, sortie: Path, aujourdhui: dt.date, dossier_bas: Pat
         (f"E{S_L1}:E{S_LN}", f'AND($D{S_L1}<>"",$F{S_L1}=TYPE_2COLIS,$E{S_L1}="")', jaune),
         (f"G{S_L1}:G{S_LN}", f'AND({suite},$G{S_L1}="")', jaune),
         (f"H{S_L1}:H{S_LN}", f'AND({suite},$G{S_L1}<>"",$H{S_L1}="")', jaune),
-        (f"I{S_L1}:I{S_LN}", f'AND({suite},$G{S_L1}<>"",$H{S_L1}<>"",$I{S_L1}="")', jaune),
+        (f"I{S_L1}:I{S_LN}", f'AND({suite},$G{S_L1}<>"",$N{S_L1}=1,$I{S_L1}="")', jaune),
+        (f"H{S_L1}:H{S_LN}", f'$N{S_L1}=0', dict(fill=fond("3A1513"), font=Font(color=ROUGE, bold=True))),
         (f"E{S_L1}:E{S_LN}", f'AND($E{S_L1}<>"",$F{S_L1}=TYPE_2COLIS)', dict(fill=fond("13233D"), font=Font(color=BLEU, bold=True))),
         (f"E{S_L1}:E{S_LN}", f'AND($D{S_L1}<>"",$F{S_L1}<>TYPE_2COLIS)', dict(fill=fond("0E1013"), font=Font(color="0E1013"))),
     ]
@@ -835,9 +873,10 @@ def construire(ancien: Path, sortie: Path, aujourdhui: dt.date, dossier_bas: Pat
         s.conditional_formatting.add(f"F{S_L1}:F{S_LN}", FormulaRule(formula=[f"$F{S_L1}=TYPE{k}"],
                                      fill=fond(teinte), font=Font(color=coul, bold=True)))
     s.conditional_formatting.add(f"K{S_L1}:K{S_LN}", FormulaRule(formula=[f'$K{S_L1}="à compléter"'], font=Font(color=ORANGE, bold=True)))
+    s.conditional_formatting.add(f"K{S_L1}:K{S_LN}", FormulaRule(formula=[f'$K{S_L1}="empl. à corriger"'], font=Font(color=ROUGE, bold=True)))
     s.conditional_formatting.add(f"K{S_L1}:K{S_LN}", FormulaRule(formula=[f'LEFT($K{S_L1},1)="✔"'], font=Font(color=VERT, bold=True)))
     for col, f, titre, msg in [
-        ("F", "=L_TYPES", None, None), ("H", "=L_ALLEES", None, None), ("I", "=L_OPE", None, None),
+        ("F", "=L_TYPES", None, None), ("I", "=L_OPE", None, None),
     ]:
         dv = DataValidation(type="list", formula1=f, allow_blank=True, showErrorMessage=False)
         s.add_data_validation(dv)
@@ -846,6 +885,10 @@ def construire(ancien: Path, sortie: Path, aujourdhui: dt.date, dossier_bas: Pat
                         promptTitle="2e colis (orientation)", prompt="Scanner l'AUTRE colis concerné : 2 colis, 1 seule erreur.")
     s.add_data_validation(dv)
     dv.add(f"E{S_L1}:E{S_LN}")
+    dv = DataValidation(type="custom", formula1="TRUE", allow_blank=True, showErrorMessage=False, showInputMessage=True,
+                        promptTitle="Emplacement précis", prompt="Format 06-121-05 A (lettre A à H). On peut taper 0612105a : il est remis en forme.")
+    s.add_data_validation(dv)
+    dv.add(f"H{S_L1}:H{S_LN}")
     s.freeze_panes = f"A{S_L1}"
     s.protection.sheet = True
     s.protection.formatColumns = False
@@ -853,7 +896,7 @@ def construire(ancien: Path, sortie: Path, aujourdhui: dt.date, dossier_bas: Pat
     s.protection.selectLockedCells = False
     s.protection.selectUnlockedCells = False
     for n_, col in [("S_DATE", "B"), ("S_HEURE", "C"), ("S_CONT", "D"), ("S_CONT2", "E"), ("S_TYPE", "F"), ("S_REF", "G"),
-                    ("S_ALLEE", "H"), ("S_OPE", "I"), ("S_STAT", "K")]:
+                    ("S_EMP", "H"), ("S_OPE", "I"), ("S_STAT", "K")]:
         nom(wb, n_, f"SAISIE!${col}${S_L1}:${col}${S_LN}")
     s.sheet_view.selection[0].activeCell = f"D{S_L1}"
     s.sheet_view.selection[0].sqref = f"D{S_L1}"
@@ -1084,7 +1127,7 @@ def construire(ancien: Path, sortie: Path, aujourdhui: dt.date, dossier_bas: Pat
     t.row_dimensions[25].height = 22
     titre_bloc("B25:N25", "PAR OPÉRATEUR · TOP 20", "toute l'équipe sur la période · l'opérateur filtré est en jaune")
     t.row_dimensions[25].height = 30
-    titre_bloc("O25:U25", "PAR ALLÉE", "période et opérateur filtrés")
+    titre_bloc("O25:U25", "PAR ALLÉE", "2 premiers chiffres de l'emplacement")
     corps("B26:N49")
     corps("O26:U49")
     for ref, txt in [("B26", "Opérateur"), ("F26", "Total")] + [(L(7 + k), f"=TCOURT{k + 1}") for k in range(6)] + \

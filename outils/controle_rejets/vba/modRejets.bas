@@ -4,7 +4,8 @@ Option Explicit
 '
 '  SAISIE           on scanne le contenant : date et heure se mettent seules.
 '                   Type (liste ou 1 à 6) ; si Orientation, la case « 2e colis »
-'                   s'allume : 2 colis, 1 seule erreur. Puis réf, allée,
+'                   s'allume : 2 colis, 1 seule erreur. Puis réf, emplacement
+'                   précis (06-121-05 A, lettre A à H),
 '                   opérateur (liste ou matricule), commentaire.
 '  HISTORIQUE       chaque début de journée, la veille y est rangée (T_REJETS).
 '                   Case RECHERCHE : filtre sur contenant, réf, opérateur...
@@ -38,7 +39,7 @@ Private Const cCONT As Long = 4
 Private Const cCONT2 As Long = 5
 Private Const cTYPE As Long = 6
 Private Const cREF As Long = 7
-Private Const cALLEE As Long = 8
+Private Const cEMP As Long = 8
 Private Const cOPE As Long = 9
 Private Const cCOM As Long = 10
 Private Const cMAT As Long = 12
@@ -57,19 +58,20 @@ Private Const hCONT2 As Long = 4
 Private Const hCOLIS As Long = 5
 Private Const hTYPE As Long = 6
 Private Const hREF As Long = 7
-Private Const hALLEE As Long = 8
-Private Const hOPE As Long = 9
-Private Const hMAT As Long = 10
-Private Const hCOM As Long = 11
-Private Const hANNEE As Long = 12
-Private Const hMOIS As Long = 13
-Private Const hSEM As Long = 14
-Private Const hJOUR As Long = 15
-Private Const hTRANCHE As Long = 16
-Private Const hUSER As Long = 17
-Private Const hSRC As Long = 18
-Private Const hID As Long = 19
-Private Const NH As Long = 19
+Private Const hEMP As Long = 8
+Private Const hALLEE As Long = 9
+Private Const hOPE As Long = 10
+Private Const hMAT As Long = 11
+Private Const hCOM As Long = 12
+Private Const hANNEE As Long = 13
+Private Const hMOIS As Long = 14
+Private Const hSEM As Long = 15
+Private Const hJOUR As Long = 16
+Private Const hTRANCHE As Long = 17
+Private Const hUSER As Long = 18
+Private Const hSRC As Long = 19
+Private Const hID As Long = 20
+Private Const NH As Long = 20
 
 ' ---- T_SYNTHESE : Date, Opérateur, Matricule, Erreurs, Colis, 6 types, Autre, Année, Mois, Semaine
 Private Const NSY As Long = 15
@@ -254,7 +256,7 @@ Public Sub SurChangementSaisie(ByVal Target As Range)
                 Case cCONT2: TraiterContenant2 ws, c.Row
                 Case cTYPE: TraiterType ws, c.Row
                 Case cREF: TraiterRef ws, c.Row
-                Case cALLEE: TraiterAllee ws, c.Row
+                Case cEMP: TraiterEmplacement ws, c.Row
                 Case cOPE: TraiterOperateur ws, c.Row
                 Case cCOM: If Texte(ws.Cells(c.Row, cCONT).Value) <> "" Then Horodater ws, c.Row
             End Select
@@ -368,20 +370,28 @@ Private Sub TraiterRef(ByVal ws As Worksheet, ByVal lig As Long)
     If ref <> brut Then ws.Cells(lig, cREF).Value = Vide(ref)
     If ref = "" Then Exit Sub
     If Texte(ws.Cells(lig, cCONT).Value) <> "" Then Horodater ws, lig
-    Info ChrW(10004) & "  Réf " & ref & "     " & Fleche() & "ALLÉE (liste ou n°)", 0
+    Info ChrW(10004) & "  Réf " & ref & "     " & Fleche() & "EMPLACEMENT (ex. 06-121-05 A ou 0612105a)", 0
 End Sub
 
-Private Sub TraiterAllee(ByVal ws As Worksheet, ByVal lig As Long)
-    Dim s As String, a As String
-    s = UCase$(Trim$(Texte(ws.Cells(lig, cALLEE).Value)))
-    If s = "" Then Exit Sub
-    a = AlleeDepuisTexte(s)
-    If a <> s Then ws.Cells(lig, cALLEE).Value = a
+Private Sub TraiterEmplacement(ByVal ws As Worksheet, ByVal lig As Long)
+    Dim brut As String, e As String, a As String
+    brut = Trim$(Texte(ws.Cells(lig, cEMP).Value))
+    If brut = "" Then Exit Sub
+    e = NormaliserEmplacement(brut)
     If Texte(ws.Cells(lig, cCONT).Value) <> "" Then Horodater ws, lig
+    If e = "" Then
+        If UCase$(brut) <> brut Then ws.Cells(lig, cEMP).Value = UCase$(brut)
+        Info ChrW(9888) & "  « " & UCase$(brut) & " » : emplacement attendu 06-121-05 A (2-3-2 chiffres + lettre A à H). " & _
+             "Taper 0612105a suffit.", 2
+        Exit Sub
+    End If
+    If e <> brut Then ws.Cells(lig, cEMP).Value = e
+    a = Left$(e, 2)
     If Not DansListe("L_ALLEES", a) Then
-        Info ChrW(9888) & "  Allée " & a & " absente de la liste (REGLAGES) : gardée telle quelle.     " & Fleche() & "OPÉRATEUR", 1
+        Info ChrW(9888) & "  " & e & " : allée " & a & " absente de la liste (REGLAGES), gardé tel quel.     " & _
+             Fleche() & "OPÉRATEUR", 1
     Else
-        Info ChrW(10004) & "  Allée " & a & "     " & Fleche() & "OPÉRATEUR (liste ou matricule)", 0
+        Info ChrW(10004) & "  Emplacement " & e & " · allée " & a & "     " & Fleche() & "OPÉRATEUR (liste ou matricule)", 0
     End If
 End Sub
 
@@ -414,7 +424,7 @@ End Sub
 Private Function Rediriger(ByVal ws As Worksheet, ByVal c As Range) As Boolean
     Dim s As String, lig As Long, r As Long
     Select Case c.Column
-        Case cTYPE, cALLEE, cOPE, cCOM
+        Case cTYPE, cEMP, cOPE, cCOM
         Case Else: Exit Function
     End Select
     s = NettoyerScan(Texte(c.Value))
@@ -464,7 +474,7 @@ Private Function ProchaineCase(ByVal ws As Worksheet, ByVal lig As Long) As Long
     If t = "" Then ProchaineCase = cTYPE: Exit Function
     If EstDeuxColis(t) And Texte(ws.Cells(lig, cCONT2).Value) = "" Then ProchaineCase = cCONT2: Exit Function
     If Texte(ws.Cells(lig, cREF).Value) = "" Then ProchaineCase = cREF: Exit Function
-    If Texte(ws.Cells(lig, cALLEE).Value) = "" Then ProchaineCase = cALLEE: Exit Function
+    If Not EmplacementOk(Texte(ws.Cells(lig, cEMP).Value)) Then ProchaineCase = cEMP: Exit Function
     If Texte(ws.Cells(lig, cOPE).Value) = "" Then ProchaineCase = cOPE: Exit Function
 End Function
 
@@ -473,7 +483,7 @@ Private Sub InviteSuite(ByVal ws As Worksheet, ByVal lig As Long)
         Case cTYPE: Info Fleche() & "TYPE : " & TypesCourts(), 3
         Case cCONT2: Info Fleche() & "Scanner l'AUTRE colis (case jaune « 2e colis »)", 3
         Case cREF: Info Fleche() & "RÉFÉRENCE concernée (taper ou scanner)", 3
-        Case cALLEE: Info Fleche() & "ALLÉE (liste ou n°)", 3
+        Case cEMP: Info Fleche() & "EMPLACEMENT : 06-121-05 A (lettre A à H)", 3
         Case cOPE: Info Fleche() & "OPÉRATEUR (liste ou matricule)", 3
         Case Else: Info ChrW(10004) & "  Ligne complète     " & Fleche() & "Scanner le contenant suivant", 0
     End Select
@@ -654,7 +664,8 @@ Private Sub VersHisto(v As Variant, ByVal i As Long, ByVal d As Double, out() As
     out(n, hCOLIS) = IIf(c2 <> "", 2, 1)
     out(n, hTYPE) = Vide(Texte(v(i, cTYPE)))
     out(n, hREF) = Vide(Texte(v(i, cREF)))
-    out(n, hALLEE) = Vide(Texte(v(i, cALLEE)))
+    out(n, hEMP) = Vide(Texte(v(i, cEMP)))
+    out(n, hALLEE) = Vide(AlleeDepuisTexte(Texte(v(i, cEMP))))
     out(n, hOPE) = Vide(ope)
     out(n, hMAT) = Vide(mat)
     out(n, hCOM) = Vide(Texte(v(i, cCOM)))
@@ -722,6 +733,7 @@ Private Sub FormaterHisto(ByVal blocs As Range)
         .Columns(hCONT).NumberFormat = "@"
         .Columns(hCONT2).NumberFormat = "@"
         .Columns(hREF).NumberFormat = "@"
+        .Columns(hEMP).NumberFormat = "@"
         .Columns(hALLEE).NumberFormat = "@"
         .Columns(hMAT).NumberFormat = "@"
         .Columns(hID).NumberFormat = "@"
@@ -872,6 +884,10 @@ Private Sub CompleterLigneHisto(ByVal r As Range)
         If Texte(v(1, hSRC)) = "" Then r.Cells(1, hSRC).Value = "Manuel"
     End If
     r.Cells(1, hCOLIS).Value = IIf(Texte(v(1, hCONT2)) <> "", 2, 1)
+    If Texte(v(1, hALLEE)) = "" And Texte(v(1, hEMP)) <> "" Then
+        r.Cells(1, hALLEE).NumberFormat = "@"
+        r.Cells(1, hALLEE).Value = AlleeDepuisTexte(Texte(v(1, hEMP)))
+    End If
     cal = Calendrier(v(1, hDATE), v(1, hHEURE))
     If IsArray(cal) Then r.Cells(1, hANNEE).Resize(1, 5).Value = cal
 End Sub
@@ -947,6 +963,7 @@ Public Sub RecalculerHistorique()
             If Texte(v(i, hID)) = "" Then id = id + 1: v(i, hID) = "R" & Format$(id, "000000")
             If Texte(v(i, hSRC)) = "" Then v(i, hSRC) = "Manuel"
             v(i, hCOLIS) = IIf(Texte(v(i, hCONT2)) <> "", 2, 1)
+            If Texte(v(i, hALLEE)) = "" And Texte(v(i, hEMP)) <> "" Then v(i, hALLEE) = AlleeDepuisTexte(Texte(v(i, hEMP)))
             cal = Calendrier(v(i, hDATE), v(i, hHEURE))
             If IsArray(cal) Then
                 For j = 0 To 4: v(i, hANNEE + j) = cal(j): Next j
@@ -1443,6 +1460,52 @@ Private Function AlleeDepuisTexte(ByVal s As String) As String
     Next i
     If Len(chiffres) = 1 Then chiffres = "0" & chiffres
     If chiffres = "" Then AlleeDepuisTexte = s Else AlleeDepuisTexte = chiffres
+End Function
+
+' « 0612105a », « 6-121-5 A », « PICK0612105A » -> « 06-121-05 A » ; "" si le format est faux.
+' Format : 2-3-2 chiffres + une lettre de A à H (obligatoire).
+Private Function NormaliserEmplacement(ByVal s As String) As String
+    Dim g(1 To 3) As String, n As Long, i As Long, ch As String, lettre As String, nouveau As Boolean
+    s = UCase$(Trim$(s))
+    Do While Len(s) > 0                      ' préfixe éventuel de l'étiquette (ex. PICK)
+        ch = Left$(s, 1)
+        If ch >= "0" And ch <= "9" Then Exit Do
+        s = Mid$(s, 2)
+    Loop
+    If Len(s) = 0 Then Exit Function
+    ch = Right$(s, 1)
+    If ch < "A" Or ch > "H" Then Exit Function
+    lettre = ch
+    s = Left$(s, Len(s) - 1)
+    n = 1
+    For i = 1 To Len(s)
+        ch = Mid$(s, i, 1)
+        If ch >= "0" And ch <= "9" Then
+            If nouveau Then n = n + 1: nouveau = False
+            If n > 3 Then Exit Function
+            g(n) = g(n) & ch
+        ElseIf InStr("-./_ ", ch) > 0 Then
+            If g(n) <> "" Then nouveau = True
+        Else
+            Exit Function
+        End If
+    Next i
+    If n = 1 Then                            ' saisie compacte : 7 chiffres
+        If Len(g(1)) <> 7 Then Exit Function
+        g(2) = Mid$(g(1), 3, 3)
+        g(3) = Mid$(g(1), 6, 2)
+        g(1) = Left$(g(1), 2)
+    ElseIf n <> 3 Then
+        Exit Function
+    End If
+    If g(1) = "" Or g(2) = "" Or g(3) = "" Then Exit Function
+    If Len(g(1)) > 2 Or Len(g(2)) > 3 Or Len(g(3)) > 2 Then Exit Function
+    NormaliserEmplacement = Right$("0" & g(1), 2) & "-" & Right$("00" & g(2), 3) & "-" & Right$("0" & g(3), 2) & " " & lettre
+End Function
+
+Private Function EmplacementOk(ByVal s As String) As Boolean
+    If s = "" Then Exit Function
+    EmplacementOk = (NormaliserEmplacement(s) = s)
 End Function
 
 Private Function NettoyerScan(ByVal s As String) As String
