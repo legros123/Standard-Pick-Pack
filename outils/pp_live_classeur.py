@@ -233,7 +233,7 @@ def construire(chemin, exemple=False):
     param(11, "Dossier de l'écran (data.js)", "C:\\DASHBOARD\\", "P_DOSSIER_EXPORT",
           "Le dossier où se trouve pp_live.html sur le PC du Flip")
     param(12, "Suivi op (chemin complet)", "À RENSEIGNER", "P_SUIVI_OP",
-          "Suivi_Op_PP_OFFICIEL.xlsx : registre, cadences et historique (lu chaque matin)")
+          "Rempli tout seul la 1re fois : bouton « Charger l'équipe » (tu choisis le fichier). Relu chaque matin.")
     param(13, "Dossier des décelées", "À RENSEIGNER", "P_DOSSIER_DECELEES", "Ex. Z:\\Maitrise\\...\\DECELEES\\")
     param(14, "Nom du fichier des décelées", "{mois}{aaaa}.xlsx", "P_MODELE_DECELEES",
           "Donne novembre2026.xlsx — onglet du jour nommé jjmmaa ou jjmmaaaa")
@@ -288,7 +288,7 @@ def construire(chemin, exemple=False):
     for i, s in enumerate(["HG", "Câble", "Expédition", "Réception", "Convoyeur", "Autre"]):
         p.write_string(59 + i, 0, s, f_in_txt)
     nom("T_SERVICES", "'PARAMÈTRES'!$A$60:$A$65")
-    p.insert_button("D13", {"macro": "RECHARGER_SUIVI_OP", "caption": "Relire le suivi op maintenant",
+    p.insert_button("D13", {"macro": "CHARGER_EQUIPE", "caption": "Charger l'équipe depuis le suivi op",
                             "width": 230, "height": 26, "x_offset": 300})
 
     # ═════════════════════════ REQUÊTES ═════════════════════════
@@ -361,6 +361,10 @@ def construire(chemin, exemple=False):
     nom("CAD_QUOTA", f"CADENCES!$G$2:$G${last}")
     nom("CAD_JOURS", f"CADENCES!$H$2:$H${last}")
     nom("CAD_CADENCE", f"CADENCES!$K$2:$K${last}")
+    ws_cad.write(0, 13, "LISTE DES ACTIFS (A → Z)", f_th)
+    ws_cad.set_column("N:N", 28)
+    nom("L_LISTE", f"CADENCES!$N$2:$N${last}")
+    nom("L_NOMS", f"OFFSET(CADENCES!$N$2,0,0,MAX(1,COUNTA(CADENCES!$N$2:$N${last})),1)")
 
     # ═════════════════════════ HISTO (suivi op) ═════════════════════════
     h = ws_h
@@ -482,7 +486,7 @@ def construire(chemin, exemple=False):
 
     # ═════════════════════════ AUJOURD'HUI ═════════════════════════
     j = ws_j
-    widths = {"A": 9, "B": 11, "C": 28, "D": 13, "E": 9, "F": 10, "G": 13, "H": 10, "I": 12, "J": 12, "K": 2, "L": 34}
+    widths = {"A": 9, "B": 28, "C": 11, "D": 13, "E": 9, "F": 10, "G": 13, "H": 10, "I": 12, "J": 12, "K": 2, "L": 34}
     for col, w in widths.items():
         j.set_column(f"{col}:{col}", w)
     j.set_column("Y:Z", 6, None, {"hidden": True})
@@ -509,7 +513,7 @@ def construire(chemin, exemple=False):
             '&" : la prévision n\'est plus utilisée, seul ce qui est lancé dans LOGYS compte.")')
     j.merge_range("A6:E6", mode, f_mode)
     j.set_row(5, 30)
-    j.merge_range("G5:J5", "Pas encore démarré : bouton « Démarrer l'écran » →", f_etat)
+    j.merge_range("G5:J5", "Pas encore démarré : macro à installer (onglet INSTALLATION), puis « Démarrer l'écran »", f_etat)
     j.merge_range("G6:J6", '="LOGYS lu à "&IF(N(C_MAJ)=0,"—",' + hhmm("C_MAJ") + ')&"   ·   data.js écrit à "&'
                            'IF(N(C_EXPORT)=0,"—",' + hhmm("C_EXPORT") + ')', f_etat2)
     j.set_row(6, 8)
@@ -523,13 +527,16 @@ def construire(chemin, exemple=False):
         j.merge_range(f"{a}9:{b}9", fo, f_kpi_v)
     j.set_row(7, 16)
     j.set_row(8, 34)
-    j.set_row(9, 8)
+    j.merge_range("A10:J10", f'=IF(COUNTA(B{EQ_L1}:B{EQ_L1 + EQ_N - 1})=0,"La liste est vide : clique « Charger l\'équipe '
+                             f'(suivi op) » à droite. La 1re fois, choisis simplement le fichier du suivi op.","")',
+                  F(bold=True, font_color="#B42318", font_size=11))
+    j.set_row(9, 22)
     nom("J_PREVU", f"{J}!$D$5")
     nom("J_ETAT", f"{J}!$G$5")
     nom("J_PRESENTS", f"{J}!$A$9")
     nom("J_CAPA", f"{J}!$C$9")
 
-    heads = ["① Présent", "Matricule", "Nom", "Rôle du jour", "Part à", "Revient à", "Vers",
+    heads = ["① Présent", "Nom", "Matricule", "Rôle du jour", "Part à", "Revient à", "Vers",
              "Contrat", "Cadence (l/h)", "Capacité (l/h)"]
     for i, x in enumerate(heads):
         j.write(10, i, x, f_th)
@@ -539,22 +546,17 @@ def construire(chemin, exemple=False):
                            "Il revient plus tard : décoche, mets l'heure dans « Revient à ».",
                     {"x_scale": 2.2, "y_scale": 1.3})
     a, z = EQ_L1, EQ_L1 + EQ_N - 1
-    ex_team = []
-    if exemple:
-        ex_team = EXEMPLE_EQUIPE
-    else:
-        ex_team = [("149", "Picking", True, None, None), ("739", "Picking", False, None, dt.time(19, 30)),
-                   ("017", "Pilote", True, None, None)]
+    ex_team = [(NOM_EXEMPLE.get(m, f"OPERATEUR {m}"),) + tuple(rest) for m, *rest in EXEMPLE_EQUIPE] if exemple else []
     for i in range(EQ_N):
         r = a + i
         row0 = r - 1
         ex = ex_team[i] if i < len(ex_team) else None
         j.insert_checkbox(row0, 0, bool(ex and ex[2]), f_chk)
         if ex:
-            j.write_string(row0, 1, ex[0], f_in_txt)
+            j.write_string(row0, 1, ex[0], f_in)
             j.write_string(row0, 3, ex[1], f_in)
         else:
-            j.write_blank(row0, 1, None, f_in_txt)
+            j.write_blank(row0, 1, None, f_in)
             j.write_blank(row0, 3, None, f_in)
         for col, idx in ((4, 3), (5, 4)):
             if ex and ex[idx] is not None:
@@ -562,11 +564,10 @@ def construire(chemin, exemple=False):
             else:
                 j.write_blank(row0, col, None, f_in_h)
         j.write_blank(row0, 6, None, f_in)
-        m = f'MATCH($B{r}&"",CAD_MAT,0)'
-        j.write_formula(row0, 2, f'=IF($B{r}="","",IFERROR(INDEX(CAD_NOM,{m})&"","(hors registre)"))', f_calc)
+        m = f'MATCH($B{r},CAD_NOM,0)'
+        j.write_formula(row0, 2, f'=IF($B{r}="","",IFERROR(INDEX(CAD_MAT,{m})&"","hors registre"))', f_calc_c)
         j.write_formula(row0, 7, f'=IF($B{r}="","",IFERROR(IF(LEFT(INDEX(CAD_CONTRAT,{m})&"",3)="Int","Intérim",'
-                                 f'INDEX(CAD_CONTRAT,{m})&""),IF(OR(LEFT($B{r},1)="6",LEFT($B{r},1)="7"),"Intérim","—")))',
-                        f_calc_c)
+                                 f'INDEX(CAD_CONTRAT,{m})&""),"—"))', f_calc_c)
         j.write_formula(row0, 8, f'=IF($B{r}="","",IF(OR($D{r}="Pilote",IFERROR(INDEX(CAD_QUOTA,{m})&"","OUI")="NON"),'
                                  f'ROUND(P_OBJ_LIGNES_OP/P_HEURES_POINTEES,1),IF(OR(N(IFERROR(INDEX(CAD_CADENCE,{m}),0))=0,'
                                  f'N(IFERROR(INDEX(CAD_JOURS,{m}),0))<P_JOURS_MINI),P_CADENCE_DEFAUT,INDEX(CAD_CADENCE,{m}))))',
@@ -576,10 +577,11 @@ def construire(chemin, exemple=False):
                                   f'UPPER($A{r}&"")="X"),1,0))')
         j.write_formula(row0, 25, f'=IF($B{r}="",0,IF($D{r}="",1,IFERROR(INDEX(T_ROLES_COEF,MATCH($D{r},T_ROLES_NOM,0)),0)))')
     j.merge_range(z, 0, z, 9, "Il part plus tard : laisse coché + « Part à ».  Il revient plus tard : décoche + "
-                              "« Revient à ».  Un renfort : tape son matricule sur une ligne vide et coche.",
+                              "« Revient à ».  Un renfort : sur une ligne vide, choisis son nom dans la liste (flèche) et coche.",
                   F(font_size=9, font_color=GREY, italic=True))
     nom("J_CHK", f"{J}!$A${a}:$A${z}")
-    nom("J_MAT", f"{J}!$B${a}:$B${z}")
+    nom("J_NOM", f"{J}!$B${a}:$B${z}")
+    nom("J_MAT", f"{J}!$C${a}:$C${z}")
     nom("J_ROLE", f"{J}!$D${a}:$D${z}")
     nom("J_PART", f"{J}!$E${a}:$E${z}")
     nom("J_REVIENT", f"{J}!$F${a}:$F${z}")
@@ -594,8 +596,12 @@ def construire(chemin, exemple=False):
     j.conditional_format(f"I{a}:I{z}", {"type": "formula",
                                         "criteria": f"=AND($B{a}<>\"\",$I{a}=P_CADENCE_DEFAUT,$D{a}<>\"Pilote\")",
                                         "format": wb.add_format({"font_color": "#B54708", "bold": True})})
-    j.conditional_format(f"C{a}:C{z}", {"type": "formula", "criteria": f"=$C{a}=\"(hors registre)\"",
-                                        "format": wb.add_format({"italic": True, "font_color": "#98A2B3"})})
+    j.conditional_format(f"B{a}:C{z}", {"type": "formula", "criteria": f"=$C{a}=\"hors registre\"",
+                                        "format": wb.add_format({"italic": True, "font_color": "#B54708"})})
+    j.data_validation(f"B{a}:B{z}", {"validate": "list", "source": "=L_NOMS", "error_type": "information",
+                                     "input_title": "Nom", "input_message": "Flèche : choisis dans la liste du suivi op",
+                                     "error_title": "Hors registre",
+                                     "error_message": "Ce nom n'est pas dans le suivi op : il comptera à la cadence de démarrage."})
     j.data_validation(f"D{a}:D{z}", {"validate": "list", "source": "=T_ROLES_NOM",
                                      "input_title": "Rôle du jour", "input_message": "Pilote = 50 % de capacité"})
     j.data_validation(f"G{a}:G{z}", {"validate": "list", "source": "=T_SERVICES"})
@@ -607,11 +613,12 @@ def construire(chemin, exemple=False):
                              "error_message": "Un nombre de lignes, ex. 8500"})
     j.freeze_panes(11, 0)
     btn = [("DEMARRER", "▶  Démarrer l'écran"), ("ARRETER", "■  Arrêter l'écran"),
-           ("ACTUALISER", "⟳  Actualiser maintenant"), ("NOUVELLE_JOURNEE", "☀  Nouvelle journée")]
+           ("ACTUALISER", "⟳  Actualiser maintenant"), ("CHARGER_EQUIPE", "⇩  Charger l'équipe (suivi op)"),
+           ("NOUVELLE_JOURNEE", "☀  Nouvelle journée")]
     for i, (mac, cap) in enumerate(btn):
         j.insert_button("L4", {"macro": mac, "caption": cap, "width": 230, "height": 30,
                                "x_offset": 6, "y_offset": i * 38})
-    j.write("L12", "Les autres onglets se règlent une fois (INSTALLATION). "
+    j.write("L15", "Les autres onglets se règlent une fois (INSTALLATION). "
                    "En cas de doute : onglet CONTRÔLE.", f_note)
 
     # ═════════════════════════ INSTALLATION ═════════════════════════
@@ -624,27 +631,28 @@ def construire(chemin, exemple=False):
         ("1", "Enregistre ce fichier sur le PC qui reste allumé (accès à LOGYS et au dossier de l'écran Flip)."),
         ("2", "Alt + F11 → Fichier → Importer un fichier → PPLive.bas → menu Débogage → Compiler VBAProject → ferme la fenêtre."),
         ("3", "Fichier → Enregistrer sous → type « Classeur Excel (prenant en charge les macros) (*.xlsm) »."),
-        ("4", "Onglet PARAMÈTRES : DSN, dossier de l'écran (là où est pp_live.html), chemin du suivi op ; décelées si tu veux la vigilance."),
+        ("4", "Onglet PARAMÈTRES : DSN et dossier de l'écran (là où est pp_live.html) ; décelées si tu veux la vigilance."),
         ("5", "Onglet REQUÊTES : nom de la table des tournées (bouton « Chercher la table » si tu ne le connais pas) et requête des rejets."),
-        ("6", "Ferme et rouvre le fichier .xlsm, active les macros : l'écran démarre seul. Vérifie l'onglet CONTRÔLE."),
+        ("6", "Onglet AUJOURD'HUI : bouton « Charger l'équipe (suivi op) », choisis le fichier du suivi op : tous les noms arrivent seuls."),
+        ("7", "Ferme et rouvre le fichier .xlsm, active les macros : l'écran démarre seul. Vérifie l'onglet CONTRÔLE."),
     ]
     for k, (n_, txt) in enumerate(etapes):
         i_.write(2 + k, 0, n_, F(bold=True, font_size=14, font_color="#F79009", align="center"))
         i_.write(2 + k, 1, txt, F(font_size=11, text_wrap=True))
         i_.set_row(2 + k, 30)
-    i_.write("B10", "CHAQUE JOUR", F(bold=True, font_size=14, font_color=NAVY))
+    i_.write("B11", "CHAQUE JOUR", F(bold=True, font_size=14, font_color=NAVY))
     jour = ["À l'ouverture le matin, le fichier prépare la journée seul : équipe rechargée depuis le suivi op, tout le monde coché, prévision effacée.",
             "① Onglet AUJOURD'HUI : décoche les absents (un clic sur la case).",
             "② Tape la prévision de lignes du jour dans la grande case jaune. Jusqu'à 18h15 l'écran ajoute ce qui reste à lancer ; après 18h15 seul le réel LOGYS compte.",
-            "Quelqu'un part aider ailleurs : laisse-le coché et mets l'heure dans « Part à » (ou décoche-le s'il part tout de suite). Il revient : « Revient à ».",
+            "Quelqu'un part aider ailleurs : laisse-le coché et mets l'heure dans « Part à » (ou décoche-le s'il part tout de suite). Il revient : « Revient à ». Un renfort : choisis son nom dans la liste déroulante.",
             "Le fichier lit LOGYS et réécrit data.js toutes les minutes. Laisse-le ouvert ; s'il est fermé, l'écran affiche « Données de … · vérifier le PC Excel »."]
     for k, txt in enumerate(jour):
-        i_.write(10 + k, 1, txt, F(font_size=11, text_wrap=True))
-        i_.set_row(10 + k, 30)
-    i_.write("B17", "CE QUE LE FICHIER NE FAIT JAMAIS", F(bold=True, font_size=14, font_color=NAVY))
-    i_.write("B18", "Il n'écrit rien dans LOGYS (requêtes SELECT uniquement), ne modifie pas le suivi op ni le fichier des "
+        i_.write(11 + k, 1, txt, F(font_size=11, text_wrap=True))
+        i_.set_row(11 + k, 30)
+    i_.write("B18", "CE QUE LE FICHIER NE FAIT JAMAIS", F(bold=True, font_size=14, font_color=NAVY))
+    i_.write("B19", "Il n'écrit rien dans LOGYS (requêtes SELECT uniquement), ne modifie pas le suivi op ni le fichier des "
                     "décelées (ouverts en lecture seule), n'envoie aucun mail.", F(font_size=11, text_wrap=True))
-    i_.set_row(17, 30)
+    i_.set_row(18, 30)
 
     # ═════════════════════════ EXPORT (data.js) ═════════════════════════
     x = ws_x
@@ -682,8 +690,9 @@ def construire(chemin, exemple=False):
     for i in range(EQ_N):
         r = EQ_L1 + i
         c_ = lambda col: f"{J}!${col}${r}"
+        mat = f'IF(OR({c_("C")}="",{c_("C")}="hors registre"),{c_("B")},{c_("C")})&""'
         fo_(f'IF({c_("B")}="","",' + cat(
-            L("{mat:"), jsq(propre(c_("B") + '&""')), L(", role:"), jsq(propre(c_("D") + '&""')),
+            L("{mat:"), jsq(propre(mat)), L(", role:"), jsq(propre(c_("D") + '&""')),
             L(", present:"), f'IF({c_("Y")}=1,"true","false")',
             L(", sorti:"), f'IF(ISNUMBER({c_("E")}),{jsq(hhmm(c_("E")))},"null")',
             L(", revenu:"), f'IF(ISNUMBER({c_("F")}),{jsq(hhmm(c_("F")))},"null")',
@@ -744,6 +753,7 @@ def construire(chemin, exemple=False):
 
 
 # ───────────────────────── données fictives (contrôle uniquement) ─────────────────────────
+NOM_EXEMPLE = {"017": "PILOTE A", "018": "PILOTE B", "142": "REJET C", "905": "RENFORT HG"}
 EXEMPLE_EQUIPE = ([("017", "Pilote", True, None, None), ("018", "Pilote", True, None, None),
                    ("142", "Rejet", True, None, None), ("015", "Carton", True, None, None)] +
                   [(m, "Picking", k < 16, None, (dt.time(19, 30) if m == "748" else None))
@@ -786,6 +796,8 @@ def remplir_exemple(wb, ws_t, ws_cad, ws_h, ws_jr, ws_d, ws_c, F):
     # registre / cadences
     cad = [("017", "PILOTE A", "PILOTE"), ("018", "PILOTE B", "PILOTE"), ("142", "REJET C", "")]
     cad += [(m, f"OPERATEUR {m}", "") for m, *_ in EXEMPLE_EQUIPE[3:-1]]
+    for i, nm in enumerate(sorted(x[1] for x in cad)):
+        ws_cad.write_string(i + 1, 13, nm)
     for i, (m, np_, role) in enumerate(cad):
         jours = 3 if m == "789" else 40
         cadence = round(rnd.uniform(60, 105), 1)

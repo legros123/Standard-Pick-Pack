@@ -26,8 +26,8 @@ Private mProchain As Date                      ' prochaine actualisation planifi
 '============================================================ boutons et démarrage
 
 Public Sub Auto_Open()
-    ' Ouverture du classeur : prépare la journée si besoin, puis démarre l'écran.
-    If JourEnregistre() <> CLng(Date) Then NouvelleJournee
+    ' Ouverture du classeur : prépare la journée (nouveau jour ou liste d'équipe vide), puis démarre l'écran.
+    If JourEnregistre() <> CLng(Date) Or EquipeVide() Then NouvelleJournee
     DEMARRER
 End Sub
 
@@ -56,12 +56,37 @@ Public Sub NOUVELLE_JOURNEE()
     ACTUALISER
 End Sub
 
-Public Sub RECHARGER_SUIVI_OP()
+Public Sub CHARGER_EQUIPE()
+    ' Bouton : relit le suivi op et remplit la liste de l'équipe avec tous les opérateurs actifs (A > Z).
+    ' La première fois, le fichier du suivi op est simplement choisi dans une fenêtre : rien à taper.
+    Dim f As Variant
+    If Not Renseigne(Txt("P_SUIVI_OP")) Or Not FichierExiste(Txt("P_SUIVI_OP")) Then
+        f = Application.GetOpenFilename("Classeurs Excel (*.xls;*.xlsx;*.xlsm;*.xlsb),*.xls;*.xlsx;*.xlsm;*.xlsb", , _
+                                        "Choisis le fichier du suivi op (Suivi_Op_PP_OFFICIEL)")
+        If VarType(f) = vbBoolean Then Exit Sub  ' bouton Annuler
+        R("P_SUIVI_OP").Value = CStr(f)
+    End If
+    If Not EquipeVide() Then
+        If MsgBox("Remplacer la liste actuelle par les opérateurs actifs du suivi op ?" & vbLf & vbLf & _
+                  "Tout le monde sera coché, les heures de départ / retour seront effacées.", _
+                  vbQuestion + vbYesNo, "PP LIVE") <> vbYes Then Exit Sub
+    End If
+    Application.Cursor = xlWait
     If ChargerSuiviOp() Then
-        MsgBox "Suivi op relu : registre, cadences et historique à jour.", vbInformation, "PP LIVE"
+        RemplirEquipe
+        Application.Cursor = xlDefault
+        MsgBox NbNoms() & " opérateurs chargés depuis le suivi op." & vbLf & _
+               "Décoche les absents, c'est tout.", vbInformation, "PP LIVE"
+        ACTUALISER
     Else
+        Application.Cursor = xlDefault
         MsgBox SafeStr(R("C_MSG").Value2), vbExclamation, "PP LIVE"
     End If
+End Sub
+
+Public Sub RECHARGER_SUIVI_OP()
+    ' Ancien nom du bouton : même chose que « Charger l'équipe ».
+    CHARGER_EQUIPE
 End Sub
 
 Public Sub PPLive_Cycle()
@@ -344,7 +369,7 @@ Private Sub LireDecelees()
     If Right$(dossier, 1) <> "\" Then dossier = dossier & "\"
     chemin = dossier & Replace(Replace(Txt("P_MODELE_DECELEES"), "{mois}", MoisFr(Month(Date)), , , vbTextCompare), _
                                "{aaaa}", CStr(Year(Date)), , , vbTextCompare)
-    If Len(Dir$(chemin)) = 0 Then
+    If Not FichierExiste(chemin) Then
         Journaliser "Décelées : fichier introuvable " & chemin
         Exit Sub
     End If
@@ -411,11 +436,11 @@ Private Function ChargerSuiviOp() As Boolean
     On Error GoTo Erreur
     chemin = Txt("P_SUIVI_OP")
     If Not Renseigne(chemin) Then
-        Etat "Suivi op non renseigné (PARAMÈTRES) : cadence de démarrage pour tous", True
+        Etat "Équipe : bouton « Charger l'équipe (suivi op) » puis choisis le fichier du suivi op", True
         Exit Function
     End If
-    If Len(Dir$(chemin)) = 0 Then
-        Etat "Suivi op introuvable : " & chemin, True
+    If Not FichierExiste(chemin) Then
+        Etat "Suivi op introuvable : " & chemin & " (bouton « Charger l'équipe » pour le rechoisir)", True
         Exit Function
     End If
     Set wb = OuvrirLecture(chemin)
@@ -449,6 +474,7 @@ Private Sub EcrireCadences(ByVal ops As Variant, ByVal prod As Variant)
     Dim idx As Object, nOps As Long, i As Long, k As Long, n As Long, fen As Long
     Dim jours() As Long, nbF() As Long, ligF() As Double, hF() As Double, dernier() As Double
     Dim hp As Double, np As String, zone As Range, sortie() As Variant
+    Dim actifs() As String, na As Long, col() As Variant
 
     fen = CLng(NumP("P_FENETRE_CADENCE"))
     If fen < 1 Then fen = 30
@@ -504,12 +530,34 @@ Private Sub EcrireCadences(ByVal ops As Variant, ByVal prod As Variant)
     Next i
     Set zone = R("CAD_TABLE")
     zone.ClearContents
-    If n = 0 Then Exit Sub
+    If n = 0 Then
+        R("L_LISTE").ClearContents
+        Exit Sub
+    End If
     If n > zone.Rows.Count Then
         Journaliser "Registre : " & n & " opérateurs, seuls les " & zone.Rows.Count & " premiers sont gardés"
         n = zone.Rows.Count
     End If
     zone.Resize(n, 12).Value = sortie
+
+    ' liste des actifs de A à Z : liste déroulante des noms et remplissage de l'équipe
+    ReDim actifs(1 To n)
+    For i = 1 To n
+        If sortie(i, 6) = "OUI" Then
+            na = na + 1
+            actifs(na) = CStr(sortie(i, 2))
+        End If
+    Next i
+    Set zone = R("L_LISTE")
+    zone.ClearContents
+    If na = 0 Then Exit Sub
+    ReDim Preserve actifs(1 To na)
+    TriTexte actifs
+    ReDim col(1 To na, 1 To 1)
+    For i = 1 To na
+        col(i, 1) = actifs(i)
+    Next i
+    zone.Resize(na, 1).Value = col
 End Sub
 
 Private Sub EcrireHisto(ByVal prod As Variant, ByVal errs As Variant)
@@ -649,32 +697,46 @@ Erreur:
 End Sub
 
 Private Sub RemplirEquipe()
-    ' Liste du jour = opérateurs ACTIFS du registre (onglet CADENCES), rôle Pilote si le registre le dit.
-    ' Sans registre lu, la liste actuelle est gardée. Dans tous les cas : tout le monde coché.
-    Dim cad As Variant, eqMat As Range, v As Variant, nbMax As Long, n As Long, i As Long, nbActifs As Long
-    Dim mats() As Variant, roles() As Variant, coches() As Variant, role As String
+    ' Liste du jour = opérateurs ACTIFS du suivi op, de A à Z (colonne liste de l'onglet CADENCES).
+    ' Rôle du jour proposé d'après le registre (Pilote, Carton, Rejet, sinon Picking).
+    ' Sans suivi op lu, la liste actuelle est gardée. Dans tous les cas : tout le monde coché.
+    Dim liste As Variant, cad As Variant, v As Variant, eqNom As Range, roleDe As Object
+    Dim nbMax As Long, n As Long, i As Long, nbActifs As Long, nm As String
+    Dim noms() As Variant, roles() As Variant, coches() As Variant
 
-    Set eqMat = R("J_MAT")
-    nbMax = eqMat.Rows.Count
-    ReDim mats(1 To nbMax, 1 To 1): ReDim roles(1 To nbMax, 1 To 1): ReDim coches(1 To nbMax, 1 To 1)
+    Set eqNom = R("J_NOM")
+    nbMax = eqNom.Rows.Count
+    ReDim noms(1 To nbMax, 1 To 1): ReDim roles(1 To nbMax, 1 To 1): ReDim coches(1 To nbMax, 1 To 1)
+
+    Set roleDe = CreateObject("Scripting.Dictionary")
+    roleDe.CompareMode = vbTextCompare
     cad = R("CAD_TABLE").Value2
     For i = 1 To UBound(cad, 1)
-        If Len(SafeStr(cad(i, 1))) > 0 And SafeStr(cad(i, 6)) = "OUI" Then
+        nm = SafeStr(cad(i, 2))
+        If Len(nm) > 0 And Not roleDe.Exists(nm) Then
+            roleDe.Add nm, RoleParDefaut(SafeStr(cad(i, 3)) & " " & SafeStr(cad(i, 4)))
+        End If
+    Next i
+
+    liste = R("L_LISTE").Value2
+    For i = 1 To UBound(liste, 1)
+        nm = SafeStr(liste(i, 1))
+        If Len(nm) > 0 Then
             nbActifs = nbActifs + 1
             If n < nbMax Then
                 n = n + 1
-                mats(n, 1) = "'" & SafeStr(cad(i, 1))
-                role = UCase$(SafeStr(cad(i, 3)) & " " & SafeStr(cad(i, 4)))
-                If InStr(1, role, "PILOT", vbTextCompare) > 0 Then roles(n, 1) = "Pilote" Else roles(n, 1) = "Picking"
+                noms(n, 1) = nm
+                If roleDe.Exists(nm) Then roles(n, 1) = roleDe(nm) Else roles(n, 1) = "Picking"
             End If
         End If
     Next i
     If n > 0 Then
-        eqMat.Value = mats
+        eqNom.Value = noms
         R("J_ROLE").Value = roles
-        If nbActifs > nbMax Then Journaliser "Registre : " & nbActifs & " actifs, seuls " & nbMax & " tiennent dans la liste"
+        If nbActifs > nbMax Then Journaliser "Suivi op : " & nbActifs & " actifs, seuls " & nbMax & " tiennent dans la liste"
     End If
-    v = eqMat.Value2
+
+    v = eqNom.Value2
     For i = 1 To nbMax
         coches(i, 1) = (Len(SafeStr(v(i, 1))) > 0)
     Next i
@@ -683,6 +745,28 @@ Private Sub RemplirEquipe()
     R("J_REVIENT").ClearContents
     R("J_VERS").ClearContents
 End Sub
+
+Private Function RoleParDefaut(ByVal s As String) As String
+    ' Rôle du jour proposé à partir du rôle et du poste du registre (modifiable ensuite dans la liste).
+    s = UCase$(s)
+    If InStr(1, s, "PILOT", vbBinaryCompare) > 0 Then
+        RoleParDefaut = "Pilote"
+    ElseIf InStr(1, s, "CARTON", vbBinaryCompare) > 0 Then
+        RoleParDefaut = "Carton"
+    ElseIf InStr(1, s, "REJET", vbBinaryCompare) > 0 Then
+        RoleParDefaut = "Rejet"
+    Else
+        RoleParDefaut = "Picking"
+    End If
+End Function
+
+Private Function EquipeVide() As Boolean
+    EquipeVide = (NbNoms() = 0)
+End Function
+
+Private Function NbNoms() As Long
+    NbNoms = CLng(Application.WorksheetFunction.CountA(R("J_NOM")))
+End Function
 
 Private Sub MajJournal()
     ' Une ligne par jour (onglet JOURNAL) : sert à l'historique des rejets affiché par l'écran.
@@ -726,7 +810,7 @@ Private Function EcrireDataJs(ByRef msg As String) As Boolean
         Exit Function
     End If
     If Right$(dossier, 1) <> "\" Then dossier = dossier & "\"
-    If Len(Dir$(dossier, vbDirectory)) = 0 Then
+    If Not DossierExiste(dossier) Then
         msg = "Dossier de l'écran introuvable : " & dossier
         Exit Function
     End If
@@ -900,6 +984,21 @@ Erreur:
     Err.Raise Err.Number, "OuvrirLecture", Err.Description
 End Function
 
+Private Function FichierExiste(ByVal chemin As String) As Boolean
+    ' Dir$ peut lever une erreur sur un lecteur réseau absent : on répond simplement « non ».
+    If Len(chemin) = 0 Then Exit Function
+    On Error Resume Next
+    FichierExiste = (Len(Dir$(chemin, vbNormal + vbReadOnly + vbHidden)) > 0)
+    On Error GoTo 0
+End Function
+
+Private Function DossierExiste(ByVal chemin As String) As Boolean
+    If Len(chemin) = 0 Then Exit Function
+    On Error Resume Next
+    DossierExiste = (Len(Dir$(chemin, vbDirectory)) > 0)
+    On Error GoTo 0
+End Function
+
 Private Function Tableau1(ByVal x As Variant) As Variant
     ' Une plage d'une seule cellule renvoie une valeur, pas un tableau : on la met dans un tableau 1 x 1.
     Dim a(1 To 1, 1 To 1) As Variant
@@ -931,6 +1030,21 @@ Private Sub TriDecroissant(ByRef a() As Variant, ByVal col As Long)
             Next k
             j = j - 1
         Loop
+    Next i
+End Sub
+
+Private Sub TriTexte(ByRef a() As String)
+    ' Tri alphabétique (sans tenir compte des majuscules) par insertion.
+    Dim i As Long, j As Long, t As String
+    For i = LBound(a) + 1 To UBound(a)
+        t = a(i)
+        j = i - 1
+        Do While j >= LBound(a)
+            If StrComp(a(j), t, vbTextCompare) <= 0 Then Exit Do
+            a(j + 1) = a(j)
+            j = j - 1
+        Loop
+        a(j + 1) = t
     Next i
 End Sub
 
