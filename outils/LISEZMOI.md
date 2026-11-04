@@ -39,3 +39,19 @@ Réglages (seuils, poids, URL du site) en tête de `bilan_mensuel.py`.
 **Aucun classement n'est affiché** (ni sur les pages, ni sur les cartes, ni dans la synthèse) : chacun se compare à la moyenne de l'équipe via sa carte joueur et son hexagone. OVR = 45 + 2,5 × note /20 (10/20 = 70) · bronze < 65 · argent 65-77 · or 78-84 · icône ≥ 85.
 
 **Pages perso** : `NNN_nom.html` (une par opérateur, données intégrées) — le QR du recto pointe vers `https://legros123.github.io/Suivi-P-P-/<Mois>/NNN_nom.html`. Fonctionne sur tous les téléphones et lecteurs QR. Pour un nouveau mois : copier le dossier `bilan/<Mois>/` produit par le script à la racine de Suivi-P-P-. Seuil carte : 15 h de picking réel (heures − hors pick).
+
+---
+
+# PP LIVE — classeur qui alimente l'écran Flip
+
+```bash
+python3 outils/pp_live_classeur.py PP_LIVE.xlsx          # classeur vierge
+python3 outils/pp_live_classeur.py test.xlsx --exemple   # avec données fictives, pour contrôle
+```
+
+Puis dans Excel : Alt+F11 → Importer `live/PPLive.bas` → Compiler → Enregistrer sous `.xlsm` (onglet INSTALLATION du classeur).
+
+- **Chaque jour, onglet AUJOURD'HUI** : décocher les absents (vraies cases à cocher Excel 365), taper la prévision de lignes du jour. Jusqu'à 18h15 l'écran ajoute ce qui reste à lancer ; ensuite seul le réel LOGYS compte (`P_FIN_PREVISION`).
+- **data.js est écrit par des formules** (onglet caché EXPORT, une ligne de JavaScript par cellule ; décimaux en `740/100`, dates par ANNEE/MOIS/JOUR : aucun piège de paramètres régionaux). La macro lit LOGYS, le suivi op et les décelées, puis recopie EXPORT dans data.js chaque minute.
+- **LOGYS en lecture seule** : requêtes SELECT de l'onglet REQUÊTES. Le nom de la table des tournées est à compléter une fois (`<<TABLE_TOURNEES>>`) ; le bouton « Chercher la table » interroge `ALL_TAB_COLUMNS`.
+- Suivi op lu chaque matin (OPERATEURS dès la ligne 7, PROD dès la ligne 5, ERREURS dès la ligne 4) : registre, cadences 30 jours, historique 30 jours, décelées du mois.

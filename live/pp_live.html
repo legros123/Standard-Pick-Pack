@@ -18,9 +18,9 @@
   window.PP_DATA = {
     genere:  "2026-10-22T17:31:05",                       // heure d'export Excel
     jour:    { date:"2026-10-22", debut:"13:06", fin:"21:00", pauses:[["15:00","15:15"],["17:45","18:15"]] },
-    params:  { heures_pointees:7.4, cadence_defaut:50, fin_prevision:"18:20" },   // fin_prevision facultatif (18:20 par défaut)
+    params:  { heures_pointees:7.4, cadence_defaut:50, fin_prevision:"18:15" },   // fin_prevision facultatif (18:15 par défaut)
              //  Reste à lancer = prévision du jour − lignes déjà lancées dans LOGYS (faites + en cours + lancées).
-             //  À partir de fin_prevision, la prévision est annulée : seul le lancé réel compte.
+             //  À partir de fin_prevision (18h15), la prévision est annulée : seul le lancé réel compte.
     seuils:  { avance_stable:10, retard_critique:0, rej_orange:120, rej_rouge:140, dec_orange:15, dec_rouge:20,
                vig_orange:3, vig_rouge:5, obj_lignes_op:620, obj_ppm_averee:220 },
     saisie:  { prevu:8500 },          // prévision du jour. À défaut : somme de v1 + a2 + a3 (ancien format, heures ignorées)
@@ -648,12 +648,12 @@ var PP = (function () {
 
     // ---------- prévision du jour ----------
     // Reste à lancer = prévision − lignes déjà lancées dans LOGYS (faites + en cours + lancées).
-    // Ce reste compte dans la charge jusqu'à fin_prevision (18h20) ; ensuite seul le réel compte.
+    // Ce reste compte dans la charge jusqu'à fin_prevision (18h15) ; ensuite seul le réel compte.
     var sa = D.saisie || {};
     var totalPrevu = sa.prevu != null && sa.prevu !== ''
       ? (+sa.prevu || 0)
       : (+sa.v1 || 0) + (+sa.a2 || 0) + (+sa.a3 || 0);
-    var finPrevision = T(P.fin_prevision || '18:20');
+    var finPrevision = T(P.fin_prevision || '18:15');
     var reelSeul = now >= finPrevision;
     var visible = faites + aPrendre + enCoursBrut;
     var resteALancer = reelSeul ? 0 : Math.max(0, totalPrevu - visible);
