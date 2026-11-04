@@ -155,32 +155,23 @@ body.est-perime .carte{filter:saturate(.25) brightness(.7)}
 .c-renfort.r-ok .lib{color:var(--acier)}
 .c-renfort.r-ok svg{color:var(--vert)}
 
-.c-kpis{display:grid;grid-template-columns:1.25fr 1fr auto;gap:.8rem;align-items:stretch}
-.kpi{background:var(--surf);border:1px solid var(--edge);border-radius:.6rem;padding:.42rem .8rem}
-.kpi .k{font:600 .7rem var(--fm);color:var(--acier);letter-spacing:.14em;text-transform:uppercase}
-.kpi .v{font:700 1.55rem/1.1 var(--fm);margin-top:.1rem}
-.kpi .v small{font-size:.85rem;color:var(--acier);font-weight:500;margin-left:.25rem}
-.anneau{display:grid;place-items:center;width:3.9rem;position:relative}
-.anneau svg{width:3.9rem;height:3.9rem;transform:rotate(-90deg)}
-.anneau b{position:absolute;display:grid;justify-items:center;font:700 1.05rem/1 var(--fm)}
-.anneau b small{font:600 .5rem var(--fm);letter-spacing:.16em;color:var(--acier);margin-top:.2rem}
-
-.compo{display:grid;gap:.4rem}
-.compo .barre-c{display:flex;height:.8rem;border-radius:.4rem;overflow:hidden;background:var(--plate-2);gap:2px}
-.compo .barre-c i{display:block;height:100%}
-.compo .seg-ec{background:var(--craie)} .compo .seg-la{background:var(--acier-2)}
-.compo .seg-av{background:repeating-linear-gradient(-45deg,var(--acier-3) 0 .3rem,#2F343C .3rem .6rem)}
-.compo .leg{display:flex;gap:1.1rem;font:500 .78rem var(--fm);color:var(--acier);flex-wrap:wrap}
-.compo .leg span{display:inline-flex;align-items:center;gap:.35rem}
-.compo .leg i{width:.7rem;height:.7rem;border-radius:.15rem;display:inline-block}
-.compo .leg b{color:var(--craie);font-weight:700}
-
-.c-courbe{position:relative;flex:1 1 6rem;min-height:5.2rem;display:flex;flex-direction:column}
-.c-courbe .k{font:600 .7rem var(--fm);color:var(--acier);letter-spacing:.14em;text-transform:uppercase;margin-bottom:.3rem;display:flex;justify-content:space-between}
-.c-courbe .hote{flex:1;min-height:0;position:relative}
-.c-courbe svg{position:absolute;inset:0;display:block;overflow:visible}
-.c-courbe .bulle{position:absolute;pointer-events:none;transform:translate(-50%,-120%);background:var(--craie);color:#111;
-  font:700 .78rem var(--fm);padding:.25rem .45rem;border-radius:.3rem;white-space:nowrap;opacity:0;transition:opacity .15s}
+.c-chiffres{flex:none;height:13.5rem;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.7rem}
+.ch{--ch:var(--acier-2);position:relative;display:grid;align-content:center;justify-items:center;gap:.4rem;
+  background:var(--surf);border:1px solid var(--edge);border-radius:.75rem;padding:.8rem .4rem .7rem;overflow:hidden}
+.ch::before{content:'';position:absolute;inset:0 0 auto;height:.3rem;background:var(--ch)}
+.ch .k{font:700 .95rem var(--fm);letter-spacing:.2em;text-transform:uppercase;color:var(--acier)}
+.ch .v{font:700 3.9rem/1 var(--fm);letter-spacing:-.03em;color:var(--craie);white-space:nowrap}
+.ch .v.long{font-size:3.2rem}
+.ch .v .mi{display:inline-block;width:.22em}
+.ch .u{font:500 .8rem var(--fm);color:var(--acier);white-space:nowrap}
+.ch .u b{color:var(--craie);font-weight:700}
+.ch-ec{--ch:var(--craie)}
+.ch-re{--ch:var(--jaune);border-color:rgba(255,212,0,.4);background:linear-gradient(180deg,rgba(255,212,0,.09),var(--surf) 65%)}
+.ch-re .k{color:var(--jaune)}
+.c-avance{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:.8rem;font:500 .85rem var(--fm);color:var(--acier)}
+.c-avance b{color:var(--craie);font-weight:700}
+.c-avance .jauge-av{height:.6rem;border-radius:.3rem;background:var(--plate-3);overflow:hidden}
+.c-avance .jauge-av i{display:block;height:100%;border-radius:.3rem;background:repeating-linear-gradient(-45deg,var(--jaune) 0 .5rem,#E6BF00 .5rem 1rem)}
 
 .c-zones,.c-zones-tete{flex:none}
 .c-zones{list-style:none;display:grid;gap:.3rem;min-height:0}
@@ -373,97 +364,26 @@ function blocProd(s) {
     <div class="obj"><span>obj. ${N(obj)}</span><em>${Math.round(r * 100)} %</em></div></div>`;
 }
 
-function anneau(p) {
-  const r = 26, c = 2 * Math.PI * r, v = Math.max(0, Math.min(1, p || 0));
-  return `<div class="anneau"><svg viewBox="0 0 64 64"><circle cx="32" cy="32" r="${r}" fill="none" stroke="#2A2F37" stroke-width="7"/>
-    <circle cx="32" cy="32" r="${r}" fill="none" stroke="var(--jaune)" stroke-width="7" stroke-linecap="round"
-    stroke-dasharray="${(c * v).toFixed(1)} ${c.toFixed(1)}"/></svg><b>${p == null ? '—' : Math.round(v * 100) + '%'}<small>FAIT</small></b></div>`;
+function chiffre(cls, lib, v, sous) {
+  // séparateur de milliers affiné : une police à chasse fixe lui donne sinon la largeur d'un chiffre
+  const t = N(v), chiffres = t.replace(/\D/g, '').length;
+  const html = t.replace(/[\u202f\u00a0 ]/g, '<span class="mi"></span>');
+  return `<div class="ch ${cls}"><div class="k">${lib}</div><div class="v${chiffres > 4 ? ' long' : ''}">${html}</div><div class="u">${sous}</div></div>`;
 }
 
-function composition(s) {
-  const t = (s.en_cours || 0) + (s.lancees || 0) + (s.a_venir || 0);
-  const pc = v => t ? (100 * v / t).toFixed(2) + '%' : '0';
-  return `<div class="compo"><div class="barre-c" role="img" aria-label="Composition du reste à faire">
-      <i class="seg-ec" style="width:${pc(s.en_cours || 0)}"></i><i class="seg-la" style="width:${pc(s.lancees || 0)}"></i><i class="seg-av" style="width:${pc(s.a_venir || 0)}"></i></div>
-    <div class="leg"><span><i class="seg-ec"></i>En cours <b>${N(s.en_cours)}</b></span><span><i class="seg-la"></i>Lancées <b>${N(s.lancees)}</b></span><span><i class="seg-av"></i>À venir (prévi) <b>${N(s.a_venir)}</b></span></div></div>`;
-}
-
-function courbeHote(idx, s) {
-  return `<div class="c-courbe"><div class="k"><span>Reste à faire · aujourd'hui</span><span>pointillé = projection</span></div>
-    <div class="hote" data-courbe="${idx}"></div><div class="bulle"></div></div>`;
-}
-
-function dessinerCourbe(hote, data, idx, s) {
-  const fs = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
-  const W = Math.max(200, hote.clientWidth), H = Math.max(70, hote.clientHeight);
-  const pg = .4 * fs, pd = .4 * fs, ph = 1.15 * fs, pb = 1.35 * fs;
-  const now = minutesDe(data.maj);
-  let pts = (data.histo || []).map(p => ({ t: p.t, r: p.r ? p.r[idx] : null })).filter(p => p.r != null && p.t <= now + 1);
-  if (!pts.length || pts[pts.length - 1].t < now - 1) pts.push({ t: now, r: s.reste });
-  else pts[pts.length - 1] = { t: pts[pts.length - 1].t, r: s.reste };
-  pts.sort((a, b) => a.t - b.t);
-  const visee = s.cible_min, fin = s.fin_min;
-  const t0 = Math.min(pts[0].t, now - 90);
-  let t1 = Math.max(visee ?? now + 120, now + 60);
-  if (fin != null) t1 = Math.max(t1, Math.min(fin, t1 + 180));
-  t1 += 20;
-  const rmax = Math.max(1, s.reste, ...pts.map(p => p.r)) * 1.15;
-  const X = t => pg + (t - t0) / (t1 - t0) * (W - pg - pd);
-  const Y = r => ph + (1 - r / rmax) * (H - ph - pb);
-  const f1 = v => v.toFixed(1);
-  const ligne = pts.map((p, i) => `${i ? 'L' : 'M'}${f1(X(p.t))},${f1(Y(p.r))}`).join('');
-  const aire = `${ligne}L${f1(X(pts[pts.length - 1].t))},${f1(Y(0))}L${f1(X(pts[0].t))},${f1(Y(0))}Z`;
-  const ancre = x => x > W - 4 * fs ? 'end' : (x < 4 * fs ? 'start' : 'middle');
-  let proj = '', projLib = '';
-  if (s.reste > 0 && fin != null && fin > now) {
-    const tf = Math.min(fin, t1), rf = s.reste * (1 - (tf - now) / (fin - now)), h = hm(fin);
-    proj = `<path d="M${f1(X(now))},${f1(Y(s.reste))}L${f1(X(tf))},${f1(Y(rf))}" stroke="var(--st)" stroke-width="2.5" stroke-dasharray="7 6" fill="none"/>`;
-    projLib = fin <= t1
-      ? `<circle cx="${f1(X(fin))}" cy="${f1(Y(0))}" r="4.5" fill="var(--st)"/><text x="${f1(X(fin))}" y="${f1(Y(0) - .55 * fs)}" text-anchor="${ancre(X(fin))}" class="t-st">fin ${h.txt}</text>`
-      : `<text x="${f1(W - 2)}" y="${f1(Y(rf) - .5 * fs)}" text-anchor="end" class="t-st">fin ${h.txt}${h.j > 0 ? ' J+' + h.j : ''} →</text>`;
-  }
-  let viseeSvg = '';
-  if (visee != null && visee >= t0 && visee <= t1) {
-    const xv = f1(X(visee));
-    viseeSvg = `<line x1="${xv}" x2="${xv}" y1="${f1(ph - .3 * fs)}" y2="${f1(Y(0))}" stroke="var(--jaune)" stroke-width="1.5" stroke-dasharray="3 4"/>
-      <text x="${xv}" y="${f1(ph - .5 * fs)}" text-anchor="${ancre(X(visee))}" class="t-j">visée ${hm(visee).txt}</text>`;
-  }
-  const grad = [];
-  for (let t = Math.ceil(t0 / 120) * 120; t <= t1; t += 120)
-    grad.push(`<text x="${f1(X(t))}" y="${f1(H - .25 * fs)}" text-anchor="middle" class="t-ax">${hm(t).txt.slice(0, 2)}h</text>
-      <line x1="${f1(X(t))}" x2="${f1(X(t))}" y1="${f1(Y(0))}" y2="${f1(Y(0) + 4)}" stroke="#3E444D"/>`);
-  const der = pts[pts.length - 1];
-  hote.innerHTML = `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="Reste à faire depuis le début de journée : ${N(der.r)} lignes maintenant">
-      <style>.t-ax{font:600 .68rem var(--fm);fill:#69717D}.t-j{font:700 .7rem var(--fm);fill:var(--jaune)}.t-st{font:700 .78rem var(--fm);fill:var(--st)}.t-v{font:700 .8rem var(--fm);fill:var(--craie)}</style>
-      <line x1="${f1(pg)}" x2="${f1(W - pd)}" y1="${f1(Y(0))}" y2="${f1(Y(0))}" stroke="#3E444D"/>
-      ${grad.join('')}
-      <path d="${aire}" fill="rgba(244,245,246,.07)"/>
-      <path d="${ligne}" stroke="var(--craie)" stroke-width="2.2" fill="none" stroke-linejoin="round"/>
-      ${proj}${viseeSvg}${projLib}
-      <circle cx="${f1(X(der.t))}" cy="${f1(Y(der.r))}" r="5" fill="var(--craie)" stroke="#16191D" stroke-width="2.5"/>
-      <text x="${f1(X(der.t))}" y="${f1(Y(der.r) - .65 * fs)}" text-anchor="${ancre(X(der.t))}" class="t-v">${N(der.r)}</text>
-      <circle class="survol" r="4.5" fill="var(--jaune)" opacity="0"/>
-      <rect class="zone-survol" x="0" y="0" width="${W}" height="${H}" fill="transparent"/>
-    </svg>`;
-  // survol : point le plus proche, bulle avec heure et reste
-  const svg = hote.firstElementChild, point = svg.querySelector('.survol'), zone = svg.querySelector('.zone-survol');
-  const bulle = hote.parentElement.querySelector('.bulle');
-  zone.addEventListener('mousemove', e => {
-    const b = svg.getBoundingClientRect(), x = (e.clientX - b.left) * W / b.width;
-    const t = t0 + (x - pg) / (W - pg - pd) * (t1 - t0);
-    let best = pts[0];
-    for (const p of pts) if (Math.abs(p.t - t) < Math.abs(best.t - t)) best = p;
-    point.setAttribute('cx', X(best.t)); point.setAttribute('cy', Y(best.r)); point.setAttribute('opacity', 1);
-    bulle.textContent = `${hm(best.t).txt} · ${N(best.r)} lignes`;
-    bulle.style.left = X(best.t) + 'px';
-    bulle.style.top = (hote.offsetTop + Y(best.r)) + 'px';
-    bulle.style.opacity = 1;
-  });
-  zone.addEventListener('mouseleave', () => { point.setAttribute('opacity', 0); bulle.style.opacity = 0; });
+function chiffres(s) {
+  const pct = s.avancement == null ? null : Math.round(Math.max(0, Math.min(1, s.avancement)) * 100);
+  return `<div class="c-chiffres">
+      ${chiffre('ch-ec', 'En cours', s.en_cours, s.ops_logys ? `<b>${N(s.ops_logys)}</b> préparateur${s.ops_logys > 1 ? 's' : ''}` : 'lignes')}
+      ${chiffre('ch-la', 'Lancées', s.lancees, 'lignes')}
+      ${chiffre('ch-re', 'Restantes', s.reste, `dont <b>${N(s.a_venir)}</b> à venir`)}
+    </div>
+    <div class="c-avance"><span>Préparées <b>${N(s.preparees)}</b></span>
+      <div class="jauge-av" role="img" aria-label="${pct ?? 0} % de la journée préparé"><i style="width:${pct ?? 0}%"></i></div>
+      <b>${pct == null ? '—' : pct + ' %'}</b></div>`;
 }
 
 function zones(s) {
-  if (s.id === 'PICK') return '';
   let zs = (s.zones || []).filter(z => z.code);
   if (!zs.length) return '';
   const deuxCol = s.id === 'CABLE' && zs.length > 4;
@@ -512,13 +432,7 @@ function carte(data, s, idx) {
       ${blocProd(s)}
     </div>
     ${blocRenfort(s, st)}
-    <div class="c-kpis">
-      <div class="kpi"><div class="k">Reste à faire</div><div class="v">${N(s.reste)}<small>lignes</small></div></div>
-      <div class="kpi"><div class="k">Préparées aujourd'hui</div><div class="v">${N(s.preparees)}<small>lignes</small></div></div>
-      ${anneau(s.avancement)}
-    </div>
-    ${composition(s)}
-    ${courbeHote(idx, s)}
+    ${chiffres(s)}
     ${zones(s)}
   </section>`;
 }
@@ -537,12 +451,6 @@ function poserFlap(el, id, texte) {
 
 /* ── Affichage complet ────────────────────────────────────────────── */
 let derniereDonnee = null, enDemo = false;
-const observateur = new ResizeObserver(entrees => {
-  for (const e of entrees) {
-    const h = e.target, t = h.clientWidth + 'x' + h.clientHeight;
-    if (t !== h._taille && h._dessin) { h._taille = t; h._dessin(); }
-  }
-});
 function afficher(data, demo) {
   derniereDonnee = data; enDemo = demo;
   const svcs = data.services || [];
@@ -563,17 +471,6 @@ function afficher(data, demo) {
     const f = hm(s.fin_min);
     if (el) poserFlap(el, s.id, f ? f.txt : '--:--');
   });
-  // courbes dessinées à la taille réelle de leur cadre, redessinées s'il change
-  // (chargement des polices, rotation, changement d'écran)
-  observateur.disconnect();
-  grille.querySelectorAll('[data-courbe]').forEach(h => {
-    const i = +h.dataset.courbe;
-    h._dessin = () => dessinerCourbe(h, data, i, svcs[i]);
-    h._dessin();
-    h._taille = h.clientWidth + 'x' + h.clientHeight;
-    observateur.observe(h);
-  });
-
   // pied : messages
   const msgs = [];
   for (const s of svcs) {
@@ -636,7 +533,7 @@ function donneesDemo() {
   const pick = { id: 'PICK', nom: 'Pick', part: .73, statut: 'FACILE', fin_min: 1128, fin_txt: '', fin_eq_min: 1128, cible_min: v,
     marge_min: 72, renfort: 0, renfort_txt: '', zone_nc: '', reste: 3260, lancees: 1180, en_cours: 310, a_venir: 1770,
     preparees: 4380, ops: 11, ops_logys: 9, avancement: .573, prod: 79.4, prod_obj: 75, heures: 3.4,
-    zones: [{ nom: 'Pick (détail + carton)', code: 'PICK', reste: 3260, ops: 11, fin_min: 1128, statut: 'OK' }] };
+    zones: [{ nom: 'Détail + carton', code: 'PICK', reste: 3260, ops: 11, fin_min: 1128, statut: 'OK' }] };
   const cable = { id: 'CABLE', nom: 'Câble', part: .04, statut: 'COMPLIQUÉ', fin_min: 1262, fin_txt: '', fin_eq_min: 1218, cible_min: v,
     marge_min: -62, renfort: 1, renfort_txt: '', zone_nc: '', reste: 151, lancees: 40, en_cours: 5, a_venir: 106,
     preparees: 140, ops: 5, ops_logys: 4, avancement: .481, prod: 7.1, prod_obj: 8, heures: 3.4,

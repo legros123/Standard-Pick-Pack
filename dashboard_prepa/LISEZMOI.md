@@ -1,6 +1,6 @@
 # Dashboard préparation CLR : Pick · Câble · Hors gabarit
 
-Un écran, le même dans tous les services, avec **les 3 services côte à côte**. Pour chacun : **l'état** (FACILE / TENDU / COMPLIQUÉ), **l'heure de fin estimée**, **la prod** (lignes / heure / opérateur face à l'objectif), la tendance et le renfort nécessaire.
+Un écran, le même dans tous les services, avec **les 3 services côte à côte**. Pour chacun : **l'état** (FACILE / TENDU / COMPLIQUÉ), **l'heure de fin estimée**, **la prod** (lignes / heure / opérateur face à l'objectif), et en gros **les lignes en cours, lancées et restantes**. En plus : la tendance, le renfort nécessaire, les lignes préparées et le détail par zone.
 
 ```
 Logys (Oracle)  ──ODBC──▶  Dashboard_Prepa_CLR.xlsm  ──toutes les 5 min──▶  donnees_dashboard.js  ──▶  index.html

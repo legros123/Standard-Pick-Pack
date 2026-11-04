@@ -518,7 +518,7 @@ def creer():
 
     # ───────────────────────────── HISTO ───────────────────────────────
     ws = his
-    cellule(ws, "A1", "HISTORIQUE — une ligne par actualisation (courbe et tendance de l'écran TV)",
+    cellule(ws, "A1", "HISTORIQUE — une ligne par actualisation (tendance « s'améliore / se dégrade » de l'écran TV)",
             F_TITRE)
     cellule(ws, "A2", "Écrit par la macro. Les fins sont des dates-heures (ou un texte : "
             "Terminé, Non couverte).", F_SOUS)
@@ -676,7 +676,7 @@ def creer():
     # PICK
     bande(ws, 15, "PICK — détail + carton : lignes et opérateurs", "B", "T")
     entetes(ws, 16, entete_zones, 34)
-    cellule(ws, f"B{PICK_L}", "Pick (détail + carton)", F_GRAS)
+    cellule(ws, f"B{PICK_L}", "Détail + carton", F_GRAS)
     cellule(ws, f"C{PICK_L}", "PICK", F_GRAS, al=AL_C)
     formules_zone(ws, PICK_L, "PICK",
                   f'=IF($C{PICK_L}="","",MAX(0,PREVI_TOUR*PART_PICK-SUM(D{PICK_L}:F{PICK_L})))')
