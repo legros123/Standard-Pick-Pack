@@ -57,7 +57,7 @@ from pathlib import Path
 # ── Taille des tournées (validé superviseur 04/11/2026) ──
 LIGNES_MIN, LIGNES_MAX = 50, 180      # multi-lignes (DETA)
 MONO_MIN, MONO_MAX = 36, 72           # monolignes : nombre de C16 (= étiquettes)
-MONO_CONTENANTS = {"C16", "C14"}      # contenants des tournées monolignes (pratique Logys)
+MONO_CONTENANTS = {"C16"}             # tournées monolignes : C16 uniquement (validé superviseur 04/11/2026)
 
 # ── Chariot ──
 CHARIOT_EQ_C16 = 45                   # capacité : 45 C16 (surface au sol équivalente)
@@ -101,6 +101,9 @@ POSITIONS = {1: (5, 32), 2: (5, 32), 3: (5, 32), 4: (23, 122), 5: (19, 118), 6: 
              7: (19, 117), 8: (23, 122), 9: (19, 118), 10: (23, 122), 11: (19, 117),
              12: (23, 122), 13: (19, 118), 14: (24, 112)}
 ALLEE_COMPOSES = 11                  # P16
+# Mode exploitation (--figer-entamees) : une tournée Logys dont une ligne est dans un de ces états
+# est déjà commencée -> on ne la touche pas
+ETATS_ENTAMES = {"ENCO", "TERM", "PREL", "VALI"}
 
 # ── Temps standards (s) — calés sur la productivité détail réelle (voir LISEZMOI) ──
 # calage : les tournées Logys réelles (21-23/10) donnent 69 lignes/h = productivité détail 2026 (513 l/j)
@@ -167,6 +170,7 @@ class Ligne:
     colis: str
     contenant: str
     tournee_wms: str
+    etat: str = ""
 
     @property
     def compose(self):
@@ -335,7 +339,7 @@ def charger_lignes(chemin: Path, anomalies: list, compteurs: dict) -> list[Ligne
             qte=qte, poids=poids, volume=vol,
             colis=str(_val(r, "colis") or "").strip(),
             contenant=str(_val(r, "contenant") or "").strip().upper(),
-            tournee_wms=str(_val(r, "tournee_wms") or "").strip()))
+            tournee_wms=str(_val(r, "tournee_wms") or "").strip(), etat=etat))
     if not lignes:
         sys.exit(f"Aucune ligne de la zone {', '.join(ZONES_OPTIMISEES)} dans {chemin}")
     return lignes
@@ -813,6 +817,54 @@ def optimiser(lignes, anomalies, limite_s, journal=print):
     return plan, ts, stats
 
 
+# ─────────────────────────── réaffectation Logys ───────────────────────────
+def ordonner(ts):
+    """Ordre de lancement : vague, multi-lignes puis monolignes puis carton complet, grosses d'abord."""
+    ordre = sorted(ts, key=lambda t: (t.vague, {"MULTI": 0, "MONO": 1, "CART": 2}[t.type], -t.nb_lignes))
+    return ordre, {id(t): f"T{k:03d}" for k, t in enumerate(ordre, 1)}
+
+
+def plan_reaffectation(ts) -> tuple[list, dict]:
+    """Une ligne par contenant : tournée Logys actuelle -> nouvelle tournée.
+    Une nouvelle tournée qui reprend exactement les contenants d'une tournée Logys garde son n°."""
+    ordre, num = ordonner(ts)
+    par_logys = defaultdict(set)          # tournée Logys -> ses contenants (dans le périmètre)
+    for t in ts:
+        for c in colis_de(t):
+            for l in c.lignes:
+                if l.tournee_wms:
+                    par_logys[l.tournee_wms].add(c.id)
+    rows, bilan = [], {"inchangees": 0, "a_creer": 0, "contenants_deplaces": 0, "contenants": 0}
+    for k, t in enumerate(ordre, 1):
+        cs = colis_de(t)
+        ids = {c.id for c in cs}
+        logys = {l.tournee_wms for c in cs for l in c.lignes}
+        garde = None
+        if len(logys) == 1:
+            tw = next(iter(logys))
+            if tw and par_logys[tw] == ids:
+                garde = tw
+        bilan["inchangees" if garde else "a_creer"] += 1
+        for c in cs:
+            bilan["contenants"] += 1
+            bilan["contenants_deplaces"] += not garde
+            rows.append([t.vague, c.id.split("/", 1)[-1], c.id.split("/", 1)[0], c.contenant, len(c.lignes),
+                         ", ".join(sorted({l.tournee_wms for l in c.lignes if l.tournee_wms})),
+                         garde or num[id(t)], k, t.type, "INCHANGÉE" if garde else "À RÉAFFECTER"])
+    return rows, bilan
+
+
+ENTETE_REAFFECTATION = ["VAGUE", "NUM_CONT", "COMMANDE", "TYPE_CONTENANT", "NB_LIGNES", "NUM_TOUR_LOGYS",
+                        "NOUVELLE_TOURNEE", "ORDRE_LANCEMENT", "TYPE_TOURNEE", "ACTION"]
+
+
+def ecrire_reaffectation_csv(chemin: Path, rows):
+    with open(chemin, "w", newline="", encoding="utf-8-sig") as f:
+        w = csv.writer(f, delimiter=";")
+        w.writerow(ENTETE_REAFFECTATION)
+        w.writerows(rows)
+
+
 # ─────────────────────────── sortie Excel ───────────────────────────
 def ecrire_excel(chemin, ts, plan, ref, controles, anomalies, stats, source, compteurs):
     import openpyxl
@@ -894,6 +946,11 @@ def ecrire_excel(chemin, ts, plan, ref, controles, anomalies, stats, source, com
     n_ec = sum(1 for c in controles if c[1] == "ÉCART")
     ws.append(["Règles vérifiées", f"{len(controles)} — " + (f"{n_ec} écart(s)" if n_ec else "toutes conformes")])
     ws.cell(ws.max_row, 2).fill = PatternFill("solid", fgColor=ORANGE if n_ec else VERT)
+    rea, bil = plan_reaffectation(ts)
+    ws.append(["Réaffectation Logys", f"{bil['inchangees']} tournées inchangées · {bil['a_creer']} à créer · "
+               f"{bil['contenants_deplaces']}/{bil['contenants']} contenants à réaffecter (onglet REAFFECTATION)"])
+    if compteurs.get("figees"):
+        ws.append(["Tournées Logys déjà entamées (non touchées)", compteurs["figees"]])
     ws.append(["Lignes annulées écartées", compteurs.get("annulees", 0)])
     hz = {k.split(":", 1)[1]: n for k, n in compteurs.items() if k.startswith("hors_zone:")}
     ws.append(["Lignes hors zone pick (laissées à Logys)", " · ".join(f"{z} {n}" for z, n in sorted(hz.items())) or "0"])
@@ -906,8 +963,7 @@ def ecrire_excel(chemin, ts, plan, ref, controles, anomalies, stats, source, com
     for col in "BCD":
         ws.column_dimensions[col].width = 18
 
-    ordre = sorted(ts, key=lambda t: (t.vague, {"MULTI": 0, "MONO": 1, "CART": 2}[t.type], -t.nb_lignes))
-    num = {id(t): f"T{k:03d}" for k, t in enumerate(ordre, 1)}
+    ordre, num = ordonner(ts)
     rows = []
     for k, t in enumerate(ordre, 1):
         m = mesurer(t, plan)
@@ -973,6 +1029,11 @@ def ecrire_excel(chemin, ts, plan, ref, controles, anomalies, stats, source, com
     feuille(ws, ["Règle", "Résultat", "Nb", "Détail"], [list(c) for c in controles], {"Règle": 60, "Détail": 60})
     for i in range(2, ws.max_row + 1):
         ws.cell(i, 2).fill = PatternFill("solid", fgColor=VERT if ws.cell(i, 2).value == "OK" else ORANGE)
+    ws = wb.create_sheet("REAFFECTATION")
+    feuille(ws, ENTETE_REAFFECTATION, rea, {"NUM_TOUR_LOGYS": 26})
+    for i in range(2, ws.max_row + 1):
+        if ws.cell(i, 10).value == "INCHANGÉE":
+            ws.cell(i, 10).fill = PatternFill("solid", fgColor=VERT)
     feuille(wb.create_sheet("ANOMALIES"), ["Type", "Objet", "Détail"], [list(a) for a in anomalies], {"Détail": 80})
     params = [("Multi-lignes min / max", f"{LIGNES_MIN} / {LIGNES_MAX}"),
               ("Monolignes min / max (C16)", f"{MONO_MIN} / {MONO_MAX} — contenants {', '.join(sorted(MONO_CONTENANTS))}"),
@@ -1010,6 +1071,8 @@ def _main(argv=None):
     ap.add_argument("--mono-max", type=int)
     ap.add_argument("--chariot-c16", type=float, help="capacité chariot en équivalents C16")
     ap.add_argument("--temps-calcul", type=float, default=TEMPS_CALCUL_MAX)
+    ap.add_argument("--figer-entamees", action="store_true",
+                    help="exploitation : ne pas toucher aux tournées Logys déjà commencées (lignes ENCO/TERM…)")
     a = ap.parse_args(argv)
 
     def opt(v, d):
@@ -1022,11 +1085,20 @@ def _main(argv=None):
 
     anomalies, compteurs = [], {}
     lignes = charger_lignes(a.fichier, anomalies, compteurs)
+    if a.figer_entamees:
+        entamees = {l.tournee_wms for l in lignes if l.etat in ETATS_ENTAMES and l.tournee_wms}
+        compteurs["figees"] = len(entamees)
+        lignes = [l for l in lignes if l.tournee_wms not in entamees]
+        if not lignes:
+            sys.exit(f"Toutes les tournées sont déjà entamées ({len(entamees)}) : rien à réaffecter.")
     plan, ts, stats = optimiser(lignes, anomalies, a.temps_calcul)
     ref = tournees_logys(lignes)
     controles = controler(ts, lignes)
     sortie = a.sortie or Path(f"tournees_{dt.datetime.now():%Y%m%d_%H%M}.xlsx")
     ecrire_excel(sortie, ts, plan, ref, controles, anomalies, stats, a.fichier.name, compteurs)
+    rea, bil = plan_reaffectation(ts)
+    csv_rea = sortie.with_name(sortie.stem + "_reaffectation.csv")
+    ecrire_reaffectation_csv(csv_rea, rea)
 
     o = total(ts, plan)
     print(f"{o['lignes']} lignes zone pick · {len({l.commande for l in lignes})} commandes · "
@@ -1041,7 +1113,10 @@ def _main(argv=None):
               f"temps {(r['minutes'] - o['minutes']) / 60:.1f} h · {r['tournees'] - o['tournees']} tournées de moins")
     ec = [c for c in controles if c[1] == "ÉCART"]
     print(f"Contrôles : {len(controles) - len(ec)}/{len(controles)} conformes" + (" — VOIR CONTROLES" if ec else ""))
-    print(f"→ {sortie}")
+    print(f"Réaffectation : {bil['inchangees']} tournées inchangées, {bil['a_creer']} à créer, "
+          f"{bil['contenants_deplaces']}/{bil['contenants']} contenants à réaffecter"
+          + (f" · {compteurs['figees']} tournées entamées non touchées" if compteurs.get("figees") else ""))
+    print(f"→ {sortie}\n→ {csv_rea}")
     return 1 if ec else 0
 
 

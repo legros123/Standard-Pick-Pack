@@ -69,7 +69,7 @@ class TestJeuEssai(unittest.TestCase):
         import openpyxl
         wb = openpyxl.load_workbook(sortie)
         self.assertEqual(wb.sheetnames, ["SYNTHESE", "TOURNEES", "PRELEVEMENT", "PREVISIONNEL",
-                                         "CONTROLES", "ANOMALIES", "PARAMETRES"])
+                                         "CONTROLES", "REAFFECTATION", "ANOMALIES", "PARAMETRES"])
         self.assertEqual(wb["PRELEVEMENT"].max_row - 1, len(self.lignes))
 
 
@@ -174,6 +174,32 @@ class TestCasLimites(unittest.TestCase):
         d = ecrire([ligne(f"C{i}", 4, 30 + i) for i in range(3)])
         ot.main([str(d), "--lignes-max", "60", "--sortie", str(d.with_suffix(".xlsx")), "--temps-calcul", "0.2"])
         self.assertEqual(ot.LIGNES_MAX, avant)
+
+    def test_reaffectation(self):
+        # deux tournées Logys mal faites (mêmes allées éclatées) : chaque contenant reçoit une nouvelle tournée
+        rows = [ligne(f"C{i}", 4 + i % 2, 30 + i, num=str(i), CHARIOT=f"TO{i % 2}") for i in range(60)]
+        lignes, ts, an = self._run(rows)
+        rea, bil = ot.plan_reaffectation(ts)
+        self.assertEqual(len(rea), 60)                       # un contenant = une ligne du plan
+        self.assertEqual(bil["contenants"], 60)
+        self.assertTrue(all(r[6] for r in rea))              # chaque contenant a une tournée cible
+        # une tournée identique à Logys garde son numéro
+        rows = [ligne(f"K{i}", 4, 30 + i, cont="C16", num=str(i), CHARIOT="TOK") for i in range(55)]   # 1 tournée mono
+        lignes, ts, an = self._run(rows)
+        rea, bil = ot.plan_reaffectation(ts)
+        self.assertEqual(bil["inchangees"], 1)
+        self.assertEqual({r[6] for r in rea}, {"TOK"})
+
+    def test_figer_tournees_entamees(self):
+        rows = [ligne(f"E{i}", 4, 30 + i, num=str(i), CHARIOT="TO_ENCO", ETAT_LIGNE="ENCO") for i in range(5)]
+        rows += [ligne(f"P{i}", 5, 30 + i, num=str(i), CHARIOT="TO_PREV", ETAT_LIGNE="PREV") for i in range(5)]
+        d = ecrire(rows)
+        sortie = d.with_suffix(".xlsx")
+        ot.main([str(d), "--figer-entamees", "--sortie", str(sortie), "--temps-calcul", "0.2"])
+        import csv as _csv
+        with open(sortie.with_name(sortie.stem + "_reaffectation.csv"), encoding="utf-8-sig") as f:
+            r = list(_csv.reader(f, delimiter=";"))[1:]
+        self.assertEqual({x[5] for x in r}, {"TO_PREV"})     # la tournée entamée n'est pas dans le plan
 
     def test_annulees_et_hors_zone(self):
         rows = [ligne("A", 4, 30, ETAT_LIGNE="ANNU"), ligne("B", 4, 31, ZONE="ARETRACT"), ligne("C", 4, 32)]

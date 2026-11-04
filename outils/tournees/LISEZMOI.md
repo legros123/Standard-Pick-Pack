@@ -8,17 +8,32 @@ L'outil refait les tournées de la zone pick (PICK01A14) à partir des lignes de
 
 | | Logys réel | Optimisé | Écart |
 |---|---|---|---|
-| Tournées | 420 | 351 | −69 |
+| Tournées | 420 | 353 | −67 |
 | Lignes par tournée | 57 | 68 | +19 % |
-| Distance | 191,6 km | 152,3 km | **−20,5 %** |
-| Temps de préparation estimé | ≈ 343 h | ≈ 326 h | **−17,4 h** (≈ 6 h / jour) |
-| Multi-lignes sous 50 lignes | 142 | 46 (inévitables) | |
-| Commandes réparties sur 2 chariots (P05) | 309 | 0 | |
+| Distance | 191,6 km | 152,2 km | **−20,6 %** |
+| Temps de préparation estimé | 343,2 h | 325,9 h | **−17,3 h** (≈ 6 h / jour) |
+| Tournées sous le minimum | 168 | 47 (inévitables) | −72 % |
+| Commandes réparties sur plusieurs chariots (P05) | 313 | 1 (trop grosse pour un chariot) | |
+| Chariots au-dessus de 45 éq. C16 | 9 | 0 | |
 | Contrôles | | 11/11 conformes | |
 
-Les 46 tournées multi-lignes restantes sous 50 lignes sont inévitables :
-- 34 viennent de vagues trop petites (de 1 à 40 lignes au total) ;
-- 12 sont des chariots déjà pleins à 45 équivalents C16, à cause de gros contenants.
+Les 47 tournées restantes sous le minimum sont inévitables :
+- 12 sont des chariots déjà pleins à 45 équivalents C16, à cause de gros contenants ;
+- les autres viennent de vagues trop petites (de 1 à 40 lignes au total).
+
+## Réaffectation dans Logys
+
+En exploitation, on extrait la vague du jour avec `sql/02`, puis on lance :
+
+```bash
+python3 outils/tournees/optimiseur_tournees.py vague.xlsx --figer-entamees --sortie vague_opt.xlsx
+```
+
+On obtient deux fichiers :
+- `vague_opt_reaffectation.csv` : une ligne par contenant, avec sa tournée Logys actuelle et sa tournée cible. Il sert à votre informatique ou à l'éditeur pour réaffecter les tournées dans Logys.
+- l'onglet REAFFECTATION : le même contenu dans le classeur. Une tournée identique à une tournée Logys garde son numéro (en vert).
+
+L'outil n'écrit jamais dans Logys. Le cahier des charges est dans [`REAFFECTATION_LOGYS.md`](REAFFECTATION_LOGYS.md), et les contrôles avant/après dans `sql/04_reaffectation_controles.sql`.
 
 ## Utilisation
 
@@ -47,7 +62,7 @@ Options : `--lignes-min 50 --lignes-max 180 --mono-min 36 --mono-max 72 --chario
 - **Sens unique** : les allées impaires vont vers le fond, les paires vers la sortie, avec une traverse à chaque bout. On traverse toujours une allée en entière. Quand il faut changer de bout, on passe par l'allée vide la plus courte : c'est le cas des allées 1 à 3 (positions 5 à 32, contre 19 à 122 pour les allées 4 à 14). Le parcours le plus court est calculé exactement, par programmation dynamique.
 - **Chariot = 45 équivalents C16** : chaque contenant compte pour sa surface posée sur sa plus grande face, rapportée à celle d'un C16. Un C11 compte pour 3,77, un D11 pour 4,08, un B16 pour 1,01. Les vraies tournées Logys plafonnent à 44-45 : ce modèle reproduit bien la limite physique du chariot.
 - **Multi-lignes** : de 50 à 180 lignes.
-- **Monolignes** (P13) : de 36 à 72 C16, pour les commandes d'une seule ligne en C16 ou C14. Les monolignes agences en B16/A16 restent en multi-lignes, comme dans Logys. Une vague qui a moins de 36 monolignes les verse en multi-lignes.
+- **Monolignes** (P13) : de 36 à 72 C16, pour les commandes d'une seule ligne en **C16 uniquement**. Les autres monolignes (C14, B16, A16…) vont en multi-lignes. Une vague qui a moins de 36 monolignes les verse en multi-lignes.
 - **Carton complet** (CART) : limites Logys MODEL_REAL, soit 80 contenants, 800 kg et 2,8 m³.
 - **Une tournée = une vague**. Bacs et cartons peuvent partager un même chariot, comme dans Logys : P03 interdit la confusion entre bacs et cartons, pas leur mélange. Une commande n'est jamais coupée, sauf si elle ne tient pas sur un chariot.
 - **Hors zone pick** (ARETRACT, AEROSOLS, PREPARATEUR, hors gabarit…) : ces lignes ne sont pas modifiées et restent des tournées Logys. Les lignes annulées sont écartées.
@@ -69,11 +84,10 @@ Options : `--lignes-min 50 --lignes-max 180 --mono-min 36 --mono-max 72 --chario
 
 ## À confirmer
 
-- **Allée 14** : elle a 781 lignes dans les données, alors que vous m'avez parlé de 13 allées. Elle est pour l'instant traitée comme une allée normale.
 - **Distances** : 3 m entre deux allées et 0,5 m par numéro de position (`ALLEE_LARGEUR_MODULE`, `METRES_PAR_POSITION`). Ces valeurs changent les mètres et les heures affichés. Elles changent aussi l'équilibre entre la distance, le coût fixe par tournée et la pénalité sous le minimum, donc les tournées choisies peuvent un peu changer. Si vous les corrigez, il faut relancer la comparaison.
 
 ## Tests
 
 ```bash
-python3 outils/tournees/test_optimiseur.py      # 19 tests (jeu fictif au format Logys + cas limites)
+python3 outils/tournees/test_optimiseur.py      # 21 tests (jeu fictif au format Logys + cas limites)
 ```
