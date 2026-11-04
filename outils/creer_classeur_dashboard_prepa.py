@@ -10,12 +10,15 @@ dashboard_prepa/vba/modDashboardPrepa.bas importé (Alt+F11 > Fichier >
 Importer), puis enregistré en .xlsm.
 
 Onglets : PILOTAGE (saisie du jour + résultats), PARAMETRES (réglages
-fixes), ZONES (ZONE_MVT -> service / zone), DONNEES (résultat Logys),
-HISTO (une ligne par actualisation), REQUETES (modèle SQL), AIDE.
+fixes), ZONES (zones de prise et sous-types de tournée -> service / zone),
+DONNEES (résultat Logys), HISTO (une ligne par actualisation),
+REQUETES (modèle SQL), AIDE.
 
-La requête Excel est lue dans dashboard_prepa/sql/requetes_prepa.sql
-entre les marqueurs « >>> MODELE EXCEL » et « <<< MODELE EXCEL » : un
-seul texte de référence pour SQL Developer et pour le classeur.
+Source Logys : REXEL.F_GESTOURPREP_TOUR (vue des tournées de préparation
+déjà utilisée par « Suivi activité préparation V4.69 »). La requête Excel
+est lue dans dashboard_prepa/sql/requetes_prepa.sql entre les marqueurs
+« >>> MODELE EXCEL » et « <<< MODELE EXCEL » : un seul texte de référence
+pour SQL Developer et pour le classeur.
 """
 from pathlib import Path
 import re
@@ -33,25 +36,28 @@ SQL = RACINE / "dashboard_prepa" / "sql" / "requetes_prepa.sql"
 SORTIE = RACINE / "dashboard_prepa" / "Dashboard_Prepa_CLR.xlsx"
 
 # ── Réglages par défaut ────────────────────────────────────────────────
-# Cadences à 100 % de quota (lignes / heure / opérateur)
-#  · Pick : 620 lignes / 7,4 h (quota P&P, Suivi_Op_PP_OFFICIEL)
-#  · HG / câble : 1 000 points / 7,4 h ÷ pondération de la ligne
-#    (HG_Cable V17, onglet LISTES). L'équipe HG a fait 102 % du standard
-#    sur janv.–juin 2026 (949 jours-opérateur, 6 798 h).
+# Cadences par zone (lignes / heure / opérateur). Valeurs de terrain de
+# « Suivi activité préparation V4.69 » (ligne « Nombre ligne h ») ; la
+# référence HG_Cable V17 (1 000 pts / 7,4 h ÷ pondération) est rappelée.
 PTS_H = 1000 / 7.4
 CADENCES = [
-    # clé, cadence, pondération, source
-    ("PICK", round(620 / 7.4, 1), None, "Quota P&P : 620 lignes / 7,4 h (Suivi_Op_PP_OFFICIEL)"),
-    ("CÂBLE", round(PTS_H / 15.38, 1), 15.38, "1 000 pts / 7,4 h ÷ 15,38 pts par ligne (HG_Cable V17)"),
-    ("SOL", round(PTS_H / 1.972, 1), 1.972,
-     "Mix réel janv.–juin 2026 : couronne 1 · prépa/chauf./pann. 2,75 · gaine/plaf. 2 · éclair. 1,75 · volum./touret/1 m 3,5 · chauffe-eau 5,75 → 1,97 pt/ligne"),
-    ("LONGUEUR 2M", round(PTS_H / 4, 1), 4, "1 000 pts / 7,4 h ÷ 4 pts par ligne"),
-    ("LONGUEUR 3M", round(PTS_H / 3.25, 1), 3.25, "1 000 pts / 7,4 h ÷ 3,25 pts par ligne (long. 3 m + IRL)"),
-    ("RÉTRACT", round(PTS_H / 9.6, 1), 9.6, "1 000 pts / 7,4 h ÷ 9,6 pts par ligne"),
-    ("RÉTRACT LONGUEUR", round(PTS_H / 9.6, 1), 9.6, "1 000 pts / 7,4 h ÷ 9,6 pts par ligne (rétract long. + ext. + cuivre)"),
+    # clé, cadence, référence V17, source
+    ("PICK", 75, round(620 / 7.4, 1), "Ancien fichier : PP 75 l/h (quota P&P 620 l / 7,4 h = 83,8)"),
+    ("COUPES", 8, round(PTS_H / 15.38, 1), "Ancien fichier : câble 8 l/h"),
+    ("RÉTRACT CÂBLE", 8, round(PTS_H / 15.38, 1), "Comme les coupes faute de mieux : à ajuster"),
+    ("SOL", 80, round(PTS_H / 1.972, 1),
+     "Ancien fichier : couronnes 148,6 l/h et reste HG 64 l/h, pondérés par le mix réel "
+     "(36 % de couronnes, suivi op HG janv.–juin 2026)"),
+    ("LONGUEUR 2M", 36.5, round(PTS_H / 4, 1), "Ancien fichier : LG 270 l / 7,4 h"),
+    ("LONGUEUR 3M", 36.5, round(PTS_H / 3.25, 1), "Ancien fichier : LG 270 l / 7,4 h"),
+    ("RÉTRACT", 17.6, round(PTS_H / 9.6, 1), "Ancien fichier : rétract 130 l / 7,4 h"),
+    ("RÉTRACT LONGUEUR", 17.6, round(PTS_H / 9.6, 1), "Comme le rétract : à ajuster"),
 ]
-# Part de chaque zone dans le prévisionnel HG (hors câble) :
-# suivi op HG janv.–juin 2026, 221 634 lignes HG, 103 jours.
+# Prod objectif par service (lignes / heure / opérateur), ancien fichier
+PROD_OBJ = [("Pick", "PROD_OBJ_PICK", 75, "PP 75 l/h"),
+            ("Câble", "PROD_OBJ_CABLE", 8, "Câble 8 l/h"),
+            ("Hors gabarit", "PROD_OBJ_HG", 51, "HG total 51 l/h")]
+# Part de chaque zone dans le prévisionnel HG : suivi op HG janv.–juin 2026
 ZONES_HG = [
     ("Sol", "SOL", 0.605),
     ("Longueur 2 m", "LONGUEUR 2M", 0.078),
@@ -59,42 +65,43 @@ ZONES_HG = [
     ("Rétract", "RÉTRACT", 0.110),
     ("Rétract longueur", "RÉTRACT LONGUEUR", 0.047),
 ]
-# ZONE_MVT -> service / zone dashboard (macro d'import HG_Cable V17)
+ZONES_CABLE = [("Coupes", "COUPES"), ("Rétract câble", "RÉTRACT CÂBLE")]
+# Sous-type de tournée (L_STYP_TOUR) -> service : ancien fichier V4.69
+TYPES = [("DETAIL", "PICK"), ("CARTON", "PICK"), ("HORS GAB", "HG"), ("VRAC", "HG"),
+         ("LONGUEUR", "HG"), ("PALETTE", "HG"), ("CABLE", "CABLE")]
+# Zone de prise (ZONE_MVT_PRISE) -> zone du dashboard, par service
 ZONES_MVT = (
-    [(z, "HG", "SOL") for z in (
-        "COURONNES", "COURONNE", "AEROSOLS", "BARDAGE", "PICK01A14", "CHAUFFAGE",
-        "PREPARATEUR", "PANNEAUX", "HGAEMBALLER", "GAINES", "PLAFONNIERS",
-        "ECLAIRAGE", "ECLAIRAGE2", "ECL3EMBALLAGE", "ECL4DEPISEDIR", "GAINESVENTIL",
-        "TOUPRECOND", "COFFRETS", "ZPROMOS", "LONGUEUR1M", "CHAUFFEEAU", "VOLUMES")]
-    + [(z, "HG", "LONGUEUR 2M") for z in ("LONGUEUR2M", "LG2DEPOSEDIR", "LG2EMBALLAGE")]
-    + [(z, "HG", "LONGUEUR 3M") for z in ("LONGUEUR3M", "LG3ALLEE32", "IRL")]
-    + [(z, "HG", "RÉTRACT") for z in ("ARETRACT", "RETRACT")]
-    + [(z, "HG", "RÉTRACT LONGUEUR") for z in ("RETRACT3435", "EXTERIEUR", "TUBECUIVRE", "TUBE CUIVRE")]
-    + [("CABLE", "CABLE", "CABLE")]
+    [("HG", z, "SOL") for z in (
+        "COURONNES", "COURONNES2", "COURONNESVU", "COURONNE", "AEROSOLS", "BARDAGE",
+        "PICK01A14", "CHAUFFAGE", "PREPARATEUR", "PANNEAUX", "HGAEMBALLER", "GAINES",
+        "PLAFONNIERS", "ECLAIRAGE", "ECLAIRAGE2", "ECL3EMBALLAGE", "ECL4DEPISEDIR",
+        "GAINESVENTIL", "TOUPRECOND", "COFFRETS", "ZPROMOS", "LONGUEUR1M", "CHAUFFEEAU",
+        "VOLUMES")]
+    + [("HG", z, "LONGUEUR 2M") for z in ("LONGUEUR2M", "LG2DEPOSEDIR", "LG2EMBALLAGE")]
+    + [("HG", z, "LONGUEUR 3M") for z in ("LONGUEUR3M", "LG3ALLEE32", "IRL", "MRL")]
+    + [("HG", z, "RÉTRACT") for z in ("ARETRACT", "RETRACT")]
+    + [("HG", z, "RÉTRACT LONGUEUR") for z in ("RETRACT3435", "EXTERIEUR", "TUBECUIVRE",
+                                              "TUBE CUIVRE")]
+    + [("CABLE", "CABLE", "COUPES"), ("CABLE", "RETRACT", "RÉTRACT CÂBLE")]
 )
 REMARQUES_ZONES = {
-    "RETRACT": "À confirmer : la macro V17 (Module1) la classe en RÉTRACT HG, l'ancienne (Module3) en CÂBLE",
-    "ECL4DEPISEDIR": "Orthographe reprise de la macro V17 (ECL4DEPOSEDIR ?)",
-    "CABLE": "L'allée est lue dans l'emplacement (jeton COL_ALLEE)",
+    ("HG", "MRL"): "Dans la liste « longueurs » de l'ancien fichier : 2 m ou 3 m ? à vérifier",
+    ("HG", "ECL4DEPISEDIR"): "Orthographe reprise de la macro HG_Cable V17",
+    ("CABLE", "RETRACT"): "Ancien fichier : ligne Câble / Retract = zone RETRACT",
+    ("HG", "ARETRACT"): "Ancien fichier : ligne HG / Retract = zone ARETRACT",
 }
+# Pauses par service : ancien fichier (pause de 30 min à 18:05 pour le
+# pick, 17:25 pour le HG et le câble)
+PAUSES = [("PICK", 18 * 60 + 5, 30, "Pause pick (ancien fichier)"),
+          ("HG", 17 * 60 + 25, 30, "Pause HG (ancien fichier)"),
+          ("CABLE", 17 * 60 + 25, 30, "Pause câble (ancien fichier)")]
 
 # Jetons de la requête : nom, valeur par défaut, rôle, forme attendue
 JETONS = [
-    ("SOURCE", "A_RENSEIGNER", "Table, vue ou jointure des lignes de préparation, avec un alias",
-     "PROPRIETAIRE.TABLE l"),
-    ("COL_ZONE", "ZONE_MVT", "Colonne zone (confirmée par l'extraction journalière HG)", "l.ZONE_MVT"),
-    ("COL_ALLEE", None, "Allée câble tirée de l'emplacement. Vide = 'TOUTES' (une seule ligne "
-     "câble). Une valeur qui commence par ' se tape avec deux '",
-     "SUBSTR(l.EMPLACEMENT, 1, 2)"),
-    ("COL_PREPA", "CAST(NULL AS VARCHAR2(1))", "Préparateur affecté (le NOM de l'extraction)", "l.NOM_PREPARATEUR"),
-    ("COL_DATE_VALID", "A_RENSEIGNER", "Date + heure de validation de la ligne", "l.DATE_VALIDATION"),
-    ("EXPR_NB_LIGNES", "1", "1 si un enregistrement = une ligne, sinon la colonne nb de lignes", "1"),
-    ("COND_LANCE", "A_RENSEIGNER", "Condition : ligne lancée, pas encore prise", "l.STATUT = 'xx'"),
-    ("COND_EN_COURS", "A_RENSEIGNER", "Condition : ligne prise par un préparateur, non validée", "l.STATUT = 'yy'"),
-    ("COND_VALIDEE", "A_RENSEIGNER", "Condition : ligne validée, SANS filtre de date", "l.STATUT = 'zz'"),
-    ("COND_RETRACT", "1 = 0", "Condition : ligne câble servie au rétract (1 = 0 : non suivi)",
-     "l.NIVEAU_EMPLACEMENT > 0"),
-    ("COND_PERIMETRE", "1 = 1", "Filtre site / dépôt / type (1 = 1 : aucun)", "l.CODE_DEPOT = 'xx'"),
+    ("VUE_TOURNEES", "REXEL.F_GESTOURPREP_TOUR",
+     "Vue des tournées de préparation (ancien fichier « Suivi activité préparation »)",
+     "REXEL.F_GESTOURPREP_TOUR"),
+    ("COND_PERIMETRE", "1 = 1", "Filtre facultatif sur la vue (1 = 1 : aucun)", "t.L_TYP_TOUR = 'xx'"),
 ]
 
 # ── Styles ─────────────────────────────────────────────────────────────
@@ -195,44 +202,57 @@ def modele_sql():
 
 
 # ═══════════════════════════════════════════════════════════════════════
-#  Plan de l'onglet PILOTAGE
+#  Plan des onglets
 # ═══════════════════════════════════════════════════════════════════════
-SYN = {"PICK": 11, "CABLE": 12, "HG": 13}            # lignes de synthèse
+SYN = {"PICK": 11, "CABLE": 12, "HG": 13}            # lignes de synthèse (B:Y)
 PICK_L = 17                                            # ligne unique pick
-CAB_1, CAB_N, CAB_RETR, CAB_TOT = 21, 32, 33, 34       # câble : 12 allées
-HG_1, HG_N, HG_TOT = 38, 45, 46                        # HG : 8 zones
+CAB_1, CAB_N, CAB_TOT = 21, 26, 27                     # câble : 6 cases
+HG_1, HG_N, HG_TOT = 31, 38, 39                        # HG : 8 cases
 DON_1, DON_N = 7, 506                                  # DONNEES : 500 lignes
 ZON_1, ZON_N = 5, 300                                  # ZONES
-P_DEB_L1, P_DEB_LN = 44, 47                            # pauses
+TYP_1, TYP_N = 5, 40                                   # sous-types (ZONES!G:I)
+PAU_1, PAU_N = 50, 55                                  # pauses (PARAMETRES)
+CLE_DEFAUT = {"PICK": "PICK", "CABLE": "COUPES", "HG": "SOL"}
 
 
-def formules_zone(ws, r, svc, cle_cadence, avenir):
-    """Écrit les formules d'une ligne de zone (colonnes D à P)."""
+def filtre_pause(svc):
+    """Vrai pour les pauses du service ou de tous les services."""
+    return f'(((P_SVC="{svc}")+(P_SVC="TOUS"))>0)'
+
+
+def pauses_entre(svc, debut, fin):
+    """Durée (en jours) des pauses du service qui commencent dans [debut ; fin[."""
+    return f"SUMPRODUCT({filtre_pause(svc)}*(P_DEB>={debut})*(P_DEB<{fin})*P_DUR)"
+
+
+def formules_zone(ws, r, svc, avenir):
+    """Formules d'une ligne de zone (colonnes D à P) ; la clé est en colonne C."""
     s = SYN[svc]
     cle = f"$C{r}"
     vide = f'$C{r}=""'
+    t0 = "MOD(H_CALC,1)"
 
     def somme(statut, man):
         return (f'=IF({vide},"",IF(${man}{r}<>"",${man}{r},'
-                f'SUMIFS(D_NB,D_SERV,"{svc}",D_DASH,{cle},D_STATUT,"{statut}")))')
+                f'SUMIFS(D_RESTE,D_SERV,"{svc}",D_DASH,{cle},D_STATUT,"{statut}")))')
 
-    pause = (f"SUMPRODUCT((P_DEB>=MOD(H_CALC,1))*(P_DEB<MOD(H_CALC,1)+K{r}/I{r}/24)*P_DUR)")
     f = {
         "D": somme("LANCE", "R"),
         "E": somme("EN_COURS", "S"),
-        "F": somme("PREPAREE", "T"),
+        "F": f'=IF({vide},"",IF($T{r}<>"",$T{r},SUMIFS(D_TERMJ,D_SERV,"{svc}",D_DASH,{cle})))',
         "G": avenir,
         "H": f'=IF({vide},"",SUM(D{r},E{r},G{r}))',
-        "J": (f'=IF({vide},"",IFERROR(ROUND(INDEX(CAD_VAL,MATCH({cle_cadence},CAD_KEY,0))'
-              f'*RENDEMENT,1),""))'),
+        "J": (f'=IF({vide},"",IFERROR(ROUND(IFERROR(INDEX(CAD_VAL,MATCH({cle},CAD_KEY,0)),'
+              f'INDEX(CAD_VAL,MATCH("{CLE_DEFAUT[svc]}",CAD_KEY,0)))*RENDEMENT,1),""))'),
         "K": f'=IF({vide},"",IF(N(J{r})>0,H{r}/J{r},""))',
         "L": (f'=IF({vide},"",IF(H{r}=0,"Terminé",IF(N(I{r})<=0,"Non couverte",'
-              f'IF(NOT(ISNUMBER(K{r})),"Cadence ?",H_CALC+K{r}/I{r}/24+{pause}))))'),
+              f'IF(NOT(ISNUMBER(K{r})),"Cadence ?",H_CALC+K{r}/I{r}/24'
+              f'+{pauses_entre(svc, t0, f"{t0}+K{r}/I{r}/24")}))))'),
         "M": (f'=IF({vide},"",IF(H{r}=0,"TERMINÉ",IF(N(I{r})<=0,"NON COUVERTE",'
-              f'IF(NOT(ISNUMBER(L{r})),"?",IF(L{r}>$R${s},"RETARD",'
-              f'IF(L{r}>$R${s}-SEUIL_TENDU/1440,"TENDU","OK"))))))'),
-        "N": (f'=IF({vide},"",IF(H{r}=0,0,IF($S${s}<=0,"Dépassée",'
-              f'IF(NOT(ISNUMBER(K{r})),"",ROUNDUP(K{r}/$S${s}*2,0)/2))))'),
+              f'IF(NOT(ISNUMBER(L{r})),"?",IF(L{r}>$T${s},"RETARD",'
+              f'IF(L{r}>$T${s}-SEUIL_TENDU/1440,"TENDU","OK"))))))'),
+        "N": (f'=IF({vide},"",IF(H{r}=0,0,IF($U${s}<=0,"Dépassée",'
+              f'IF(NOT(ISNUMBER(K{r})),"",ROUNDUP(K{r}/$U${s}*2,0)/2))))'),
         "O": f'=IF(ISNUMBER(N{r}),MAX(0,N{r}-N(I{r})),"")',
         "P": f'=IF({vide},"",SUMIFS(D_PREPA,D_SERV,"{svc}",D_DASH,{cle},D_STATUT,"EN_COURS"))',
     }
@@ -248,7 +268,6 @@ def formules_zone(ws, r, svc, cle_cadence, avenir):
                 border=BORD, al=AL_D)
     ws[f"B{r}"].border = BORD
     ws[f"C{r}"].border = BORD
-    ws[f"Q{r}"].value = None
 
 
 def creer():
@@ -268,102 +287,123 @@ def creer():
 
     # ─────────────────────────── PARAMETRES ────────────────────────────
     ws = par
-    for col, w in {"A": 2, "B": 30, "C": 22, "D": 18, "E": 70}.items():
+    for col, w in {"A": 2, "B": 32, "C": 16, "D": 16, "E": 78}.items():
         ws.column_dimensions[col].width = w
     cellule(ws, "B2", "PARAMÈTRES — réglages fixes du dashboard", F_TITRE)
-    cellule(ws, "B3", "Cellules jaunes = à ajuster. Les valeurs de départ et leur source sont "
-            "indiquées à droite.", F_SOUS)
+    cellule(ws, "B3", "Cellules jaunes = à ajuster. Valeurs de départ reprises de « Suivi activité "
+            "préparation V4.69 » et de HG_Cable V17 (source à droite).", F_SOUS)
 
-    bande(ws, 4, "1 · RÉPARTITION DU PRÉVISIONNEL ENTRE SERVICES", "B", "E")
+    bande(ws, 4, "1 · PRÉVISIONNEL : RÉPARTITION ENTRE SERVICES ET FOISONNEMENT", "B", "E")
     entetes(ws, 5, [("B", "Service"), ("C", "Part du prévi"), ("D", ""), ("E", "Source")])
     for i, (lib, n, v) in enumerate([("Pick", "PART_PICK", 0.73), ("Câble", "PART_CABLE", 0.04),
                                      ("Hors gabarit", "PART_HG", 0.23)]):
         r = 6 + i
         cellule(ws, f"B{r}", lib, F_GRAS, border=BORD)
         cellule(ws, f"C{r}", v, F_SAISIE, R_SAISIE, FMT_PCT1, AL_D, BORD)
-        cellule(ws, f"E{r}", "Découpage de départ donné par le superviseur ; à remplacer par la "
-                "requête Q7 (analyse prépa)", F_AIDE, al=AL_G)
+        cellule(ws, f"E{r}", "Découpage donné par le superviseur ; à recaler avec la requête Q7 "
+                "(répartition sur 20 jours)", F_AIDE, al=AL_G)
         nom(wb, n, f"PARAMETRES!$C${r}")
     cellule(ws, "B9", "Total (doit faire 100 %)", F_GRAS, R_TOTAL, border=BORD)
     cellule(ws, "C9", "=SUM(C6:C8)", F_GRAS, R_TOTAL, FMT_PCT1, AL_D, BORD)
     cellule(ws, "D9", '=IF(ROUND(C9,3)=1,"✓","≠ 100 %")', F_GRAS, R_TOTAL, al=AL_C, border=BORD)
+    cellule(ws, "B10", "Foisonnement (lignes tournée ÷ lignes commande)", F_GRAS, border=BORD)
+    cellule(ws, "C10", 1.42, F_SAISIE, R_SAISIE, "0.00", AL_D, BORD)
+    cellule(ws, "E10", "Le prévi se saisit en lignes commande ; Logys compte des lignes de tournée. "
+            "Ancien fichier : taux de foisonnement 1,42 (mesuré 1,51 le 14/10 : 11 338 / 7 500). "
+            "Requête Q9.", F_AIDE, al=AL_G)
+    nom(wb, "FOISONNEMENT", "PARAMETRES!$C$10")
 
-    bande(ws, 11, "2 · CADENCES MOYENNES PAR OPÉRATEUR ET PAR ZONE", "B", "E")
-    entetes(ws, 12, [("B", "Zone (clé)"), ("C", "Lignes / heure / opérateur"),
-                     ("D", "Pondération HG (pts / ligne)"), ("E", "Calcul et source")], 32)
+    bande(ws, 12, "2 · CADENCES MOYENNES PAR OPÉRATEUR ET PAR ZONE (fin estimée)", "B", "E")
+    entetes(ws, 13, [("B", "Zone (clé)"), ("C", "Lignes / h / opérateur"),
+                     ("D", "Réf. V17 à 100 %"), ("E", "Source")], 32)
     for i in range(10):
-        r = 13 + i
-        if i < len(CADENCES):
-            k, v, p, src = CADENCES[i]
-        else:
-            k, v, p, src = None, None, None, "Zone à ajouter : même nom que dans PILOTAGE (colonne C)"
+        r = 14 + i
+        k, v, ref, src = CADENCES[i] if i < len(CADENCES) else (
+            None, None, None, "Zone à ajouter : même clé que PILOTAGE colonne C")
         cellule(ws, f"B{r}", k, F_GRAS, R_SAISIE if k is None else None, border=BORD)
         cellule(ws, f"C{r}", v, F_SAISIE, R_SAISIE, FMT_DEC, AL_D, BORD)
-        cellule(ws, f"D{r}", p, F_BASE, fmt="0.00", al=AL_D, border=BORD)
+        cellule(ws, f"D{r}", ref, F_BASE, fmt=FMT_DEC, al=AL_D, border=BORD)
         cellule(ws, f"E{r}", src, F_AIDE, al=AL_G)
-    nom(wb, "CAD_KEY", "PARAMETRES!$B$13:$B$22")
-    nom(wb, "CAD_VAL", "PARAMETRES!$C$13:$C$22")
-    cellule(ws, "B23", "Rendement équipe du jour", F_GRAS, border=BORD)
-    cellule(ws, "C23", 1, F_SAISIE, R_SAISIE, "0%", AL_D, BORD)
-    cellule(ws, "E23", "Multiplie toutes les cadences. 100 % = standard ; l'équipe HG a fait "
-            "102 % sur janv.–juin 2026. Baisser un jour à forte part d'intérimaires.", F_AIDE, al=AL_G)
-    nom(wb, "RENDEMENT", "PARAMETRES!$C$23")
+    nom(wb, "CAD_KEY", "PARAMETRES!$B$14:$B$23")
+    nom(wb, "CAD_VAL", "PARAMETRES!$C$14:$C$23")
+    cellule(ws, "B24", "Rendement équipe du jour", F_GRAS, border=BORD)
+    cellule(ws, "C24", 1, F_SAISIE, R_SAISIE, "0%", AL_D, BORD)
+    cellule(ws, "E24", "Multiplie toutes les cadences (baisser un jour à forte part "
+            "d'intérimaires).", F_AIDE, al=AL_G)
+    nom(wb, "RENDEMENT", "PARAMETRES!$C$24")
 
-    bande(ws, 25, "3 · DÉCOUPAGE DU PRÉVISIONNEL HORS GABARIT PAR ZONE", "B", "E")
-    entetes(ws, 26, [("B", "Zone HG (clé)"), ("C", "Part du prévi HG"), ("D", ""), ("E", "Source")])
+    bande(ws, 26, "3 · PROD OBJECTIF PAR SERVICE (affichée à l'écran)", "B", "E")
+    entetes(ws, 27, [("B", "Service"), ("C", "Lignes / h / opérateur"), ("D", ""),
+                     ("E", "Source")])
+    for i, (lib, n, v, src) in enumerate(PROD_OBJ):
+        r = 28 + i
+        cellule(ws, f"B{r}", lib, F_GRAS, border=BORD)
+        cellule(ws, f"C{r}", v, F_SAISIE, R_SAISIE, FMT_DEC, AL_D, BORD)
+        cellule(ws, f"E{r}", f"Ancien fichier « Nombre ligne h » : {src}", F_AIDE, al=AL_G)
+        nom(wb, n, f"PARAMETRES!$C${r}")
+
+    bande(ws, 32, "4 · DÉCOUPAGE DU PRÉVISIONNEL HORS GABARIT PAR ZONE", "B", "E")
+    entetes(ws, 33, [("B", "Zone HG (clé)"), ("C", "Part du prévi HG"), ("D", ""), ("E", "Source")])
     for i in range(8):
-        r = 27 + i
+        r = 34 + i
         k, v = (ZONES_HG[i][1], ZONES_HG[i][2]) if i < len(ZONES_HG) else (None, None)
         cellule(ws, f"B{r}", k, F_GRAS, R_SAISIE if k is None else None, border=BORD)
         cellule(ws, f"C{r}", v, F_SAISIE, R_SAISIE, FMT_PCT1, AL_D, BORD)
         if i == 0:
             cellule(ws, f"E{r}", "Suivi op HG (HG_Cable V17), janv.–juin 2026 : 221 634 lignes HG "
                     "hors câble sur 103 jours", F_AIDE, al=AL_G)
-    nom(wb, "HG_PART_KEY", "PARAMETRES!$B$27:$B$34")
-    nom(wb, "HG_PART_VAL", "PARAMETRES!$C$27:$C$34")
-    cellule(ws, "B35", "Total (doit faire 100 %)", F_GRAS, R_TOTAL, border=BORD)
-    cellule(ws, "C35", "=SUM(C27:C34)", F_GRAS, R_TOTAL, FMT_PCT1, AL_D, BORD)
-    cellule(ws, "D35", '=IF(ROUND(C35,3)=1,"✓","≠ 100 %")', F_GRAS, R_TOTAL, al=AL_C, border=BORD)
+    nom(wb, "HG_PART_KEY", "PARAMETRES!$B$34:$B$41")
+    nom(wb, "HG_PART_VAL", "PARAMETRES!$C$34:$C$41")
+    cellule(ws, "B42", "Total (doit faire 100 %)", F_GRAS, R_TOTAL, border=BORD)
+    cellule(ws, "C42", "=SUM(C34:C41)", F_GRAS, R_TOTAL, FMT_PCT1, AL_D, BORD)
+    cellule(ws, "D42", '=IF(ROUND(C42,3)=1,"✓","≠ 100 %")', F_GRAS, R_TOTAL, al=AL_C, border=BORD)
 
-    bande(ws, 37, "4 · HORAIRES", "B", "E")
-    entetes(ws, 38, [("B", "Heure de fin visée"), ("C", "Heure"), ("D", ""), ("E", "Note")])
-    for i, (lib, n) in enumerate([("Pick", "CIBLE_PICK"), ("Câble", "CIBLE_CABLE"),
-                                  ("Hors gabarit", "CIBLE_HG")]):
-        r = 39 + i
+    bande(ws, 44, "5 · HORAIRES ET PAUSES", "B", "E")
+    entetes(ws, 45, [("B", "Service"), ("C", "Début d'activité"), ("D", "Heure de fin visée"),
+                     ("E", "Note")])
+    for i, (lib, svc) in enumerate([("Pick", "PICK"), ("Câble", "CABLE"), ("Hors gabarit", "HG")]):
+        r = 46 + i
         cellule(ws, f"B{r}", lib, F_GRAS, border=BORD)
-        cellule(ws, f"C{r}", 20 / 24, F_SAISIE, R_SAISIE, FMT_H, AL_D, BORD)
-        cellule(ws, f"E{r}", "À ajuster : fin de poste ou dernier départ camion du service",
-                F_AIDE, al=AL_G)
-        nom(wb, n, f"PARAMETRES!$C${r}")
-    entetes(ws, 43, [("B", "Pause (libellé)"), ("C", "Début"), ("D", "Durée"), ("E", "Note")])
-    for r in range(P_DEB_L1, P_DEB_LN + 1):
-        cellule(ws, f"B{r}", None, F_SAISIE, R_SAISIE, border=BORD)
-        cellule(ws, f"C{r}", None, F_SAISIE, R_SAISIE, FMT_H, AL_D, BORD)
-        cellule(ws, f"D{r}", None, F_SAISIE, R_SAISIE, "[h]:mm", AL_D, BORD)
-    cellule(ws, f"E{P_DEB_L1}", "Ex. : Pause matin · 09:30 · 0:20. Une pause qui tombe avant "
-            "l'heure de fin estimée la repousse d'autant.", F_AIDE, al=AL_G)
-    nom(wb, "P_DEB", f"PARAMETRES!$C${P_DEB_L1}:$C${P_DEB_LN}")
-    nom(wb, "P_DUR", f"PARAMETRES!$D${P_DEB_L1}:$D${P_DEB_LN}")
+        cellule(ws, f"C{r}", (12 * 60 + 6) / 1440, F_SAISIE, R_SAISIE, FMT_H, AL_D, BORD)
+        cellule(ws, f"D{r}", 20 / 24, F_SAISIE, R_SAISIE, FMT_H, AL_D, BORD)
+        cellule(ws, f"E{r}", "Ancien fichier : « horaire prep 12h06/20h » (le calcul utilisait "
+                "21:00, 20:30 le vendredi) : à ajuster", F_AIDE, al=AL_G)
+        nom(wb, f"DEBUT_{svc}", f"PARAMETRES!$C${r}")
+        nom(wb, f"CIBLE_{svc}", f"PARAMETRES!$D${r}")
+    entetes(ws, PAU_1 - 1, [("B", "Pause : service (PICK, CABLE, HG, TOUS)"), ("C", "Début"),
+                            ("D", "Durée"), ("E", "Note")])
+    for i in range(PAU_N - PAU_1 + 1):
+        r = PAU_1 + i
+        svc, deb, dur, note = PAUSES[i] if i < len(PAUSES) else (None, None, None, None)
+        cellule(ws, f"B{r}", svc, F_SAISIE, R_SAISIE, al=AL_C, border=BORD)
+        cellule(ws, f"C{r}", deb / 1440 if deb else None, F_SAISIE, R_SAISIE, FMT_H, AL_D, BORD)
+        cellule(ws, f"D{r}", dur / 1440 if dur else None, F_SAISIE, R_SAISIE, "[h]:mm", AL_D, BORD)
+        cellule(ws, f"E{r}", note, F_AIDE, al=AL_G)
+    dvp = DataValidation(type="list", formula1='"PICK,CABLE,HG,TOUS"', allow_blank=True)
+    ws.add_data_validation(dvp)
+    dvp.add(f"B{PAU_1}:B{PAU_N}")
+    nom(wb, "P_SVC", f"PARAMETRES!$B${PAU_1}:$B${PAU_N}")
+    nom(wb, "P_DEB", f"PARAMETRES!$C${PAU_1}:$C${PAU_N}")
+    nom(wb, "P_DUR", f"PARAMETRES!$D${PAU_1}:$D${PAU_N}")
 
-    bande(ws, 49, "5 · SEUILS", "B", "E")
-    seuils = [("Marge mini pour « FACILE » (min)", "SEUIL_TENDU", 30, "0",
+    bande(ws, 57, "6 · SEUILS", "B", "E")
+    seuils = [("Marge mini pour « FACILE » (min)", "SEUIL_TENDU", 30,
                "Marge ≥ seuil : FACILE · entre 0 et le seuil : TENDU · négative : COMPLIQUÉ"),
-              ("Rétract câble : alerte à partir de (lignes)", "SEUIL_RETRACT", 10, "0",
-               "Lignes rétract câble lancées + en cours → « PRÉVOIR CARISTE »"),
-              ("Écran TV : données périmées après (min)", "PERIME_MIN", 15, "0",
+              ("Écran TV : données périmées après (min)", "PERIME_MIN", 15,
                "Au-delà, l'écran affiche un bandeau « données non actualisées »")]
-    for i, (lib, n, v, fmt, note) in enumerate(seuils):
-        r = 50 + i
+    for i, (lib, n, v, note) in enumerate(seuils):
+        r = 58 + i
         cellule(ws, f"B{r}", lib, F_GRAS, border=BORD)
-        cellule(ws, f"C{r}", v, F_SAISIE, R_SAISIE, fmt, AL_D, BORD)
+        cellule(ws, f"C{r}", v, F_SAISIE, R_SAISIE, "0", AL_D, BORD)
         cellule(ws, f"E{r}", note, F_AIDE, al=AL_G)
         nom(wb, n, f"PARAMETRES!$C${r}")
 
-    bande(ws, 54, "6 · CONNEXION LOGYS ET EXPORT VERS L'ÉCRAN TV", "B", "E")
+    bande(ws, 61, "7 · CONNEXION LOGYS ET EXPORT VERS L'ÉCRAN TV", "B", "E")
     cnx = [("DSN ODBC Logys", "CFG_DSN", "A_RENSEIGNER",
-            "Nom de la source ODBC Oracle déjà configurée sur le poste (Sources de données ODBC)"),
-           ("Utilisateur (facultatif)", "CFG_UID", None,
-            "Vide si le DSN le contient. Le mot de passe est demandé par la fenêtre ODBC, jamais écrit"),
+            "Même source ODBC que « Suivi activité préparation » (Données > Connexions > Propriétés)"),
+           ("Utilisateur", "CFG_UID", None,
+            "Le compte de lecture de l'ancien fichier. Le mot de passe est demandé par la fenêtre "
+            "ODBC (ou gardé dans le DSN), jamais écrit dans le classeur"),
            ("Actualisation auto (minutes)", "CFG_INTERVALLE", 5, "Entre 2 et 15 conseillé"),
            ("Dossier d'export", "CFG_DOSSIER", None,
             "Dossier partagé où se trouve index.html (ex. \\\\serveur\\partage\\Dashboard). "
@@ -371,64 +411,77 @@ def creer():
            ("Fichier de données", "CFG_FICHIER", "donnees_dashboard.js", "Nom attendu par index.html"),
            ("Nom du site", "CFG_SITE", "CLR Champigneulles", "Affiché en haut de l'écran")]
     for i, (lib, n, v, note) in enumerate(cnx):
-        r = 55 + i
+        r = 62 + i
         cellule(ws, f"B{r}", lib, F_GRAS, border=BORD)
         cellule(ws, f"C{r}", v, F_SAISIE, R_SAISIE, al=AL_G, border=BORD)
         ws.merge_cells(f"C{r}:D{r}")
         cellule(ws, f"E{r}", note, F_AIDE, al=AL_G)
         nom(wb, n, f"PARAMETRES!$C${r}")
 
-    bande(ws, 62, "7 · PARAMÉTRAGE DE LA REQUÊTE LOGYS (jetons &&… du modèle SQL)", "B", "E")
-    entetes(ws, 63, [("B", "Jeton"), ("C", "Valeur (SQL Oracle)"), ("D", "Forme attendue"),
-                     ("E", "Rôle")])
+    bande(ws, 69, "8 · REQUÊTE LOGYS (jetons &&… du modèle SQL, onglet REQUETES)", "B", "E")
+    entetes(ws, 70, [("B", "Jeton"), ("C", "Valeur (SQL Oracle)"), ("D", "Forme"), ("E", "Rôle")])
     for i, (jet, val, role, forme) in enumerate(JETONS):
-        r = 64 + i
+        r = 71 + i
         cellule(ws, f"B{r}", jet, Font(name="Consolas", size=10, bold=True), border=BORD)
         cellule(ws, f"C{r}", val, Font(name="Consolas", size=10, bold=True, color="0000FF"),
                 R_SAISIE, al=AL_G, border=BORD)
         cellule(ws, f"D{r}", forme, Font(name="Consolas", size=8, color="7A808A"), al=AL_G,
                 border=BORD)
         cellule(ws, f"E{r}", role, F_AIDE, al=AL_G)
-    nom(wb, "CFG_SQL", f"PARAMETRES!$B$64:$C${63 + len(JETONS)}")
-    r = 64 + len(JETONS) + 1
-    cellule(ws, f"B{r}", "Valeurs à trouver avec sql/00_decouverte_schema.sql. Le jeton "
-            "ZONES_CABLE est calculé tout seul depuis l'onglet ZONES. Mêmes valeurs que les "
-            "DEFINE de sql/requetes_prepa.sql.", F_AIDE)
+    nom(wb, "CFG_SQL", f"PARAMETRES!$B$71:$C${70 + len(JETONS)}")
     ws.freeze_panes = "A4"
 
     # ───────────────────────────── ZONES ───────────────────────────────
     ws = zon
-    for col, w in {"A": 20, "B": 12, "C": 22, "D": 80}.items():
+    for col, w in {"A": 20, "B": 11, "C": 22, "D": 64, "E": 4, "F": 3, "G": 16, "H": 11,
+                   "I": 44}.items():
         ws.column_dimensions[col].width = w
-    cellule(ws, "A1", "ZONES — ZONE_MVT Logys → service et zone du dashboard", F_TITRE)
-    cellule(ws, "A2", "Une zone Logys absente de la liste compte en PICK et est ajoutée ici "
-            "automatiquement avec « À VÉRIFIER ». Services : PICK, CABLE, HG. Zone dashboard HG : "
-            "même clé que PILOTAGE colonne C (SOL, LONGUEUR 2M…).", F_SOUS)
-    entetes(ws, 4, [("A", "ZONE_MVT"), ("B", "SERVICE"), ("C", "ZONE DASHBOARD"),
-                    ("D", "REMARQUE")], 22)
+    ws.column_dimensions["E"].hidden = True
+    cellule(ws, "A1", "ZONES — zones de prise et sous-types de tournée", F_TITRE)
+    cellule(ws, "A2", "Le service vient du sous-type de tournée (colonnes G:H), la zone du "
+            "dashboard de la zone de prise (colonnes A:C). Une valeur Logys inconnue est ajoutée "
+            "automatiquement avec « À VÉRIFIER ».", F_SOUS)
+    entetes(ws, 4, [("A", "ZONE_MVT_PRISE"), ("B", "SERVICE"), ("C", "ZONE DASHBOARD"),
+                    ("D", "REMARQUE"), ("G", "L_STYP_TOUR"), ("H", "SERVICE"), ("I", "REMARQUE")], 22)
     for i in range(ZON_N - ZON_1 + 1):
         r = ZON_1 + i
-        z = ZONES_MVT[i] if i < len(ZONES_MVT) else (None, None, None)
-        cellule(ws, f"A{r}", z[0], Font(name="Consolas", size=10, bold=True), fmt="@", border=BORD)
-        cellule(ws, f"B{r}", z[1], F_SAISIE, border=BORD, al=AL_C)
-        cellule(ws, f"C{r}", z[2], F_SAISIE, border=BORD)
-        cellule(ws, f"D{r}", REMARQUES_ZONES.get(z[0]) if z[0] else None, F_AIDE, border=BORD)
+        svc, z, d = ZONES_MVT[i] if i < len(ZONES_MVT) else (None, None, None)
+        cellule(ws, f"A{r}", z, Font(name="Consolas", size=10, bold=True), fmt="@", border=BORD)
+        cellule(ws, f"B{r}", svc, F_SAISIE, border=BORD, al=AL_C)
+        cellule(ws, f"C{r}", d, F_SAISIE, border=BORD)
+        cellule(ws, f"D{r}", REMARQUES_ZONES.get((svc, z)), F_AIDE, border=BORD)
+        ws[f"E{r}"] = f'=IF($A{r}="","",$B{r}&"|"&$A{r})'
+    for i in range(TYP_N - TYP_1 + 1):
+        r = TYP_1 + i
+        st, svc = TYPES[i] if i < len(TYPES) else (None, None)
+        cellule(ws, f"G{r}", st, Font(name="Consolas", size=10, bold=True), fmt="@", border=BORD)
+        cellule(ws, f"H{r}", svc, F_SAISIE, border=BORD, al=AL_C)
+        cellule(ws, f"I{r}", "Ancien fichier V4.69" if st else None, F_AIDE, border=BORD)
     dv = DataValidation(type="list", formula1='"PICK,CABLE,HG"', allow_blank=True)
     ws.add_data_validation(dv)
     dv.add(f"B{ZON_1}:B{ZON_N}")
-    ws.conditional_formatting.add(f"A{ZON_1}:D{ZON_N}", FormulaRule(
-        formula=[f'LEFT($D{ZON_1},10)="À VÉRIFIER"'], fill=PatternFill("solid", fgColor="FFE6CC")))
+    dv.add(f"H{TYP_1}:H{TYP_N}")
+    for plage, col in ((f"A{ZON_1}:D{ZON_N}", "D"), (f"G{TYP_1}:I{TYP_N}", "I")):
+        ws.conditional_formatting.add(plage, FormulaRule(
+            formula=[f'LEFT(${col}{ZON_1 if col == "D" else TYP_1},10)="À VÉRIFIER"'],
+            fill=PatternFill("solid", fgColor="FFE6CC")))
     ws.freeze_panes = "A5"
     nom(wb, "Z_MVT", f"ZONES!$A${ZON_1}:$A${ZON_N}")
     nom(wb, "Z_SERV", f"ZONES!$B${ZON_1}:$B${ZON_N}")
     nom(wb, "Z_DASH", f"ZONES!$C${ZON_1}:$C${ZON_N}")
+    nom(wb, "Z_CLE", f"ZONES!$E${ZON_1}:$E${ZON_N}")
+    nom(wb, "T_STYP", f"ZONES!$G${TYP_1}:$G${TYP_N}")
+    nom(wb, "T_SERV", f"ZONES!$H${TYP_1}:$H${TYP_N}")
 
     # ──────────────────────────── DONNEES ──────────────────────────────
     ws = don
-    for col, w in {"A": 20, "B": 14, "C": 12, "D": 10, "E": 12, "F": 12, "G": 10, "H": 20,
-                   "I": 10}.items():
+    cols = ["STYP", "ZONE", "ETAT", "NB_TOURS", "LIG_PREV", "LIG_TERM", "LIG_ANNU", "NB_PREPA",
+            "LIG_TERM_JOUR", "SERVICE", "ZONE DASH.", "STATUT", "RESTE", "TYPE CONNU",
+            "ZONE CONNUE"]
+    for col, w in zip("ABCDEFGHIJKLMNO", (13, 18, 11, 10, 10, 10, 10, 10, 13, 10, 18, 11, 10,
+                                          11, 11)):
         ws.column_dimensions[col].width = w
-    cellule(ws, "A1", "DONNÉES — résultat de la requête Logys (écrit par la macro)", F_TITRE)
+    cellule(ws, "A1", "DONNÉES — résultat de la requête Logys (A:I écrit par la macro)", F_TITRE)
     cellule(ws, "A2", "Horodatage", F_GRAS)
     cellule(ws, "B2", None, F_GRAS, fmt="dd/mm/yyyy hh:mm:ss", al=AL_G)
     cellule(ws, "A3", "Source", F_GRAS)
@@ -438,22 +491,29 @@ def creer():
     nom(wb, "MAJ_DONNEES", "DONNEES!$B$2")
     nom(wb, "SOURCE_DONNEES", "DONNEES!$B$3")
     nom(wb, "STATUT_MAJ", "DONNEES!$B$4")
-    entetes(ws, 6, [("A", "ZONE_MVT"), ("B", "ALLEE"), ("C", "STATUT"), ("D", "RETRACT"),
-                    ("E", "NB_LIGNES"), ("F", "NB_PREPA"), ("G", "SERVICE"),
-                    ("H", "ZONE DASHBOARD"), ("I", "ZONE CONNUE")], 22)
+    entetes(ws, 6, list(zip("ABCDEFGHIJKLMNO", cols)), 22)
     for r in range(DON_1, DON_N + 1):
         ws[f"A{r}"].number_format = "@"
         ws[f"B{r}"].number_format = "@"
-        ws[f"G{r}"] = (f'=IF($A{r}="","",IFERROR(IF(INDEX(Z_SERV,MATCH($A{r},Z_MVT,0))&""="",'
-                       f'"PICK",INDEX(Z_SERV,MATCH($A{r},Z_MVT,0))&""),"PICK"))')
-        ws[f"H{r}"] = (f'=IF($A{r}="","",IF($G{r}="CABLE",$B{r},IF($G{r}="PICK","PICK",'
-                       f'IFERROR(INDEX(Z_DASH,MATCH($A{r},Z_MVT,0))&"","?"))))')
-        ws[f"I{r}"] = f'=IF($A{r}="","",IF(ISNUMBER(MATCH($A{r},Z_MVT,0)),"OUI","NON"))'
-        for col in "ABCDEFGHI":
+        ws[f"C{r}"].number_format = "@"
+        ws[f"J{r}"] = (f'=IF($A{r}="","",IFERROR(IF(INDEX(T_SERV,MATCH($A{r},T_STYP,0))&""="",'
+                       f'"?",INDEX(T_SERV,MATCH($A{r},T_STYP,0))&""),"?"))')
+        ws[f"K{r}"] = (f'=IF($A{r}="","",IF($J{r}="PICK","PICK",IFERROR(IF(INDEX(Z_DASH,'
+                       f'MATCH($J{r}&"|"&$B{r},Z_CLE,0))&""="","?",INDEX(Z_DASH,MATCH($J{r}&"|"'
+                       f'&$B{r},Z_CLE,0))&""),IF($J{r}="HG","SOL",IF($J{r}="CABLE","COUPES","?")))))')
+        ws[f"L{r}"] = (f'=IF($A{r}="","",IF($C{r}="LANCEE","LANCE",IF($C{r}="ENCOURS",'
+                       f'"EN_COURS",$C{r})))')
+        ws[f"M{r}"] = f'=IF($A{r}="","",MAX(0,N($E{r})-N($F{r})-N($G{r})))'
+        ws[f"N{r}"] = f'=IF($A{r}="","",IF(ISNUMBER(MATCH($A{r},T_STYP,0)),"OUI","NON"))'
+        ws[f"O{r}"] = (f'=IF(OR($A{r}="",$J{r}="PICK",$J{r}="?"),"",IF(ISNUMBER(MATCH($J{r}&"|"'
+                       f'&$B{r},Z_CLE,0)),"OUI","NON"))')
+        for col in "ABCDEFGHIJKLMNO":
             ws[f"{col}{r}"].font = F_BASE
     ws.freeze_panes = "A7"
-    for n, col in {"D_ZONE": "A", "D_ALLEE": "B", "D_STATUT": "C", "D_RETR": "D", "D_NB": "E",
-                   "D_PREPA": "F", "D_SERV": "G", "D_DASH": "H", "D_CONNUE": "I"}.items():
+    for n, col in {"D_STYP": "A", "D_ZONE": "B", "D_ETAT": "C", "D_TOURS": "D", "D_PREV": "E",
+                   "D_TERM": "F", "D_ANNU": "G", "D_PREPA": "H", "D_TERMJ": "I", "D_SERV": "J",
+                   "D_DASH": "K", "D_STATUT": "L", "D_RESTE": "M", "D_STYPOK": "N",
+                   "D_ZONEOK": "O"}.items():
         nom(wb, n, f"DONNEES!${col}${DON_1}:${col}${DON_N}")
 
     # ───────────────────────────── HISTO ───────────────────────────────
@@ -475,24 +535,23 @@ def creer():
     ws.column_dimensions["A"].width = 2
     ws.column_dimensions["B"].width = 140
     cellule(ws, "B2", "REQUÊTES — modèle SQL Logys utilisé par la macro", F_TITRE)
-    cellule(ws, "B3", "Les jetons &&NOM sont remplacés par les valeurs de PARAMETRES (bloc 7). "
-            "Texte identique à Q6 de sql/requetes_prepa.sql. Pas de point-virgule final (ODBC).",
-            F_SOUS)
+    cellule(ws, "B3", "Les jetons &&NOM sont remplacés par PARAMETRES (bloc 8). Texte identique à "
+            "Q6 de sql/requetes_prepa.sql. Pas de point-virgule final (ODBC).", F_SOUS)
     cellule(ws, "B4", "Modèle", F_GRAS)
     cellule(ws, "B5", modele_sql(), F_MONO, R_AIDE, al=AL_GW)
-    ws.row_dimensions[5].height = 409
+    ws.row_dimensions[5].height = 260
     cellule(ws, "B7", "Dernière requête envoyée à Logys (écrite par la macro, pour contrôle)",
             F_GRAS)
     cellule(ws, "B8", None, F_MONO, R_AIDE, al=AL_GW)
-    ws.row_dimensions[8].height = 300
+    ws.row_dimensions[8].height = 260
     nom(wb, "SQL_MODELE", "REQUETES!$B$5")
     nom(wb, "SQL_GENERE", "REQUETES!$B$8")
 
     # ──────────────────────────── PILOTAGE ─────────────────────────────
     ws = pil
-    largeurs = {"A": 2, "B": 24, "C": 13, "D": 11, "E": 11, "F": 11, "G": 11, "H": 11, "I": 11,
-                "J": 11, "K": 11, "L": 12, "M": 15, "N": 11, "O": 11, "P": 30, "Q": 2, "R": 11,
-                "S": 11, "T": 11, "U": 11, "V": 11}
+    largeurs = {"A": 2, "B": 24, "C": 15, "D": 11, "E": 11, "F": 11, "G": 11, "H": 11, "I": 11,
+                "J": 11, "K": 11, "L": 12, "M": 15, "N": 11, "O": 11, "P": 11, "Q": 11, "R": 30,
+                "S": 2, "T": 12, "U": 11, "V": 16, "W": 11, "X": 11, "Y": 11}
     for col, w in largeurs.items():
         ws.column_dimensions[col].width = w
     cellule(ws, "B2", "PILOTAGE PRÉPARATION — PICK · CÂBLE · HORS GABARIT", F_TITRE)
@@ -502,16 +561,17 @@ def creer():
     cellule(ws, "B4", "Boutons : lancer une fois la macro InstallerBoutons (Alt+F8).", F_AIDE)
 
     kpis = [
-        ("B", "PRÉVISIONNEL LIGNES DU JOUR", 9000, F_SAISIE, R_SAISIE, FMT_LIG),
-        ("D", "HEURE DE CALCUL", "=IF(N(MAJ_DONNEES)=0,NOW(),MAJ_DONNEES)", F_KPI, R_KPI, FMT_DT),
-        ("F", "DONNÉES", '=IF(N(MAJ_DONNEES)=0,"aucune — saisie",SOURCE_DONNEES&" "'
+        ("B", "PRÉVI LIGNES COMMANDE", 7500, F_SAISIE, R_SAISIE, FMT_LIG),
+        ("D", "PRÉVI LIGNES TOURNÉE", "=PREVI*FOISONNEMENT", F_KPI, R_KPI, FMT_LIG),
+        ("F", "HEURE DE CALCUL", "=IF(N(MAJ_DONNEES)=0,NOW(),MAJ_DONNEES)", F_KPI, R_KPI, FMT_DT),
+        ("H", "DONNÉES", '=IF(N(MAJ_DONNEES)=0,"aucune — saisie",SOURCE_DONNEES&" "'
                          '&TEXT(MAJ_DONNEES,"hh:mm"))', F_KPI, R_KPI, None),
-        ("I", "RENDEMENT ÉQUIPE", "=RENDEMENT", Font(name=POLICE, size=14, bold=True,
+        ("J", "RENDEMENT ÉQUIPE", "=RENDEMENT", Font(name=POLICE, size=14, bold=True,
                                                     color="008000"), R_KPI, "0%"),
-        ("K", "ZONES LOGYS À VÉRIFIER", f'=COUNTIF(ZONES!$D${ZON_1}:$D${ZON_N},"À VÉRIFIER*")',
-         F_KPI, R_KPI, "0"),
-        ("M", "LIGNES NON VENTILÉES",
-         '=MAX(0,SUMIFS(D_NB,D_STATUT,"LANCE")+SUMIFS(D_NB,D_STATUT,"EN_COURS")'
+        ("L", "À VÉRIFIER (ZONES)", f'=COUNTIF(ZONES!$D${ZON_1}:$D${ZON_N},"À VÉRIFIER*")'
+         f'+COUNTIF(ZONES!$I${TYP_1}:$I${TYP_N},"À VÉRIFIER*")', F_KPI, R_KPI, "0"),
+        ("N", "LIGNES NON VENTILÉES",
+         '=MAX(0,SUMIFS(D_RESTE,D_STATUT,"LANCE")+SUMIFS(D_RESTE,D_STATUT,"EN_COURS")'
          '-SUM($D$11:$E$13))', F_KPI, R_KPI, FMT_LIG),
     ]
     for col, lib, val, font, fill, fmt in kpis:
@@ -524,67 +584,76 @@ def creer():
             c.font = Font(name=POLICE, size=14, bold=True, color="0000FF")
     ws.row_dimensions[7].height = 26
     nom(wb, "PREVI", "PILOTAGE!$B$7")
-    nom(wb, "H_CALC", "PILOTAGE!$D$7")
-    nom(wb, "NB_ZONES_VERIF", "PILOTAGE!$K$7")
-    nom(wb, "NON_VENTILEES", "PILOTAGE!$M$7")
-    ws["M6"].comment = Comment("Lignes lancées + en cours renvoyées par Logys qui ne tombent dans "
-                               "aucune ligne des tableaux (allée câble absente, zone HG sans "
-                               "ligne…). Doit rester à 0.", "Dashboard")
+    nom(wb, "PREVI_TOUR", "PILOTAGE!$D$7")
+    nom(wb, "H_CALC", "PILOTAGE!$F$7")
+    nom(wb, "NB_ZONES_VERIF", "PILOTAGE!$L$7")
+    nom(wb, "NON_VENTILEES", "PILOTAGE!$N$7")
+    ws["N6"].comment = Comment("Lignes lancées + en cours renvoyées par Logys qui ne tombent dans "
+                               "aucune ligne des tableaux (sous-type ou zone inconnus, case "
+                               "manquante). Doit rester à 0.", "Dashboard")
+    ws["B6"].comment = Comment("Prévisionnel du jour en lignes commande, comme dans l'ancien "
+                               "fichier. Il est converti en lignes de tournée avec le "
+                               "foisonnement (PARAMETRES, bloc 1).", "Dashboard")
 
     # Synthèse
-    bande(ws, 9, "SYNTHÈSE — ce qu'affiche l'écran TV", "B", "V")
+    bande(ws, 9, "SYNTHÈSE — ce qu'affiche l'écran TV", "B", "Y")
     entetes(ws, 10, [("B", "Service"), ("C", "Reste à faire"), ("D", "Lancées"),
-                     ("E", "En cours"), ("F", "À venir (prévi)"), ("G", "Préparées"),
+                     ("E", "En cours"), ("F", "À venir (prévi)"), ("G", "Préparées (jour)"),
                      ("H", "Opérateurs"), ("I", "Fin estimée"), ("J", "Fin si rééquilibrage"),
-                     ("K", "Heure visée"), ("L", "Marge (min)"), ("M", "Statut"),
-                     ("N", "Renfort (+ op.)"), ("O", "Avancement"), ("P", "Message"),
-                     ("R", "Visée (date)"), ("S", "Temps dispo (h)"), ("T", "Zone non couverte"),
-                     ("U", "Charge (h·op)"), ("V", "Prépa. vus Logys")], 32)
-    services = [("PICK", "Pick", "CIBLE_PICK", PICK_L, PICK_L, PICK_L),
-                ("CABLE", "Câble", "CIBLE_CABLE", CAB_1, CAB_N, CAB_TOT),
-                ("HG", "Hors gabarit", "CIBLE_HG", HG_1, HG_N, HG_TOT)]
-    for svc, lib, cible, a, b, t in services:
+                     ("K", "Heure visée"), ("L", "Marge (min)"), ("M", "État"),
+                     ("N", "Renfort (+ op.)"), ("O", "Avancement"), ("P", "Prod (l/h/op)"),
+                     ("Q", "Prod objectif"), ("R", "Message"), ("T", "Visée (date)"),
+                     ("U", "Temps dispo (h)"), ("V", "Zone non couverte"), ("W", "Charge (h·op)"),
+                     ("X", "Prépa. vus Logys"), ("Y", "Heures écoulées")], 32)
+    services = [("PICK", "Pick", PICK_L, PICK_L, PICK_L),
+                ("CABLE", "Câble", CAB_1, CAB_N, CAB_TOT),
+                ("HG", "Hors gabarit", HG_1, HG_N, HG_TOT)]
+    for svc, lib, a, b, t in services:
         s = SYN[svc]
-        pause = f"SUMPRODUCT((P_DEB>=MOD(H_CALC,1))*(P_DEB<MOD(H_CALC,1)+U{s}/H{s}/24)*P_DUR)"
+        t0 = "MOD(H_CALC,1)"
         f = {
             "B": lib,
             "C": f"=N(H{t})", "D": f"=N(D{t})", "E": f"=N(E{t})", "F": f"=N(G{t})",
             "G": f"=N(F{t})", "H": f"=N(I{t})",
-            "I": (f'=IF(C{s}=0,"Terminé",IF(T{s}<>"","Non couverte",'
+            "I": (f'=IF(C{s}=0,"Terminé",IF(V{s}<>"","Non couverte",'
                   f'IF(COUNT(L{a}:L{b})=0,"?",MAX(L{a}:L{b}))))'),
-            "J": (f'=IF(C{s}=0,"Terminé",IF(H{s}<=0,"Aucun opérateur",IF(U{s}<=0,"?",'
-                  f'H_CALC+U{s}/H{s}/24+{pause})))'),
-            "K": f"={cible}",
-            "L": f'=IF(ISNUMBER(I{s}),ROUND((R{s}-I{s})*1440,0),"")',
+            "J": (f'=IF(C{s}=0,"Terminé",IF(H{s}<=0,"Aucun opérateur",IF(W{s}<=0,"?",'
+                  f'H_CALC+W{s}/H{s}/24+{pauses_entre(svc, t0, f"{t0}+W{s}/H{s}/24")})))'),
+            "K": f"=CIBLE_{svc}",
+            "L": f'=IF(ISNUMBER(I{s}),ROUND((T{s}-I{s})*1440,0),"")',
             "M": (f'=IF(C{s}=0,"TERMINÉ",IF(NOT(ISNUMBER(I{s})),"COMPLIQUÉ",'
                   f'IF(L{s}<0,"COMPLIQUÉ",IF(L{s}<SEUIL_TENDU,"TENDU","FACILE"))))'),
-            "N": f'=IF(C{s}=0,0,IF(S{s}<=0,"Visée dépassée",MAX(0,ROUNDUP(U{s}/S{s}-H{s},0))))',
+            "N": f'=IF(C{s}=0,0,IF(U{s}<=0,"Visée dépassée",MAX(0,ROUNDUP(W{s}/U{s}-H{s},0))))',
             "O": f'=IF(G{s}+C{s}=0,"",G{s}/(G{s}+C{s}))',
-            "P": (f'=IF(M{s}="TERMINÉ","Service terminé",IF(ISNUMBER(N{s}),'
+            "P": f'=IF(AND(H{s}>0,Y{s}>=0.25),G{s}/(H{s}*Y{s}),"")',
+            "Q": f"=PROD_OBJ_{svc}",
+            "R": (f'=IF(M{s}="TERMINÉ","Service terminé",IF(ISNUMBER(N{s}),'
                   f'IF(N{s}>0,"Renfort +"&N{s}&" opérateur(s) pour finir à "&TEXT(K{s},"hh:mm"),'
-                  f'IF(T{s}<>"","Zone sans opérateur : "&T{s},'
+                  f'IF(V{s}<>"","Zone sans opérateur : "&V{s},'
                   f'IF(M{s}="FACILE","Marge "&INT(L{s}/60)&" h "&TEXT(MOD(L{s},60),"00"),'
                   f'"Rééquilibrer les opérateurs entre zones"))),"Heure visée dépassée"))'),
-            "R": f"=INT(H_CALC)+K{s}",
-            "S": (f"=MAX(0,(R{s}-H_CALC)*24-SUMPRODUCT((P_DEB>=MOD(H_CALC,1))*(P_DEB<K{s})"
-                  f"*P_DUR)*24)"),
-            "T": f'=IFERROR(INDEX(B{a}:B{b},MATCH("NON COUVERTE",M{a}:M{b},0)),"")',
-            "U": f"=N(K{t})",
-            "V": f"=N(P{t})",
+            "T": f"=INT(H_CALC)+K{s}",
+            "U": f"=MAX(0,(T{s}-H_CALC)*24-{pauses_entre(svc, t0, f'K{s}')}*24)",
+            "V": f'=IFERROR(INDEX(B{a}:B{b},MATCH("NON COUVERTE",M{a}:M{b},0)),"")',
+            "W": f"=N(K{t})",
+            "X": f"=N(P{t})",
+            "Y": (f"=MAX(0,(H_CALC-(INT(H_CALC)+DEBUT_{svc}))*24-SUMPRODUCT({filtre_pause(svc)}"
+                  f"*(P_DEB>=DEBUT_{svc})*(P_DEB+P_DUR<={t0})*P_DUR)*24)"),
         }
         fmts = {"C": FMT_LIG, "D": FMT_LIG, "E": FMT_LIG, "F": FMT_LIG, "G": FMT_LIG,
                 "H": "0.0", "I": FMT_H, "J": FMT_H, "K": FMT_H, "L": "+0;-0;0", "N": "0",
-                "O": FMT_PCT, "R": FMT_DT, "S": FMT_DEC, "U": FMT_DEC, "V": "0"}
+                "O": FMT_PCT, "P": FMT_DEC, "Q": FMT_DEC, "T": FMT_DT, "U": FMT_DEC,
+                "W": FMT_DEC, "X": "0", "Y": FMT_DEC}
         for col, v in f.items():
-            font = F_GRAS if col in "BCIMN" else F_BASE
-            if col in "RSTUV":
+            font = F_GRAS if col in "BCIMNP" else F_BASE
+            if col in "TUVWXY":
                 font = F_AIDE
-            if col == "K":
+            if col in "KQ":
                 font = F_LIEN
             cellule(ws, f"{col}{s}", v, font, fmt=fmts.get(col), border=BORD,
-                    al=AL_G if col in "BP" else (AL_C if col in "IJKLMN" else AL_D))
+                    al=AL_G if col in "BR" else (AL_C if col in "IJKLMN" else AL_D))
         ws.row_dimensions[s].height = 24
-        nom(wb, f"SYN_{svc}", f"PILOTAGE!$B${s}:$V${s}")
+        nom(wb, f"SYN_{svc}", f"PILOTAGE!$B${s}:$Y${s}")
     regles_statut(ws, "M11:M13")
     ws.conditional_formatting.add("O11:O13", DataBarRule(start_type="num", start_value=0,
                                                          end_type="num", end_value=1,
@@ -592,9 +661,12 @@ def creer():
     ws.conditional_formatting.add("N11:N13", CellIsRule(
         operator="greaterThan", formula=["0"], fill=PatternFill("solid", fgColor="FADBD8"),
         font=Font(name=POLICE, bold=True, color="B3261E")))
+    ws.conditional_formatting.add("P11:P13", FormulaRule(
+        formula=["AND(ISNUMBER(P11),P11<Q11*0.9)"], font=Font(name=POLICE, bold=True,
+                                                               color="B3261E")))
 
-    entete_zones = [("B", "Zone"), ("C", "Clé / code Logys"), ("D", "Lancées"),
-                    ("E", "En cours"), ("F", "Préparées (jour)"), ("G", "À venir (prévi)"),
+    entete_zones = [("B", "Zone"), ("C", "Clé (onglet ZONES)"), ("D", "Lancées"),
+                    ("E", "En cours (reste)"), ("F", "Préparées (jour)"), ("G", "À venir (prévi)"),
                     ("H", "Reste à faire"), ("I", "Opérateurs ✎"), ("J", "Cadence (l/h/op)"),
                     ("K", "Charge (h·op)"), ("L", "Fin estimée"), ("M", "Statut"),
                     ("N", "Op. pour l'heure visée"), ("O", "Renfort zone"),
@@ -602,61 +674,49 @@ def creer():
                     ("S", "En cours ✎ manuel"), ("T", "Préparées ✎ manuel")]
 
     # PICK
-    bande(ws, 15, "PICK — lignes et opérateurs", "B", "T")
+    bande(ws, 15, "PICK — détail + carton : lignes et opérateurs", "B", "T")
     entetes(ws, 16, entete_zones, 34)
-    cellule(ws, f"B{PICK_L}", "Pick (toutes zones)", F_GRAS)
+    cellule(ws, f"B{PICK_L}", "Pick (détail + carton)", F_GRAS)
     cellule(ws, f"C{PICK_L}", "PICK", F_GRAS, al=AL_C)
-    formules_zone(ws, PICK_L, "PICK", '"PICK"',
-                  f'=IF($C{PICK_L}="","",MAX(0,PREVI*PART_PICK-SUM(D{PICK_L}:F{PICK_L})))')
-    ws[f"I{PICK_L}"] = 10
+    formules_zone(ws, PICK_L, "PICK",
+                  f'=IF($C{PICK_L}="","",MAX(0,PREVI_TOUR*PART_PICK-SUM(D{PICK_L}:F{PICK_L})))')
+    ws[f"I{PICK_L}"] = 11
     nom(wb, "ZT_PICK", f"PILOTAGE!$B${PICK_L}:$T${PICK_L}")
 
     # CÂBLE
-    bande(ws, 19, "CÂBLE — par allée (opérateurs par allée ; 0,5 = un opérateur partagé "
-          "sur deux allées)", "B", "T")
+    bande(ws, 19, "CÂBLE — coupes et rétract (0,5 = un opérateur partagé)", "B", "T")
     entetes(ws, 20, entete_zones, 34)
-    for r in range(CAB_1, CAB_N + 1):
-        cellule(ws, f"B{r}", None, F_SAISIE, R_SAISIE, border=BORD)
-        cellule(ws, f"C{r}", None, F_SAISIE, R_SAISIE, "@", AL_C, BORD)
+    ops_cab = [4, 1]
+    for i, r in enumerate(range(CAB_1, CAB_N + 1)):
+        lib, cle = ZONES_CABLE[i] if i < len(ZONES_CABLE) else (None, None)
+        cellule(ws, f"B{r}", lib, F_SAISIE, R_SAISIE, border=BORD)
+        cellule(ws, f"C{r}", cle, F_SAISIE, R_SAISIE, "@", AL_C, BORD)
         avenir = (f'=IF($C{r}="","",CABLE_AVENIR*IF(SUM($D${CAB_1}:$E${CAB_N})=0,'
                   f'1/COUNTA($C${CAB_1}:$C${CAB_N}),SUM(D{r}:E{r})/SUM($D${CAB_1}:$E${CAB_N})))')
-        formules_zone(ws, r, "CABLE", '"CÂBLE"', avenir)
-    ws[f"B{CAB_1}"] = "Câble (toutes allées)"
-    ws[f"C{CAB_1}"] = "TOUTES"
-    ws[f"I{CAB_1}"] = 3
-    cellule(ws, f"B{CAB_RETR}", "dont rétract (info)", F_AIDE, border=BORD)
-    cellule(ws, f"D{CAB_RETR}", '=SUMIFS(D_NB,D_SERV,"CABLE",D_RETR,1,D_STATUT,"LANCE")', F_AIDE,
-            fmt=FMT_LIG, al=AL_D, border=BORD)
-    cellule(ws, f"E{CAB_RETR}", '=SUMIFS(D_NB,D_SERV,"CABLE",D_RETR,1,D_STATUT,"EN_COURS")',
-            F_AIDE, fmt=FMT_LIG, al=AL_D, border=BORD)
-    cellule(ws, f"F{CAB_RETR}", '=SUMIFS(D_NB,D_SERV,"CABLE",D_RETR,1,D_STATUT,"PREPAREE")',
-            F_AIDE, fmt=FMT_LIG, al=AL_D, border=BORD)
-    cellule(ws, f"H{CAB_RETR}", f"=D{CAB_RETR}+E{CAB_RETR}", F_GRAS, fmt=FMT_LIG, al=AL_D,
-            border=BORD)
-    cellule(ws, f"M{CAB_RETR}", f'=IF(H{CAB_RETR}>=SEUIL_RETRACT,"PRÉVOIR CARISTE",'
-            f'IF(H{CAB_RETR}>0,"OK","—"))', F_GRAS, al=AL_C, border=BORD)
+        formules_zone(ws, r, "CABLE", avenir)
+        if i < len(ops_cab):
+            ws[f"I{r}"] = ops_cab[i]
     nom(wb, "ZT_CABLE", f"PILOTAGE!$B${CAB_1}:$T${CAB_N}")
-    nom(wb, "RETR_CABLE", f"PILOTAGE!$B${CAB_RETR}:$T${CAB_RETR}")
-    cellule(ws, f"U{CAB_RETR}", "À venir câble", F_AIDE, al=AL_C)
-    cellule(ws, f"U{CAB_TOT}", f"=MAX(0,PREVI*PART_CABLE-SUM($D${CAB_1}:$F${CAB_N}))", F_AIDE,
+    cellule(ws, f"U{CAB_TOT - 1}", "À venir câble", F_AIDE, al=AL_C)
+    cellule(ws, f"U{CAB_TOT}", f"=MAX(0,PREVI_TOUR*PART_CABLE-SUM($D${CAB_1}:$F${CAB_N}))", F_AIDE,
             fmt=FMT_LIG, al=AL_D, border=BORD)
     nom(wb, "CABLE_AVENIR", f"PILOTAGE!$U${CAB_TOT}")
 
     # HG
-    bande(ws, 36, "HORS GABARIT — par zone (sol, longueurs 2 m / 3 m, rétract, rétract longueur)",
+    bande(ws, 29, "HORS GABARIT — par zone (sol, longueurs 2 m / 3 m, rétract, rétract longueur)",
           "B", "T")
-    entetes(ws, 37, entete_zones, 34)
-    ops_ex = [3, 1, 1, 2, 1]
+    entetes(ws, 30, entete_zones, 34)
+    ops_hg = [3, 1, 1, 0.5, 0.5]
     for i, r in enumerate(range(HG_1, HG_N + 1)):
         cellule(ws, f"B{r}", ZONES_HG[i][0] if i < len(ZONES_HG) else None, F_SAISIE, R_SAISIE,
                 border=BORD)
         cellule(ws, f"C{r}", ZONES_HG[i][1] if i < len(ZONES_HG) else None, F_SAISIE, R_SAISIE,
                 al=AL_C, border=BORD)
-        avenir = (f'=IF($C{r}="","",MAX(0,PREVI*PART_HG*IFERROR(INDEX(HG_PART_VAL,'
+        avenir = (f'=IF($C{r}="","",MAX(0,PREVI_TOUR*PART_HG*IFERROR(INDEX(HG_PART_VAL,'
                   f'MATCH($C{r},HG_PART_KEY,0)),0)-SUM(D{r}:F{r})))')
-        formules_zone(ws, r, "HG", f"$C{r}", avenir)
-        if i < len(ops_ex):
-            ws[f"I{r}"] = ops_ex[i]
+        formules_zone(ws, r, "HG", avenir)
+        if i < len(ops_hg):
+            ws[f"I{r}"] = ops_hg[i]
     nom(wb, "ZT_HG", f"PILOTAGE!$B${HG_1}:$T${HG_N}")
 
     # lignes de total
@@ -690,19 +750,19 @@ def creer():
 
     notes = [
         "COMMENT C'EST CALCULÉ",
-        "Reste à faire = lancées + en cours + à venir. À venir = prévisionnel × part du service "
-        "(× part de la zone pour le HG) − ce que Logys a déjà vu (préparées + en cours + lancées), "
-        "jamais négatif. Câble : à venir réparti entre allées au prorata du travail visible.",
-        "Charge (h·op) = reste ÷ cadence. Fin estimée d'une zone = heure de calcul + charge ÷ "
-        "opérateurs, + les pauses qui tombent avant. Fin du service = la zone qui finit en dernier.",
-        "Fin si rééquilibrage = charge totale ÷ opérateurs totaux (si on déplace les gens entre "
-        "zones). Renfort = opérateurs manquants pour finir à l'heure visée, rééquilibrage compris.",
-        "Statut : marge ≥ seuil → FACILE ; 0 à seuil → TENDU ; retard ou zone sans opérateur → "
-        "COMPLIQUÉ. Les colonnes « ✎ manuel » remplacent Logys pour la ligne quand elles sont "
-        "remplies (dépannage).",
+        "Lancées / en cours = lignes restantes des tournées LANCEE / ENCOURS (prévues − terminées − "
+        "annulées). Préparées = lignes terminées sur les tournées mises à jour aujourd'hui.",
+        "À venir = prévi (lignes commande × foisonnement) × part du service (× part de la zone pour "
+        "le HG) − ce que Logys a déjà vu (préparées + en cours + lancées), jamais négatif.",
+        "Fin estimée d'une zone = heure des données + reste ÷ cadence ÷ opérateurs, + les pauses "
+        "du service qui tombent avant. Fin du service = la zone qui finit en dernier.",
+        "Prod = lignes préparées ÷ (opérateurs × heures écoulées depuis le début d'activité, "
+        "pauses passées déduites). Renfort = opérateurs manquants pour finir à l'heure visée.",
+        "État : marge ≥ seuil → FACILE ; 0 à seuil → TENDU ; retard ou zone avec du travail et 0 "
+        "opérateur → COMPLIQUÉ. Colonnes « ✎ manuel » : remplacent Logys quand elles sont remplies.",
     ]
     for i, n in enumerate(notes):
-        cellule(ws, f"B{48 + i}", n, F_GRAS if i == 0 else F_AIDE)
+        cellule(ws, f"B{41 + i}", n, F_GRAS if i == 0 else F_AIDE)
     ws.freeze_panes = "C11"
     ws.sheet_view.zoomScale = 90
     ws.page_setup.orientation = "landscape"
@@ -714,25 +774,22 @@ def creer():
     ws = aid
     ws.column_dimensions["A"].width = 2
     ws.column_dimensions["B"].width = 120
-    cellule(ws, "B2", "AIDE — mise en route en 6 étapes", F_TITRE)
+    cellule(ws, "B2", "AIDE — mise en route en 5 étapes", F_TITRE)
     etapes = [
-        "1 · Alt+F11 > Fichier > Importer un fichier > vba\\modDashboardPrepa.bas. Débogage > "
-        "Compiler VBAProject. Enregistrer sous « Classeur prenant en charge les macros (.xlsm) ».",
-        "2 · Dans SQL Developer, lancer sql\\00_decouverte_schema.sql (F5) : repérer la table des "
-        "lignes de préparation, la colonne statut et ses codes, l'emplacement, le préparateur, "
-        "la date de validation.",
-        "3 · Renseigner PARAMETRES bloc 7 (jetons) et bloc 6 (DSN ODBC, dossier d'export). "
-        "Tester avec la macro TesterConnexionLogys (Alt+F8).",
-        "4 · Lancer InstallerBoutons (Alt+F8) : 4 boutons apparaissent en haut de PILOTAGE.",
-        "5 · Chaque matin : saisir le prévisionnel et les opérateurs par zone (cellules jaunes), "
-        "cliquer « Auto ON ». Le classeur interroge Logys toutes les 5 min et met à jour l'écran TV.",
-        "6 · Écran TV : copier index.html dans le dossier d'export et l'ouvrir en plein écran "
-        "(F11) dans Edge ou Chrome sur chaque écran de service.",
+        "1 · Alt+F11 > Fichier > Importer un fichier > vba\\modDashboardPrepa.bas. Coller "
+        "vba\\ThisWorkbook_a_coller.txt dans ThisWorkbook. Débogage > Compiler. Enregistrer en .xlsm.",
+        "2 · PARAMETRES bloc 7 : le DSN ODBC et l'utilisateur de « Suivi activité préparation » "
+        "(Données > Requêtes et connexions > Propriétés > Définition), le dossier partagé d'export.",
+        "3 · Alt+F8 > TesterConnexionLogys, puis InstallerBoutons (4 boutons en haut de PILOTAGE).",
+        "4 · Chaque jour : PILOTAGE > prévi en lignes commande et opérateurs par zone (cellules "
+        "jaunes), puis « Auto ON » : Logys est interrogé toutes les 5 min et l'écran se met à jour.",
+        "5 · Écran TV : copier index.html dans le dossier d'export et l'ouvrir en plein écran "
+        "(F11) dans Edge ou Chrome. Les 3 services tiennent toujours sur un seul écran.",
         "",
-        "Dépannage : sans Logys, remplir les colonnes « ✎ manuel » de PILOTAGE et cliquer "
-        "« Exporter (manuel) ». Zones Logys inconnues : elles comptent en PICK et apparaissent "
-        "dans ZONES avec « À VÉRIFIER » : choisir le bon service / zone.",
-        "Le détail (calculs, jetons, déploiement des écrans) est dans dashboard_prepa\\LISEZMOI.md.",
+        "Valeur Logys inconnue (sous-type ou zone) : ajoutée dans ZONES avec « À VÉRIFIER » ; "
+        "choisir le bon service / la bonne zone. Sans Logys : colonnes « ✎ manuel » + bouton "
+        "« Exporter (manuel) ».",
+        "Le détail (calculs, requêtes, déploiement des écrans) est dans dashboard_prepa\\LISEZMOI.md.",
     ]
     for i, t in enumerate(etapes):
         cellule(ws, f"B{4 + i}", t, F_BASE, al=AL_GW)

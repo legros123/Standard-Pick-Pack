@@ -1,7 +1,8 @@
 Attribute VB_Name = "modDashboardPrepa"
 ' =====================================================================
 '  DASHBOARD PRÉPARATION CLR - moteur Excel
-'  Logys (Oracle, ODBC, LECTURE SEULE) -> onglet DONNEES -> calculs de
+'  Logys (Oracle, ODBC, LECTURE SEULE, vue REXEL.F_GESTOURPREP_TOUR)
+'  -> onglet DONNEES -> calculs de
 '  l'onglet PILOTAGE -> fichier donnees_dashboard.js lu par l'écran TV
 '  (index.html, ouvert en plein écran dans chaque service).
 '
@@ -29,15 +30,17 @@ Private Const FEU_HIS As String = "HISTO"
 ' --- Plages fixes ---
 Private Const DON_L1 As Long = 7          ' 1re ligne de données Logys
 Private Const DON_MAX As Long = 500       ' lignes 7 à 506
-Private Const DON_NB_COL As Long = 6      ' A:F écrits par la macro (G:I = formules)
+Private Const DON_NB_COL As Long = 9      ' A:I écrits par la macro (J:O = formules)
 Private Const ZON_L1 As Long = 5
 Private Const ZON_LN As Long = 300
+Private Const TYP_L1 As Long = 5          ' sous-types de tournée : ZONES!G:I
+Private Const TYP_LN As Long = 40
 Private Const HIS_L1 As Long = 5
 Private Const HIS_NB_COL As Long = 11
 Private Const HIS_MAX As Long = 3000      ' au-delà, on purge les 1000 plus anciennes
 Private Const HISTO_JS_MAX As Long = 240  ' points envoyés à l'écran (journée)
 Private Const A_RENSEIGNER As String = "A_RENSEIGNER"
-Private Const SANS_ZONE As String = "'#AUCUNE#'"
+Private Const VUE_DEFAUT As String = "REXEL.F_GESTOURPREP_TOUR"
 
 ' --- Colonnes des lignes de synthèse SYN_* (1 = colonne B) ---
 Private Const S_RESTE As Long = 2
@@ -52,10 +55,13 @@ Private Const S_MARGE As Long = 11
 Private Const S_STATUT As Long = 12
 Private Const S_RENFORT As Long = 13
 Private Const S_AVANC As Long = 14
-Private Const S_MSG As Long = 15
-Private Const S_VISEE As Long = 17
-Private Const S_ZONE_NC As Long = 19
-Private Const S_LOGYS As Long = 21
+Private Const S_PROD As Long = 15
+Private Const S_PRODOBJ As Long = 16
+Private Const S_MSG As Long = 17
+Private Const S_VISEE As Long = 19
+Private Const S_ZONE_NC As Long = 21
+Private Const S_LOGYS As Long = 23
+Private Const S_HEURES As Long = 24
 
 ' --- Colonnes des tableaux de zones ZT_* (1 = colonne B) ---
 Private Const Z_NOM As Long = 1
@@ -186,7 +192,7 @@ Private Sub Executer(ByVal avecLogys As Boolean)
     RangeNom("SOURCE_DONNEES").Value2 = IIf(avecLogys, "LOGYS", "MANUEL")
     Application.Calculate
 
-    notes = AjouterZonesInconnues() & AjouterAlleesInconnues()
+    notes = AjouterValeursInconnues()
     Application.Calculate
     AjouterHisto
     Application.Calculate
@@ -231,7 +237,7 @@ End Sub
 ' =====================================================================
 '  REQUÊTE LOGYS
 ' =====================================================================
-' Remplace les jetons &&NOM du modèle (REQUETES!B5) par PARAMETRES bloc 7.
+' Remplace les jetons &&NOM du modèle (REQUETES!B5) par PARAMETRES bloc 8.
 Private Function ConstruireSql() As String
     Dim sql As String, cfg As Variant, i As Long, n As Long, p As Long
     Dim noms() As String, vals() As String
@@ -239,7 +245,7 @@ Private Function ConstruireSql() As String
     If Len(Trim$(sql)) = 0 Then Err.Raise vbObjectError + 1, , _
         "Modèle de requête vide (onglet REQUETES, cellule B5)."
     cfg = RangeNom("CFG_SQL").Value2
-    n = UBound(cfg, 1) + 1
+    n = UBound(cfg, 1)
     ReDim noms(1 To n)
     ReDim vals(1 To n)
     For i = 1 To UBound(cfg, 1)
@@ -249,12 +255,10 @@ Private Function ConstruireSql() As String
             If vals(i) = "" Then vals(i) = ValeurParDefaut(noms(i))
             If UCase$(vals(i)) = A_RENSEIGNER Then Err.Raise vbObjectError + 2, , _
                 "Paramètre Logys à renseigner : " & noms(i) & _
-                " (onglet PARAMETRES, bloc 7). Voir sql\00_decouverte_schema.sql."
+                " (onglet PARAMETRES, bloc 8)."
         End If
     Next i
-    noms(n) = "ZONES_CABLE"
-    vals(n) = ListeZones("CABLE")
-    TrierParLongueur noms, vals             ' COL_ZONE avant COL_Z... : les plus longs d'abord
+    TrierParLongueur noms, vals             ' les jetons les plus longs d'abord
     For i = 1 To n
         If noms(i) <> "" Then sql = Replace(sql, "&&" & noms(i), vals(i))
     Next i
@@ -267,29 +271,10 @@ End Function
 
 Private Function ValeurParDefaut(ByVal jeton As String) As String
     Select Case jeton
-        Case "COL_ZONE":       ValeurParDefaut = "ZONE_MVT"
-        Case "COL_ALLEE":      ValeurParDefaut = "'TOUTES'"
-        Case "COL_PREPA":      ValeurParDefaut = "CAST(NULL AS VARCHAR2(1))"
-        Case "EXPR_NB_LIGNES": ValeurParDefaut = "1"
-        Case "COND_RETRACT":   ValeurParDefaut = "1 = 0"
+        Case "VUE_TOURNEES":   ValeurParDefaut = VUE_DEFAUT
         Case "COND_PERIMETRE": ValeurParDefaut = "1 = 1"
         Case Else:             ValeurParDefaut = A_RENSEIGNER
     End Select
-End Function
-
-' Liste SQL des ZONE_MVT d'un service, lue dans l'onglet ZONES : 'CABLE','X'
-Private Function ListeZones(ByVal service As String) As String
-    Dim v As Variant, i As Long, s As String, z As String
-    v = ThisWorkbook.Worksheets(FEU_ZON).Range("A" & ZON_L1 & ":B" & ZON_LN).Value2
-    For i = 1 To UBound(v, 1)
-        z = UCase$(Trim$(TexteCellule(v(i, 1))))
-        If z <> "" And UCase$(Trim$(TexteCellule(v(i, 2)))) = service Then
-            If s <> "" Then s = s & ","
-            s = s & "'" & Replace(z, "'", "''") & "'"
-        End If
-    Next i
-    If s = "" Then s = SANS_ZONE
-    ListeZones = s
 End Function
 
 Private Sub TrierParLongueur(noms() As String, vals() As String)
@@ -319,7 +304,7 @@ Private Function Connexion() As Object
     End If
     dsn = Trim$(TexteCellule(RangeNom("CFG_DSN").Value2))
     If dsn = "" Or UCase$(dsn) = A_RENSEIGNER Then Err.Raise vbObjectError + 10, , _
-        "DSN ODBC Logys à renseigner (onglet PARAMETRES, bloc 6)."
+        "DSN ODBC Logys à renseigner (onglet PARAMETRES, bloc 7)."
     uid = Trim$(TexteCellule(RangeNom("CFG_UID").Value2))
     cs = "DSN=" & dsn & ";"
     If uid <> "" Then cs = cs & "UID=" & uid & ";"
@@ -343,10 +328,10 @@ Private Sub FermerConnexion()
     Set mCn = Nothing
 End Sub
 
-' Exécute la requête et écrit DONNEES!A:F. Renvoie le nombre de lignes.
+' Exécute la requête et écrit DONNEES!A:I. Renvoie le nombre de lignes.
 Private Function ImporterLogys(ByVal sql As String) As Long
     Dim ws As Worksheet, cn As Object, rs As Object, v As Variant, sortie() As Variant
-    Dim nbL As Long, i As Long, msg As String
+    Dim nbL As Long, i As Long, j As Long, msg As String
     Set ws = ThisWorkbook.Worksheets(FEU_DON)
     Set cn = Connexion()                  ' erreur de DSN : message clair, remonté tel quel
 
@@ -359,19 +344,19 @@ Private Function ImporterLogys(ByVal sql As String) As Long
         v = rs.GetRows()                       ' v(colonne, ligne), base 0
         If UBound(v, 1) + 1 < DON_NB_COL Then
             rs.Close
-            Err.Raise vbObjectError + 4, , "La requête doit renvoyer 6 colonnes : " & _
-                "ZONE_MVT, ALLEE, STATUT, RETRACT, NB_LIGNES, NB_PREPA."
+            Err.Raise vbObjectError + 4, , "La requête doit renvoyer 9 colonnes : STYP, ZONE, " & _
+                "ETAT, NB_TOURS, LIG_PREV, LIG_TERM, LIG_ANNU, NB_PREPA, LIG_TERM_JOUR."
         End If
         nbL = UBound(v, 2) + 1
         If nbL > DON_MAX Then nbL = DON_MAX
         ReDim sortie(1 To nbL, 1 To DON_NB_COL)
         For i = 1 To nbL
-            sortie(i, 1) = TexteZone(v(0, i - 1))
-            sortie(i, 2) = TexteBrut(v(1, i - 1))
-            sortie(i, 3) = UCase$(TexteBrut(v(2, i - 1)))
-            sortie(i, 4) = Nombre(v(3, i - 1))
-            sortie(i, 5) = Nombre(v(4, i - 1))
-            sortie(i, 6) = Nombre(v(5, i - 1))
+            sortie(i, 1) = UCase$(TexteBrut(v(0, i - 1)))     ' sous-type de tournée
+            sortie(i, 2) = TexteZone(v(1, i - 1))             ' zone de prise
+            sortie(i, 3) = UCase$(TexteBrut(v(2, i - 1)))     ' état
+            For j = 4 To DON_NB_COL
+                sortie(i, j) = Nombre(v(j - 1, i - 1))
+            Next j
         Next i
         ws.Cells(DON_L1, 1).Resize(nbL, DON_NB_COL).Value2 = sortie
     End If
@@ -390,86 +375,74 @@ End Function
 ' =====================================================================
 '  COMPLÉTER ZONES ET ALLÉES
 ' =====================================================================
-' Zone Logys inconnue -> ajoutée dans ZONES en PICK, marquée À VÉRIFIER.
-Private Function AjouterZonesInconnues() As String
-    Dim wsD As Worksheet, wsZ As Worksheet, vD As Variant, vZ As Variant
-    Dim dico As Object, i As Long, r As Long, n As Long, z As String
+' Sous-type ou zone de prise inconnus -> ajoutés dans l'onglet ZONES
+' avec « À VÉRIFIER » (sous-type : service « ? », zone : zone par défaut).
+Private Function AjouterValeursInconnues() As String
+    Dim wsD As Worksheet, wsZ As Worksheet, vD As Variant, vZ As Variant, vT As Variant
+    Dim dicoZ As Object, dicoT As Object, i As Long, rZ As Long, rT As Long
+    Dim nZ As Long, nT As Long, styp As String, zone As String, svc As String, cle As String
+    Dim note As String
     Set wsD = ThisWorkbook.Worksheets(FEU_DON)
     Set wsZ = ThisWorkbook.Worksheets(FEU_ZON)
-    vD = wsD.Range(wsD.Cells(DON_L1, 1), wsD.Cells(DON_L1 + DON_MAX - 1, 1)).Value2
-    vZ = wsZ.Range(wsZ.Cells(ZON_L1, 1), wsZ.Cells(ZON_LN, 1)).Value2
-    Set dico = CreateObject("Scripting.Dictionary")
-    dico.CompareMode = vbTextCompare
-    r = ZON_L1 - 1
+    vD = wsD.Range(wsD.Cells(DON_L1, 1), wsD.Cells(DON_L1 + DON_MAX - 1, 15)).Value2   ' A:O
+    vZ = wsZ.Range(wsZ.Cells(ZON_L1, 1), wsZ.Cells(ZON_LN, 2)).Value2                ' A:B
+    vT = wsZ.Range(wsZ.Cells(TYP_L1, 7), wsZ.Cells(TYP_LN, 7)).Value2                ' G
+    Set dicoZ = CreateObject("Scripting.Dictionary")
+    dicoZ.CompareMode = vbTextCompare
+    Set dicoT = CreateObject("Scripting.Dictionary")
+    dicoT.CompareMode = vbTextCompare
+    rZ = ZON_L1 - 1
     For i = 1 To UBound(vZ, 1)
-        z = Trim$(TexteCellule(vZ(i, 1)))
-        If z <> "" Then
-            If Not dico.Exists(z) Then dico.Add z, True
-            r = ZON_L1 + i - 1
+        zone = Trim$(TexteCellule(vZ(i, 1)))
+        If zone <> "" Then
+            cle = Trim$(TexteCellule(vZ(i, 2))) & "|" & zone
+            If Not dicoZ.Exists(cle) Then dicoZ.Add cle, True
+            rZ = ZON_L1 + i - 1
         End If
     Next i
+    rT = TYP_L1 - 1
+    For i = 1 To UBound(vT, 1)
+        styp = Trim$(TexteCellule(vT(i, 1)))
+        If styp <> "" Then
+            If Not dicoT.Exists(styp) Then dicoT.Add styp, True
+            rT = TYP_L1 + i - 1
+        End If
+    Next i
+    note = "À VÉRIFIER - ajouté le " & Format$(Now, "dd/mm/yyyy hh\:nn")
     For i = 1 To UBound(vD, 1)
-        z = Trim$(TexteCellule(vD(i, 1)))
-        If z <> "" Then
-            If Not dico.Exists(z) Then
-                r = r + 1
-                If r > ZON_LN Then
-                    AjouterZonesInconnues = " - onglet ZONES plein, zone " & z & " non ajoutée"
-                    Exit Function
+        styp = Trim$(TexteCellule(vD(i, 1)))
+        zone = Trim$(TexteCellule(vD(i, 2)))
+        svc = TexteCellule(vD(i, 10))                       ' colonne J = SERVICE
+        If styp <> "" Then
+            If Not dicoT.Exists(styp) Then
+                rT = rT + 1
+                If rT <= TYP_LN Then
+                    wsZ.Cells(rT, 7).Value2 = styp
+                    wsZ.Cells(rT, 8).Value2 = "?"
+                    wsZ.Cells(rT, 9).Value2 = note & " : choisir PICK, CABLE ou HG"
+                    nT = nT + 1
                 End If
-                wsZ.Cells(r, 1).Value2 = z
-                wsZ.Cells(r, 2).Value2 = "PICK"
-                wsZ.Cells(r, 3).Value2 = "PICK"
-                wsZ.Cells(r, 4).Value2 = "À VÉRIFIER - ajoutée le " & Format$(Now, "dd/mm/yyyy hh\:nn")
-                dico.Add z, True
-                n = n + 1
+                dicoT.Add styp, True
             End If
-        End If
-    Next i
-    If n > 0 Then AjouterZonesInconnues = " - " & n & " zone(s) Logys ajoutée(s) dans ZONES (À VÉRIFIER)"
-End Function
-
-' Allée câble avec du travail mais absente de PILOTAGE -> 1re case libre.
-Private Function AjouterAlleesInconnues() As String
-    Dim wsD As Worksheet, vD As Variant, zt As Range, vC As Variant
-    Dim dico As Object, i As Long, j As Long, n As Long, a As String, st As String
-    Set wsD = ThisWorkbook.Worksheets(FEU_DON)
-    vD = wsD.Range(wsD.Cells(DON_L1, 2), wsD.Cells(DON_L1 + DON_MAX - 1, 7)).Value2  ' B:G
-    Set zt = RangeNom("ZT_CABLE")
-    vC = zt.Columns(Z_CODE).Value2
-    Set dico = CreateObject("Scripting.Dictionary")
-    dico.CompareMode = vbTextCompare
-    For j = 1 To UBound(vC, 1)
-        a = Trim$(TexteCellule(vC(j, 1)))
-        If a <> "" Then
-            If Not dico.Exists(a) Then dico.Add a, True
-        End If
-    Next j
-    For i = 1 To UBound(vD, 1)
-        If TexteCellule(vD(i, 6)) = "CABLE" Then          ' colonne G = SERVICE
-            a = Trim$(TexteCellule(vD(i, 1)))               ' colonne B = ALLEE
-            st = TexteCellule(vD(i, 2))                     ' colonne C = STATUT
-            If a <> "" And (st = "LANCE" Or st = "EN_COURS") Then
-                If Not dico.Exists(a) Then
-                    For j = 1 To UBound(vC, 1)
-                        If Trim$(TexteCellule(vC(j, 1))) = "" Then Exit For
-                    Next j
-                    If j > UBound(vC, 1) Then
-                        AjouterAlleesInconnues = AjouterAlleesInconnues & _
-                            " - plus de case libre pour l'allée câble " & a
-                    Else
-                        zt.Cells(j, Z_CODE).Value2 = a
-                        zt.Cells(j, Z_NOM).Value2 = "Allée " & a
-                        vC(j, 1) = a
-                        n = n + 1
+            If (svc = "HG" Or svc = "CABLE") And zone <> "" Then
+                cle = svc & "|" & zone
+                If Not dicoZ.Exists(cle) Then
+                    rZ = rZ + 1
+                    If rZ <= ZON_LN Then
+                        wsZ.Cells(rZ, 1).Value2 = zone
+                        wsZ.Cells(rZ, 2).Value2 = svc
+                        wsZ.Cells(rZ, 3).Value2 = IIf(svc = "HG", "SOL", "COUPES")
+                        wsZ.Cells(rZ, 4).Value2 = note
+                        nZ = nZ + 1
                     End If
-                    dico.Add a, True
+                    dicoZ.Add cle, True
                 End If
             End If
         End If
     Next i
-    If n > 0 Then AjouterAlleesInconnues = AjouterAlleesInconnues & _
-        " - " & n & " allée(s) câble ajoutée(s) dans PILOTAGE : saisir leurs opérateurs"
+    If nT > 0 Then AjouterValeursInconnues = " - " & nT & " sous-type(s) de tournée inconnu(s) ajouté(s) dans ZONES"
+    If nZ > 0 Then AjouterValeursInconnues = AjouterValeursInconnues & " - " & nZ & _
+        " zone(s) de prise ajoutée(s) dans ZONES (À VÉRIFIER)"
 End Function
 
 
@@ -510,7 +483,7 @@ Private Function ExporterJs() As String
     If dossier = "" Then dossier = ThisWorkbook.Path
     If LCase$(Left$(dossier, 4)) = "http" Then Err.Raise vbObjectError + 6, , _
         "Classeur ouvert depuis OneDrive / SharePoint : renseigner le dossier d'export " & _
-        "(onglet PARAMETRES, bloc 6)."
+        "(onglet PARAMETRES, bloc 7)."
     If Right$(dossier, 1) <> "\" Then dossier = dossier & "\"
     fichier = Trim$(TexteCellule(RangeNom("CFG_FICHIER").Value2))
     If fichier = "" Then fichier = "donnees_dashboard.js"
@@ -558,6 +531,7 @@ Private Function JsonDashboard() As String
     j = j & Kv("source", Q(TexteCellule(RangeNom("SOURCE_DONNEES").Value2))) & ","
     j = j & Kv("perime_min", Num(RangeNom("PERIME_MIN").Value2)) & ","
     j = j & Kv("previ", Num(RangeNom("PREVI").Value2)) & ","
+    j = j & Kv("previ_tour", Num(RangeNom("PREVI_TOUR").Value2)) & ","
     j = j & Kv("zones_a_verifier", Num(RangeNom("NB_ZONES_VERIF").Value2)) & ","
     j = j & Kv("non_ventilees", Num(RangeNom("NON_VENTILEES").Value2)) & "," & vbLf
     j = j & Q("services") & ":[" & vbLf
@@ -597,6 +571,9 @@ Private Function JsonService(ByVal id As String, ByVal libelle As String, ByVal 
     j = j & Kv("ops", Num(syn.Cells(1, S_OPS).Value2)) & ","
     j = j & Kv("ops_logys", Num(syn.Cells(1, S_LOGYS).Value2)) & ","
     j = j & Kv("avancement", Num(syn.Cells(1, S_AVANC).Value2)) & ","
+    j = j & Kv("prod", Num(syn.Cells(1, S_PROD).Value2)) & ","
+    j = j & Kv("prod_obj", Num(syn.Cells(1, S_PRODOBJ).Value2)) & ","
+    j = j & Kv("heures", Num(syn.Cells(1, S_HEURES).Value2)) & ","
     For r = 1 To zt.Rows.Count
         If Trim$(TexteCellule(zt.Cells(r, Z_CODE).Value2)) <> "" Then
             If zones <> "" Then zones = zones & ","
@@ -604,7 +581,6 @@ Private Function JsonService(ByVal id As String, ByVal libelle As String, ByVal 
         End If
     Next r
     j = j & Q("zones") & ":[" & zones & "]"
-    If id = "CABLE" Then j = j & "," & JsonRetract()
     JsonService = j & "}"
 End Function
 
@@ -626,16 +602,6 @@ Private Function JsonZone(ByVal ligne As Range, ByVal jour As Double) As String
     j = j & Kv("renfort", Num(ligne.Cells(1, Z_RENFORT).Value2)) & ","
     j = j & Kv("logys", Num(ligne.Cells(1, Z_LOGYS).Value2)) & "}"
     JsonZone = j
-End Function
-
-Private Function JsonRetract() As String
-    Dim rr As Range
-    Set rr = RangeNom("RETR_CABLE")
-    JsonRetract = Q("retract") & ":{" & _
-        Kv("lancees", Entier(rr.Cells(1, Z_LANCE).Value2)) & "," & _
-        Kv("en_cours", Entier(rr.Cells(1, Z_ENCOURS).Value2)) & "," & _
-        Kv("alerte", IIf(TexteCellule(rr.Cells(1, Z_STATUT).Value2) = "PRÉVOIR CARISTE", _
-                         "true", "false")) & "}"
 End Function
 
 ' Points de la journée : {"t":minutes, "r":[reste x3], "f":[fin en minutes x3]}

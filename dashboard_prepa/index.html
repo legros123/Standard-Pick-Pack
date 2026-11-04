@@ -27,17 +27,17 @@
   --r:1rem;
   --ombre:0 1px 0 rgba(0,0,0,.6),0 1.2rem 2.6rem -1rem rgba(0,0,0,.85);
 }
-/* 1 rem = 16 px sur un écran 1920×1080, proportionnel sur tout écran 16/9 */
-html{font-size:clamp(10px,min(.8333vw,1.4815vh),30px);-webkit-text-size-adjust:100%}
+/* Scène fixe 1920×1080 mise à l'échelle de l'écran (TV, PC, tablette,
+   téléphone) : les 3 services tiennent toujours sur un seul écran. */
+html{font-size:16px;-webkit-text-size-adjust:100%}
 *{margin:0;padding:0;box-sizing:border-box}
-body{
-  font-family:var(--ff);background:var(--beton);color:var(--craie);
-  height:100vh;overflow:hidden;display:grid;grid-template-rows:auto auto 1fr auto;
-  -webkit-font-smoothing:antialiased;font-feature-settings:"tnum" 1;
+html,body{width:100%;height:100%;overflow:hidden;background:#060708}
+body{font-family:var(--ff);color:var(--craie);-webkit-font-smoothing:antialiased;font-feature-settings:"tnum" 1}
+#scene{position:absolute;left:0;top:0;width:1920px;height:1080px;transform-origin:0 0;overflow:hidden;
+  display:grid;grid-template-rows:auto auto 1fr auto;background:var(--beton);
   background-image:
     radial-gradient(120rem 50rem at 50% -20rem,rgba(255,212,0,.05),transparent 60%),
-    radial-gradient(80rem 40rem at 110% 120%,rgba(90,169,255,.035),transparent 60%);
-}
+    radial-gradient(80rem 40rem at 110% 120%,rgba(90,169,255,.035),transparent 60%)}
 body::after{content:'';position:fixed;inset:0;z-index:50;pointer-events:none;opacity:.03;
   background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
 .mono{font-family:var(--fm)}
@@ -107,24 +107,36 @@ body.est-perime .carte{filter:saturate(.25) brightness(.7)}
   background-size:2.83rem 2.83rem;animation:defile 1.6s linear infinite}
 @keyframes defile{to{background-position:2.83rem 0}}
 
-.c-fin{display:grid;justify-items:center;gap:.35rem;padding:0}
+.c-cle{display:grid;grid-template-columns:minmax(0,1.22fr) minmax(0,1fr);gap:.75rem}
+.c-fin,.c-prod{background:var(--surf);border:1px solid var(--edge);border-radius:.75rem;padding:.65rem .6rem .6rem}
+.c-fin{position:relative;display:grid;justify-items:center;align-content:center;gap:.4rem}
+.c-prod{--pst:var(--acier-2);display:grid;justify-items:center;align-content:center;gap:.35rem;padding:.65rem 1rem}
+.c-prod.p-ok{--pst:var(--vert)} .c-prod.p-moy{--pst:var(--orange)} .c-prod.p-bas{--pst:var(--rouge)}
+.c-prod .lbl{font:600 .8rem var(--fm);letter-spacing:.32em;color:var(--acier);text-transform:uppercase}
+.c-prod .v{font:700 4.1rem/1 var(--fm);letter-spacing:-.02em}
+.c-prod .v small{font-size:.95rem;color:var(--acier);font-weight:500;margin-left:.25rem;letter-spacing:0}
+.c-prod .jauge{position:relative;width:100%;height:.55rem;border-radius:.3rem;background:var(--plate-3)}
+.c-prod .jauge i{position:absolute;inset:0 auto 0 0;border-radius:.3rem;background:var(--pst)}
+.c-prod .jauge b{position:absolute;top:-.3rem;bottom:-.3rem;left:76.9%;width:2px;background:var(--craie)}
+.c-prod .obj{display:flex;gap:.6rem;align-items:baseline;font:500 .85rem var(--fm);color:var(--acier)}
+.c-prod .obj em{font:800 1rem var(--ff);font-style:normal;color:var(--pst)}
 .c-fin .lbl{font:600 .8rem var(--fm);letter-spacing:.32em;color:var(--acier);text-transform:uppercase}
 .flap{display:flex;align-items:center;gap:.4rem;perspective:30rem}
-.f{position:relative;width:3.9rem;height:5.4rem;border-radius:.5rem;display:grid;place-items:center;
-  font:700 4.6rem/1 var(--fm);color:var(--craie);
+.f{position:relative;width:3.35rem;height:4.8rem;border-radius:.5rem;display:grid;place-items:center;
+  font:700 4.05rem/1 var(--fm);color:var(--craie);
   background:linear-gradient(180deg,#25292F 0%,#1F2328 49.6%,#17191D 50.4%,#1B1E23 100%);
   box-shadow:inset 0 1px 0 rgba(255,255,255,.07),0 .5rem 1rem rgba(0,0,0,.55);transform-origin:50% 50%}
 .f::after{content:'';position:absolute;left:0;right:0;top:calc(50% - 1px);height:2px;background:rgba(0,0,0,.7)}
 .f::before{content:'';position:absolute;left:-.12rem;right:-.12rem;top:calc(50% - .18rem);height:.36rem;
   background:linear-gradient(90deg,#0B0C0E .25rem,transparent .25rem calc(100% - .25rem),#0B0C0E calc(100% - .25rem))}
-.f.sep{width:1.4rem;background:none;box-shadow:none;font-size:0}
-.f.sep::before,.f.sep::after{content:'';position:absolute;left:50%;right:auto;width:.62rem;height:.62rem;border-radius:.15rem;background:var(--acier-2);transform:translateX(-50%)}
+.f.sep{width:1.1rem;background:none;box-shadow:none;font-size:0}
+.f.sep::before,.f.sep::after{content:'';position:absolute;left:50%;right:auto;width:.52rem;height:.52rem;border-radius:.13rem;background:var(--acier-2);transform:translateX(-50%)}
 .f.sep::before{top:32%}.f.sep::after{top:auto;bottom:32%}
 .f.vide{color:var(--acier-3)}
 .f.flip{animation:flip .7s cubic-bezier(.3,.6,.35,1)}
 @keyframes flip{0%{transform:rotateX(0)}45%{transform:rotateX(-88deg);filter:brightness(.45)}100%{transform:rotateX(0)}}
-.jplus{font:800 1.2rem var(--fm);color:var(--rouge);border:2px solid var(--rouge);border-radius:.4rem;padding:.2rem .45rem;margin-left:.5rem}
-.c-fin .sous{font:500 .95rem var(--fm);color:var(--acier);letter-spacing:.02em;text-align:center}
+.jplus{position:absolute;top:.45rem;right:.5rem;font:800 .85rem var(--fm);color:var(--rouge);border:2px solid var(--rouge);border-radius:.35rem;padding:.1rem .35rem}
+.c-fin .sous{font:500 .85rem var(--fm);color:var(--acier);letter-spacing:.02em;text-align:center}
 .c-fin .sous b{color:var(--craie);font-weight:700}
 .c-fin .sous .eq{color:var(--orange)}
 
@@ -144,12 +156,12 @@ body.est-perime .carte{filter:saturate(.25) brightness(.7)}
 .c-renfort.r-ok svg{color:var(--vert)}
 
 .c-kpis{display:grid;grid-template-columns:1.25fr 1fr auto;gap:.8rem;align-items:stretch}
-.kpi{background:var(--surf);border:1px solid var(--edge);border-radius:.6rem;padding:.5rem .8rem}
+.kpi{background:var(--surf);border:1px solid var(--edge);border-radius:.6rem;padding:.42rem .8rem}
 .kpi .k{font:600 .7rem var(--fm);color:var(--acier);letter-spacing:.14em;text-transform:uppercase}
-.kpi .v{font:700 1.8rem/1.1 var(--fm);margin-top:.15rem}
+.kpi .v{font:700 1.55rem/1.1 var(--fm);margin-top:.1rem}
 .kpi .v small{font-size:.85rem;color:var(--acier);font-weight:500;margin-left:.25rem}
-.anneau{display:grid;place-items:center;width:4.3rem;position:relative}
-.anneau svg{width:4.3rem;height:4.3rem;transform:rotate(-90deg)}
+.anneau{display:grid;place-items:center;width:3.9rem;position:relative}
+.anneau svg{width:3.9rem;height:3.9rem;transform:rotate(-90deg)}
 .anneau b{position:absolute;display:grid;justify-items:center;font:700 1.05rem/1 var(--fm)}
 .anneau b small{font:600 .5rem var(--fm);letter-spacing:.16em;color:var(--acier);margin-top:.2rem}
 
@@ -163,8 +175,7 @@ body.est-perime .carte{filter:saturate(.25) brightness(.7)}
 .compo .leg i{width:.7rem;height:.7rem;border-radius:.15rem;display:inline-block}
 .compo .leg b{color:var(--craie);font-weight:700}
 
-.c-courbe{position:relative;flex:1 1 6rem;min-height:5.2rem;max-height:13rem;display:flex;flex-direction:column}
-.carte[data-id="PICK"] .c-courbe{max-height:none}
+.c-courbe{position:relative;flex:1 1 6rem;min-height:5.2rem;display:flex;flex-direction:column}
 .c-courbe .k{font:600 .7rem var(--fm);color:var(--acier);letter-spacing:.14em;text-transform:uppercase;margin-bottom:.3rem;display:flex;justify-content:space-between}
 .c-courbe .hote{flex:1;min-height:0;position:relative}
 .c-courbe svg{position:absolute;inset:0;display:block;overflow:visible}
@@ -213,26 +224,13 @@ body.est-perime .pastille{background:var(--rouge);box-shadow:0 0 0 .25rem rgba(2
 .badge.demo{background:var(--jaune);color:#111}
 .badge.man{background:var(--plate-3);color:var(--craie)}
 
-/* ── Téléphone / petit écran : une colonne, défilement ────────────── */
-@media (max-width:900px),(max-aspect-ratio:1/1){
-  html{font-size:13px}
-  body{height:auto;min-height:100vh;overflow:auto;display:block}
-  .barre{grid-template-columns:1fr auto;gap:1rem;padding:.9rem 1rem}
-  .jour{grid-column:1/-1;grid-row:2}
-  .horloge .h{font-size:2.2rem}
-  .grille{grid-template-columns:1fr;padding:1rem;gap:1rem}
-  .carte{overflow:visible}
-  .c-courbe{flex:none;height:8rem}
-  .pied{grid-template-columns:1fr;padding:.8rem 1rem;gap:.6rem}
-  .f{width:3.5rem;height:5rem;font-size:4.1rem}
-  .c-statut b{font-size:2rem}
-}
 @media (prefers-reduced-motion:reduce){
   *,*::before,*::after{animation:none!important;transition:none!important}
 }
 </style>
 </head>
 <body>
+<div id="scene">
 <div class="hachures" aria-hidden="true"></div>
 <header class="barre">
   <div class="marque">
@@ -257,6 +255,7 @@ body.est-perime .pastille{background:var(--rouge);box-shadow:0 0 0 .25rem rgba(2
   <div class="ticker"><div class="piste" id="piste"></div></div>
   <div class="badges" id="badges"></div>
 </footer>
+</div>
 
 <script>
 (() => {
@@ -359,6 +358,21 @@ function blocRenfort(s, st) {
   return `<div class="c-renfort r-ok">${ICO.check.replace('<svg', '<svg width="28" height="28"')}<div class="lib">Effectif suffisant<small>${N(s.ops)} opérateur${s.ops > 1 ? 's' : ''} affecté${s.ops > 1 ? 's' : ''}</small></div></div>`;
 }
 
+function blocProd(s) {
+  const obj = s.prod_obj, v = s.prod;
+  if (v == null || !obj) {
+    return `<div class="c-prod"><div class="lbl">Prod</div><div class="v">—</div>
+      <div class="obj">objectif <b>${obj ? N(obj) : '—'}</b> l/h/op</div></div>`;
+  }
+  const r = v / obj, cls = r >= 1 ? 'p-ok' : (r >= .9 ? 'p-moy' : 'p-bas');
+  const largeur = Math.max(2, Math.min(100, r / 1.3 * 100)).toFixed(1);
+  return `<div class="c-prod ${cls}" title="Lignes préparées ÷ (opérateurs × ${s.heures != null ? String(s.heures).replace('.', ',') + ' h' : 'heures'} d'activité)">
+    <div class="lbl">Prod</div>
+    <div class="v">${v >= 100 ? N(v) : String(Math.round(v * 10) / 10).replace('.', ',')}<small>l/h/op</small></div>
+    <div class="jauge" role="img" aria-label="${Math.round(r * 100)} % de l'objectif"><i style="width:${largeur}%"></i><b></b></div>
+    <div class="obj"><span>obj. ${N(obj)}</span><em>${Math.round(r * 100)} %</em></div></div>`;
+}
+
 function anneau(p) {
   const r = 26, c = 2 * Math.PI * r, v = Math.max(0, Math.min(1, p || 0));
   return `<div class="anneau"><svg viewBox="0 0 64 64"><circle cx="32" cy="32" r="${r}" fill="none" stroke="#2A2F37" stroke-width="7"/>
@@ -435,7 +449,8 @@ function dessinerCourbe(hote, data, idx, s) {
   const svg = hote.firstElementChild, point = svg.querySelector('.survol'), zone = svg.querySelector('.zone-survol');
   const bulle = hote.parentElement.querySelector('.bulle');
   zone.addEventListener('mousemove', e => {
-    const b = svg.getBoundingClientRect(), t = t0 + ((e.clientX - b.left) - pg) / (W - pg - pd) * (t1 - t0);
+    const b = svg.getBoundingClientRect(), x = (e.clientX - b.left) * W / b.width;
+    const t = t0 + (x - pg) / (W - pg - pd) * (t1 - t0);
     let best = pts[0];
     for (const p of pts) if (Math.abs(p.t - t) < Math.abs(best.t - t)) best = p;
     point.setAttribute('cx', X(best.t)); point.setAttribute('cy', Y(best.r)); point.setAttribute('opacity', 1);
@@ -465,13 +480,13 @@ function zones(s) {
       <span class="v">${N(z.reste)}</span><span class="o">${z.ops ? String(z.ops).replace('.', ',') : '0'} op.</span>
       <span class="s" title="Fin ${finTxt}">${zst.cls === 'ok' || zst.cls === 'tendu' ? finTxt : zst.lib}</span></li>`;
   });
-  if (zs.length > limite) lignes.push(`<li class="z plus">+ ${zs.length - limite} autre${zs.length - limite > 1 ? 's' : ''} allée${zs.length - limite > 1 ? 's' : ''}</li>`);
+  if (zs.length > limite) lignes.push(`<li class="z plus">+ ${zs.length - limite} autre${zs.length - limite > 1 ? 's' : ''} zone${zs.length - limite > 1 ? 's' : ''}</li>`);
   if (s.retract && (s.retract.lancees || s.retract.en_cours || s.retract.alerte)) {
     const n = (s.retract.lancees || 0) + (s.retract.en_cours || 0);
     lignes.push(`<li class="z retr ${s.retract.alerte ? 'alerte' : 'ok'}"${deuxCol ? ' style="grid-column:1/-1"' : ''}><span class="n">dont rétract : ${N(n)} ligne${n > 1 ? 's' : ''}</span>
       <span class="s">${s.retract.alerte ? 'Prévoir cariste' : 'OK'}</span></li>`);
   }
-  const tete = deuxCol ? '' : `<div class="c-zones-tete"><span>${s.id === 'CABLE' ? 'Allée' : 'Zone'}</span><span>reste à faire</span><span>lignes</span><span>op.</span><span>fin</span></div>`;
+  const tete = deuxCol ? '' : `<div class="c-zones-tete"><span>Zone</span><span>reste à faire</span><span>lignes</span><span>op.</span><span>fin</span></div>`;
   return `${tete}<ul class="c-zones${deuxCol ? ' deux' : ''}">${lignes.join('')}</ul>`;
 }
 
@@ -488,15 +503,18 @@ function carte(data, s, idx) {
       ${tend ? `<div class="tend ${tend.k}" title="Heure de fin comparée à il y a ${TENDANCE_MIN} min ou plus">${ICO[tend.k]}<div>${tend.lib}<small>${tend.det}</small></div></div>` : ''}
     </header>
     <div class="c-statut"><span class="ico" aria-hidden="true">${st.ico}</span><b>${st.lib}</b><small>${sousStatut(s, st)}</small></div>
-    <div class="c-fin">
-      <div class="lbl">Fin estimée</div>
-      <div style="display:flex;align-items:center"><div class="flap" data-flap="${esc(s.id)}" aria-label="Fin estimée ${fin ? fin.txt : esc(s.fin_txt || '')}"></div>${fin && fin.j > 0 ? `<span class="jplus">J+${fin.j}</span>` : ''}</div>
-      <div class="sous">${visee ? `visée <b>${visee.txt}</b>` : ''}${!fin && s.fin_txt ? ` · <b>${esc(s.fin_txt)}</b>` : ''}${showEq ? ` · <span class="eq">rééquilibré ${eq.txt}${eq.j > 0 ? ' J+' + eq.j : ''}</span>` : ''}</div>
+    <div class="c-cle">
+      <div class="c-fin">
+        <div class="lbl">Fin estimée</div>
+        <div style="display:flex;align-items:center"><div class="flap" data-flap="${esc(s.id)}" aria-label="Fin estimée ${fin ? fin.txt : esc(s.fin_txt || '')}"></div>${fin && fin.j > 0 ? `<span class="jplus">J+${fin.j}</span>` : ''}</div>
+        <div class="sous">${visee ? `visée <b>${visee.txt}</b>` : ''}${!fin && s.fin_txt ? ` · <b>${esc(s.fin_txt)}</b>` : ''}${showEq ? ` · <span class="eq">rééquil. ${eq.txt}${eq.j > 0 ? ' J+' + eq.j : ''}</span>` : ''}</div>
+      </div>
+      ${blocProd(s)}
     </div>
     ${blocRenfort(s, st)}
     <div class="c-kpis">
       <div class="kpi"><div class="k">Reste à faire</div><div class="v">${N(s.reste)}<small>lignes</small></div></div>
-      <div class="kpi"><div class="k">Préparées</div><div class="v">${N(s.preparees)}<small>auj.</small></div></div>
+      <div class="kpi"><div class="k">Préparées aujourd'hui</div><div class="v">${N(s.preparees)}<small>lignes</small></div></div>
       ${anneau(s.avancement)}
     </div>
     ${composition(s)}
@@ -534,7 +552,7 @@ function afficher(data, demo) {
   const pct = prep + reste ? prep / (prep + reste) : 0;
   $('#j-prep').textContent = N(prep);
   $('#j-reste').textContent = N(reste);
-  $('#j-previ').textContent = N(data.previ);
+  $('#j-previ').textContent = N(data.previ_tour ?? data.previ);
   $('#j-pct').textContent = Math.round(pct * 100) + ' %';
   $('#j-fill').style.width = (pct * 100).toFixed(1) + '%';
 
@@ -612,42 +630,39 @@ function horloge() {
 
 /* ── Données de démonstration (aucun fichier trouvé ou ?demo) ─────── */
 function donneesDemo() {
-  const n = new Date(), now = 10 * 60 + 35;   // démo figée à 10:35
-  const iso = `${n.getFullYear()}-${deux(n.getMonth() + 1)}-${deux(n.getDate())}T10:35:00`;
-  const v = 1200, d0 = 0;
-  const pick = { id: 'PICK', nom: 'Pick', part: .73, statut: 'FACILE', fin_min: 880 + d0, fin_txt: '', fin_eq_min: 880 + d0, cible_min: v,
-    marge_min: v - 880 - d0, renfort: 0, renfort_txt: '', zone_nc: '', reste: 3070, lancees: 810, en_cours: 300, a_venir: 1960,
-    preparees: 3500, ops: 10, ops_logys: 8, avancement: .533,
-    zones: [{ nom: 'Pick (toutes zones)', code: 'PICK', reste: 3070, ops: 10, fin_min: 880 + d0, statut: 'OK' }] };
-  const cable = { id: 'CABLE', nom: 'Câble', part: .04, statut: 'COMPLIQUÉ', fin_min: 1290 + d0, fin_txt: '', fin_eq_min: 1215 + d0, cible_min: v,
-    marge_min: v - 1290 - d0, renfort: 1, renfort_txt: '', zone_nc: '', reste: 214, lancees: 96, en_cours: 12, a_venir: 106,
-    preparees: 141, ops: 3, ops_logys: 3, avancement: .397,
+  const n = new Date(), now = 15 * 60 + 30;   // démo figée à 15:30, activité 12:06 → 20:00
+  const iso = `${n.getFullYear()}-${deux(n.getMonth() + 1)}-${deux(n.getDate())}T15:30:00`;
+  const v = 1200;
+  const pick = { id: 'PICK', nom: 'Pick', part: .73, statut: 'FACILE', fin_min: 1128, fin_txt: '', fin_eq_min: 1128, cible_min: v,
+    marge_min: 72, renfort: 0, renfort_txt: '', zone_nc: '', reste: 3260, lancees: 1180, en_cours: 310, a_venir: 1770,
+    preparees: 4380, ops: 11, ops_logys: 9, avancement: .573, prod: 79.4, prod_obj: 75, heures: 3.4,
+    zones: [{ nom: 'Pick (détail + carton)', code: 'PICK', reste: 3260, ops: 11, fin_min: 1128, statut: 'OK' }] };
+  const cable = { id: 'CABLE', nom: 'Câble', part: .04, statut: 'COMPLIQUÉ', fin_min: 1262, fin_txt: '', fin_eq_min: 1218, cible_min: v,
+    marge_min: -62, renfort: 1, renfort_txt: '', zone_nc: '', reste: 151, lancees: 40, en_cours: 5, a_venir: 106,
+    preparees: 140, ops: 5, ops_logys: 4, avancement: .481, prod: 7.1, prod_obj: 8, heures: 3.4,
     zones: [
-      { nom: 'Allée 42', code: '42', reste: 88, lancees: 40, en_cours: 4, a_venir: 44, ops: 1, fin_min: 1290 + d0, statut: 'RETARD' },
-      { nom: 'Allée 41', code: '41', reste: 64, lancees: 28, en_cours: 4, a_venir: 32, ops: 1, fin_min: 1172 + d0, statut: 'TENDU' },
-      { nom: 'Allée 43', code: '43', reste: 40, lancees: 18, en_cours: 2, a_venir: 20, ops: .5, fin_min: 1180 + d0, statut: 'TENDU' },
-      { nom: 'Allée 44', code: '44', reste: 22, lancees: 10, en_cours: 2, a_venir: 10, ops: .5, fin_min: 1010 + d0, statut: 'OK' }],
-    retract: { lancees: 7, en_cours: 2, alerte: false } };
-  const hg = { id: 'HG', nom: 'Hors gabarit', part: .23, statut: 'TENDU', fin_min: 1182 + d0, fin_txt: '', fin_eq_min: 1105 + d0, cible_min: v,
-    marge_min: v - 1182 - d0, renfort: 0, renfort_txt: '', zone_nc: '', reste: 1909, lancees: 180, en_cours: 30, a_venir: 1699,
-    preparees: 1210, ops: 8, ops_logys: 7, avancement: .388,
+      { nom: 'Coupes', code: 'COUPES', reste: 121, lancees: 34, en_cours: 5, a_venir: 82, ops: 4, fin_min: 1218, statut: 'RETARD' },
+      { nom: 'Rétract câble', code: 'RÉTRACT CÂBLE', reste: 30, lancees: 6, en_cours: 0, a_venir: 24, ops: 1, fin_min: 1262, statut: 'RETARD' }] };
+  const hg = { id: 'HG', nom: 'Hors gabarit', part: .23, statut: 'TENDU', fin_min: 1182, fin_txt: '', fin_eq_min: 1130, cible_min: v,
+    marge_min: 18, renfort: 0, renfort_txt: '', zone_nc: '', reste: 1335, lancees: 161, en_cours: 15, a_venir: 1159,
+    preparees: 1115, ops: 6, ops_logys: 3, avancement: .455, prod: 54.7, prod_obj: 51, heures: 3.4,
     zones: [
-      { nom: 'Sol', code: 'SOL', reste: 1252, lancees: 120, en_cours: 30, a_venir: 1102, ops: 3, fin_min: 1025 + d0, statut: 'OK' },
-      { nom: 'Longueur 2 m', code: 'LONGUEUR 2M', reste: 0, ops: 1, fin_min: null, fin_txt: 'Terminé', statut: 'TERMINÉ' },
-      { nom: 'Longueur 3 m', code: 'LONGUEUR 3M', reste: 331, lancees: 0, en_cours: 0, a_venir: 331, ops: 1, fin_min: 1137 + d0, statut: 'OK' },
-      { nom: 'Rétract', code: 'RÉTRACT', reste: 228, lancees: 60, en_cours: 0, a_venir: 168, ops: 1.5, fin_min: 1182 + d0, statut: 'TENDU' },
-      { nom: 'Rétract longueur', code: 'RÉTRACT LONGUEUR', reste: 97, lancees: 0, en_cours: 0, a_venir: 97, ops: 1, fin_min: 1074 + d0, statut: 'OK' }] };
-  // historique depuis 06:00 toutes les 10 min (vagues de lancement à 08:00 et 10:00)
+      { nom: 'Sol', code: 'SOL', reste: 367, lancees: 82, en_cours: 15, a_venir: 270, ops: 2, fin_min: 1068, statut: 'OK' },
+      { nom: 'Longueur 2 m', code: 'LONGUEUR 2M', reste: 191, lancees: 24, en_cours: 0, a_venir: 167, ops: 1, fin_min: 1145, statut: 'OK' },
+      { nom: 'Longueur 3 m', code: 'LONGUEUR 3M', reste: 392, lancees: 50, en_cours: 0, a_venir: 342, ops: 1.5, fin_min: 1180, statut: 'TENDU' },
+      { nom: 'Rétract', code: 'RÉTRACT', reste: 269, lancees: 5, en_cours: 0, a_venir: 264, ops: 1, fin_min: 1182, statut: 'TENDU' },
+      { nom: 'Rétract longueur', code: 'RÉTRACT LONGUEUR', reste: 116, lancees: 0, en_cours: 0, a_venir: 116, ops: .5, fin_min: 1166, statut: 'OK' }] };
+  // historique depuis 12:06 toutes les 10 min (vagues de lancement à 13:00 et 15:00)
   const histo = [];
-  for (let t = 360; t <= now; t += 10) {
-    const k = (t - 360) / Math.max(1, now - 360);
-    const vague = (t >= 480 ? 1 : 0) + (t >= 600 ? 1 : 0);
-    histo.push({ t, r: [Math.round(4300 - 1900 * k + 330 * vague + 60 * Math.sin(t / 17)), Math.round(300 - 110 * k + 12 * vague + 6 * Math.sin(t / 9)),
-      Math.round(2600 - 900 * k + 110 * vague + 30 * Math.sin(t / 13))],
-      f: [880 + (t <= now - 25 ? 14 : 0), 1290 - (t <= now - 25 ? 22 : 0), Math.round(1180 + 2 * Math.sin(t / 20))] });
+  for (let t = 726; t <= now; t += 10) {
+    const k = (t - 726) / (now - 726);
+    const vague = (t >= 780 ? 1 : 0) + (t >= 900 ? 1 : 0);
+    histo.push({ t, r: [Math.round(5600 - 2900 * k + 380 * vague + 70 * Math.sin(t / 17)), Math.round(230 - 95 * k + 10 * vague + 5 * Math.sin(t / 9)),
+      Math.round(2250 - 1050 * k + 90 * vague + 30 * Math.sin(t / 13))],
+      f: [1128 + (t <= now - 25 ? 14 : 0), 1262 - (t <= now - 25 ? 22 : 0), Math.round(1180 + 2 * Math.sin(t / 20))] });
   }
-  return { v: 1, site: 'CLR Champigneulles', maj: iso, source: 'DEMO', perime_min: 15, previ: 9000, zones_a_verifier: 0,
-    non_ventilees: 0, services: [pick, cable, hg], histo };
+  return { v: 1, site: 'CLR Champigneulles', maj: iso, source: 'DEMO', perime_min: 15, previ: 7500, previ_tour: 10650,
+    zones_a_verifier: 0, non_ventilees: 0, services: [pick, cable, hg], histo };
 }
 
 /* ── Chargement du fichier écrit par Excel ────────────────────────── */
@@ -668,6 +683,13 @@ function charger() {
   document.head.appendChild(s);
 }
 
+function ajuster() {
+  const sc = Math.min(innerWidth / 1920, innerHeight / 1080);
+  const scene = $('#scene');
+  scene.style.transform = `translate(${(innerWidth - 1920 * sc) / 2}px,${(innerHeight - 1080 * sc) / 2}px) scale(${sc})`;
+}
+window.addEventListener('resize', ajuster);
+ajuster();
 horloge();
 setInterval(horloge, 1000);
 setInterval(majFraicheur, 20000);

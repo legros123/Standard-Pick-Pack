@@ -1,14 +1,16 @@
 # Dashboard préparation CLR : Pick · Câble · Hors gabarit
 
-Un écran par service, le même partout : pour chacun des 3 services, **le statut (FACILE / TENDU / COMPLIQUÉ)**, **l'heure de fin estimée**, **la tendance** (s'améliore / se dégrade) et **le renfort nécessaire**.
+Un écran, le même dans tous les services, avec **les 3 services côte à côte**. Pour chacun : **l'état** (FACILE / TENDU / COMPLIQUÉ), **l'heure de fin estimée**, **la prod** (lignes / heure / opérateur face à l'objectif), la tendance et le renfort nécessaire.
 
 ```
 Logys (Oracle)  ──ODBC──▶  Dashboard_Prepa_CLR.xlsm  ──toutes les 5 min──▶  donnees_dashboard.js  ──▶  index.html
- lignes lancées,           prévi du jour, opérateurs        (dossier partagé)                         ouvert en plein écran
- en cours, préparées       par zone, calculs                                                          dans chaque service
+ vue des tournées          prévi du jour, opérateurs        (dossier partagé)                         plein écran
+ de préparation            par zone, calculs                                                          dans chaque service
 ```
 
 Un seul poste interroge Logys (celui du superviseur). Les écrans lisent seulement un fichier du dossier partagé : ils n'ont besoin ni d'Excel, ni d'un accès à Logys.
+
+L'écran est une scène fixe 1920×1080 mise à l'échelle de l'écran qui l'affiche : TV, PC, tablette ou téléphone, les 3 services tiennent toujours ensemble, sans défilement.
 
 ## Contenu du dossier
 
@@ -17,103 +19,93 @@ Un seul poste interroge Logys (celui du superviseur). Les écrans lisent seuleme
 | `Dashboard_Prepa_CLR.xlsx` | Classeur moteur (à enregistrer en `.xlsm` après import du module VBA). Régénérable : `python3 outils/creer_classeur_dashboard_prepa.py` |
 | `vba/modDashboardPrepa.bas` | Module VBA : requête Logys, actualisation auto, historique, export vers l'écran |
 | `vba/ThisWorkbook_a_coller.txt` | 2 procédures à coller dans `ThisWorkbook` (arrêt propre à la fermeture, démarrage auto facultatif) |
-| `sql/00_decouverte_schema.sql` | À lancer une fois : trouver la table Logys, les statuts, l'emplacement |
-| `sql/requetes_prepa.sql` | Toutes les requêtes (Pick, HG par zone, Câble par allée, rétract, analyse du découpage, calibrage des cadences) |
-| `index.html` | L'écran TV. Sans fichier de données à côté : mode démo (`index.html?demo` le force) |
+| `sql/requetes_prepa.sql` | Toutes les requêtes Logys (Pick, HG par zone, Câble coupes / rétract, modèle Excel, répartition sur 20 jours, préparateurs en cours) |
+| `sql/00_decouverte_schema.sql` | Contrôles à lancer une fois (valeurs présentes, colonnes, emplacement pour l'allée câble) |
+| `index.html` | L'écran. Sans fichier de données à côté : mode démo (`index.html?demo` le force) |
+
+## Source Logys
+
+Les requêtes reprennent les tables de « Suivi activité préparation V4.69 » :
+
+| Objet | Utilisé pour |
+|---|---|
+| `REXEL.F_GESTOURPREP_TOUR` | temps réel : état de la tournée (`L_ETAT_TOUR` LANCEE / ENCOURS / PRELEVE), sous-type (`L_STYP_TOUR`), zone de prise (`ZONE_MVT_PRISE`), lignes prévues / terminées / annulées, `OPE_MAJ`, `DAT_MAJ` |
+| `LIG_TOUR` | répartition des lignes du jour par sous-type (Q7) |
+| `REXEL.TOURNEE`, `REXEL.TRACE_REAL`, `REXEL.PERSONNE` | préparateurs en cours (Q8) |
+
+- **Service** = sous-type de tournée : DETAIL, CARTON → Pick · HORS GAB, VRAC, LONGUEUR, PALETTE → Hors gabarit · CABLE → Câble.
+- **Zone** = zone de prise : voir l'onglet ZONES. Rétract câble = zone `RETRACT`, rétract HG = zone `ARETRACT`.
+- **Lignes lancées** = prévues − terminées − annulées des tournées LANCEE. **En cours** = le reste des tournées ENCOURS : les lignes déjà terminées ne sont plus comptées, contrairement à l'ancien fichier qui comptait la tournée en entier.
+- **Préparées du jour** = lignes terminées des tournées mises à jour aujourd'hui.
 
 ## Mise en route
 
 1. **Classeur** : ouvrir `Dashboard_Prepa_CLR.xlsx` → `Alt+F11` → Fichier → Importer → `vba/modDashboardPrepa.bas`. Double-clic sur `ThisWorkbook`, coller `ThisWorkbook_a_coller.txt`. Débogage → Compiler VBAProject. Enregistrer sous `.xlsm`.
-2. **Trouver la table Logys** : dans SQL Developer, `sql/00_decouverte_schema.sql`, F5. Repérer la table des lignes de préparation, la colonne statut et ses codes (lancée / en cours / validée), l'emplacement (allée câble), le préparateur, la date de validation. La requête qui produit déjà l'extraction journalière HG (`JJ-MM-AAAA.xlsx`, colonnes ZONE_MVT, NOM, Nb de lignes) donne directement la table.
-3. **Renseigner** `PARAMETRES` bloc 7 (jetons ci-dessous) et bloc 6 (DSN ODBC, dossier d'export). Mêmes valeurs dans les `DEFINE` de `sql/requetes_prepa.sql`.
-4. **Tester** : `Alt+F8` → `TesterConnexionLogys`, puis `InstallerBoutons` (4 boutons en haut de PILOTAGE).
-5. **Écrans** : copier `index.html` dans le dossier d'export (celui où arrive `donnees_dashboard.js`). Sur chaque PC d'écran, l'ouvrir dans Edge ou Chrome puis `F11`. En mode borne, au démarrage du PC :
+2. **Connexion** : PARAMETRES bloc 7 → le DSN ODBC et l'utilisateur de « Suivi activité préparation » (dans ce fichier : Données → Requêtes et connexions → Propriétés → Définition), et le dossier partagé d'export. Aucun mot de passe n'est écrit dans le classeur : la fenêtre ODBC le demande au premier lancement, ou le DSN le garde.
+3. **Tester** : `Alt+F8` → `TesterConnexionLogys`, puis `InstallerBoutons` (4 boutons en haut de PILOTAGE).
+4. **Écrans** : copier `index.html` dans le dossier d'export (celui où arrive `donnees_dashboard.js`). Sur chaque PC d'écran, l'ouvrir dans Edge ou Chrome puis `F11`. En mode borne, au démarrage du PC :
    `msedge.exe --kiosk "file://serveur/partage/Dashboard/index.html" --edge-kiosk-type=fullscreen`
-6. **Chaque matin** : PILOTAGE → saisir le prévisionnel et les opérateurs par zone (cellules jaunes), cliquer **Auto ON**. La première actualisation se fait tout de suite (la fenêtre ODBC peut demander le mot de passe), puis toutes les 5 min sans aucune fenêtre.
-
-### Jetons de la requête (PARAMETRES, bloc 7)
-
-| Jeton | Ce qu'il faut mettre | Vide = |
-|---|---|---|
-| `SOURCE` | table / vue / jointure des lignes de préparation, avec alias | **obligatoire** |
-| `COL_ZONE` | colonne zone (confirmée : `ZONE_MVT`) | `ZONE_MVT` |
-| `COL_ALLEE` | allée câble tirée de l'emplacement, ex. `SUBSTR(l.EMPLACEMENT, 1, 2)` | `'TOUTES'` (une seule ligne câble) |
-| `COL_PREPA` | préparateur affecté à la ligne | non suivi |
-| `COL_DATE_VALID` | date + heure de validation | **obligatoire** |
-| `EXPR_NB_LIGNES` | `1` si 1 enregistrement = 1 ligne, sinon la colonne nb lignes | `1` |
-| `COND_LANCE` | condition « lancée, pas encore prise » | **obligatoire** |
-| `COND_EN_COURS` | condition « prise par un préparateur, non validée » | **obligatoire** |
-| `COND_VALIDEE` | condition « validée », **sans** date (la date est ajoutée par la requête) | **obligatoire** |
-| `COND_RETRACT` | ligne câble servie au rétract | `1 = 0` (non suivi) |
-| `COND_PERIMETRE` | site / dépôt / type de préparation | `1 = 1` |
-
-`ZONES_CABLE` est calculé tout seul depuis l'onglet ZONES.
+5. **Chaque jour** : PILOTAGE → prévisionnel en lignes commande et opérateurs par zone (cellules jaunes), puis **Auto ON**. La première actualisation se fait tout de suite, puis toutes les 5 min sans aucune fenêtre.
 
 ## Les requêtes (`sql/requetes_prepa.sql`)
 
 | | Requête | Renvoie |
 |---|---|---|
-| Q1 | Pick | lignes lancées, en cours, préparées du jour, préparateurs en cours |
-| Q2 | Hors gabarit par zone | idem par zone : sol, longueur 2 m, longueur 3 m, rétract, rétract longueur |
-| Q3 | Hors gabarit par ZONE_MVT | le détail pour établir / contrôler le découpage |
-| Q4 | Câble par allée | lancées, en cours, préparées, dont rétract, par allée |
-| Q5 | Câble rétract | nombre de lignes rétract lancées / en cours / préparées |
-| Q6 | Modèle Excel | tout en une requête, regroupé par zone / allée / statut (c'est elle que le classeur exécute) |
-| Q7 | Analyse du découpage | lignes préparées sur N jours par service et par zone, en % : remplace 73 / 4 / 23 et la répartition HG |
-| Q8 | Calibrage des cadences | lignes / heure / préparateur par zone sur N jours (indicatif) |
+| Q1 | Pick | lignes lancées, en cours, tournées, préparées du jour, préparateurs en cours |
+| Q2 | Hors gabarit par zone | lancées, en cours, préparées : sol, longueur 2 m, longueur 3 m, rétract, rétract longueur |
+| Q3 | Hors gabarit par zone de prise | le détail pour contrôler le découpage |
+| Q4 | Câble | coupes et rétract câble : lancées, en cours, préparées |
+| Q5 | Câble rétract | nombre de lignes rétract (zone RETRACT) |
+| Q6 | Modèle Excel | tout en une requête, regroupé par sous-type / zone / état (c'est elle que le classeur exécute) |
+| Q7 | Répartition | lignes de tournée par sous-type sur 20 jours, en % : remplace 73 / 4 / 23 |
+| Q8 | Préparateurs en cours | qui est sur quelle tournée, par sous-type et zone |
 
-Une ligne n'est comptée qu'une fois : en cours avant lancée, avant préparée. Toutes les requêtes sont en lecture seule.
+Toutes les requêtes sont en lecture seule.
 
 ## Comment c'est calculé (onglet PILOTAGE)
 
+- **À venir** = prévisionnel (lignes commande × foisonnement) × part du service (× part de la zone pour le HG) − ce que Logys a déjà vu (préparées + en cours + lancées), jamais négatif.
 - **Reste à faire** = lancées + en cours + à venir.
-- **À venir** = prévisionnel × part du service (× part de la zone pour le HG) − ce que Logys a déjà vu (préparées + en cours + lancées), jamais négatif. Câble : réparti entre les allées au prorata du travail visible.
-- **Charge** (heures-opérateur) = reste ÷ cadence de la zone × rendement équipe.
-- **Fin estimée d'une zone** = heure des données + charge ÷ opérateurs de la zone + les pauses qui tombent avant. **Fin du service** = la zone qui finit en dernier.
-- **Fin si rééquilibrage** = charge totale ÷ opérateurs totaux du service.
+- **Fin estimée d'une zone** = heure des données + reste ÷ cadence ÷ opérateurs de la zone, + les pauses du service qui tombent avant. **Fin du service** = la zone qui finit en dernier. **Fin si rééquilibrage** = charge totale ÷ opérateurs totaux.
+- **Prod** = lignes préparées ÷ (opérateurs × heures écoulées depuis le début d'activité, pauses passées déduites), comparée à l'objectif du service.
 - **Renfort** = opérateurs manquants pour finir à l'heure visée, rééquilibrage compris.
-- **Statut** : marge ≥ 30 min → FACILE ; 0 à 30 min → TENDU ; retard ou zone avec du travail et 0 opérateur → COMPLIQUÉ.
-- **Tendance (écran)** : heure de fin comparée à celle d'il y a 25 min ou plus (historique HISTO). Écart de moins de 5 min : stable.
-- Opérateurs : décimales acceptées (0,5 = un opérateur partagé sur deux allées).
+- **État** : marge ≥ 30 min → FACILE ; 0 à 30 min → TENDU ; retard, ou zone avec du travail et 0 opérateur → COMPLIQUÉ.
+- **Tendance (écran)** : heure de fin comparée à celle d'il y a 25 min ou plus. Écart de moins de 5 min : stable.
+- Opérateurs : décimales acceptées (0,5 = un opérateur partagé sur deux zones).
 
 ## Valeurs de départ et leur source
 
 | Réglage | Valeur | Source |
 |---|---|---|
-| Découpage du prévi | Pick 73 % · Câble 4 % · HG 23 % | consigne superviseur, à remplacer par Q7 |
-| Cadence Pick | 83,8 l/h/op | quota P&P : 620 lignes / 7,4 h |
-| Cadence Câble | 8,8 l/h/op | 1 000 pts / 7,4 h ÷ 15,38 pts par ligne (HG_Cable V17) |
-| Cadence Sol | 68,5 l/h/op | mix réel janv.–juin 2026 : 1,97 pt par ligne |
-| Cadence Longueur 2 m | 33,8 l/h/op | 4 pts par ligne |
-| Cadence Longueur 3 m | 41,6 l/h/op | 3,25 pts par ligne (long. 3 m + IRL) |
-| Cadence Rétract / Rétract longueur | 14,1 l/h/op | 9,6 pts par ligne |
-| Part HG par zone | Sol 60,5 % · Long. 2 m 7,8 % · Long. 3 m 16,0 % · Rétract 11,0 % · Rétract long. 4,7 % | suivi op HG janv.–juin 2026 (221 634 lignes, 103 jours) |
-| Rendement équipe | 100 % | l'équipe HG a fait 102 % du standard sur la même période (949 jours-opérateur) |
-| Heures visées | 20:00 | **à ajuster** |
+| Découpage du prévi | Pick 73 % · Câble 4 % · HG 23 % | consigne superviseur, à recaler avec Q7 |
+| Foisonnement | 1,42 | ancien fichier, « taux de foisonnement » (mesuré 1,51 le 14/10) |
+| Prod objectif | Pick 75 · Câble 8 · HG 51 l/h/op | ancien fichier, « Nombre ligne h » |
+| Cadence Pick / Coupes / Rétract câble | 75 / 8 / 8 l/h/op | ancien fichier (rétract câble : à ajuster) |
+| Cadence Sol | 80 l/h/op | ancien fichier : couronnes 148,6 et reste HG 64, pondérés par le mix réel (36 % de couronnes) |
+| Cadence Longueur 2 m / 3 m | 36,5 l/h/op | ancien fichier : LG 270 lignes / 7,4 h |
+| Cadence Rétract / Rétract longueur | 17,6 l/h/op | ancien fichier : rétract 130 lignes / 7,4 h |
+| Part HG par zone | Sol 60,5 % · Long. 2 m 7,8 % · Long. 3 m 16 % · Rétract 11 % · Rétract long. 4,7 % | suivi op HG janv.–juin 2026 (221 634 lignes) |
+| Horaires | début 12:06, fin visée 20:00 | ancien fichier, « horaire prep 12h06/20h » |
+| Pauses | 30 min : pick 18:05, HG et câble 17:25 | ancien fichier |
 
-Découpage des zones Logys (onglet ZONES), repris de la macro d'import de HG_Cable V17 :
-**Sol** = couronnes, aérosols, bardage, PICK01A14, chauffage, préparateur, panneaux, HG à emballer, gaines, plafonniers, éclairage (1, 2, ECL3, ECL4), gaines ventil., tourets précond., coffrets, promos, longueur 1 m, chauffe-eau, volumes ·
-**Longueur 2 m** = LONGUEUR2M, LG2DEPOSEDIR, LG2EMBALLAGE ·
-**Longueur 3 m** = LONGUEUR3M, LG3ALLEE32, IRL ·
-**Rétract** = ARETRACT, RETRACT ·
-**Rétract longueur** = RETRACT3435, EXTERIEUR, TUBECUIVRE ·
-**Câble** = CABLE. Toute autre zone compte en Pick ; une zone Logys nouvelle est ajoutée toute seule dans ZONES avec « À VÉRIFIER ».
+La référence HG_Cable V17 (1 000 points / 7,4 h ÷ pondération) est rappelée à côté de chaque cadence dans PARAMETRES.
 
 ## Points à confirmer
 
-- **Zone RETRACT** : la macro V17 (Module1) la compte en Rétract HG, l'ancienne (Module3) en Câble. Laissée en HG.
-- **Rétract au câble** : quelle règle Logys distingue une ligne câble servie au rétract (niveau d'emplacement ? zone ?) → jeton `COND_RETRACT`.
-- **Allée câble** : où est l'allée dans le code emplacement → requête D7 du fichier de découverte, puis jeton `COL_ALLEE`. Ensuite, vider la ligne « Câble (toutes allées) » de PILOTAGE : les allées s'ajoutent seules.
-- **Heures visées et pauses** par service (PARAMETRES, bloc 4).
+- **Heure de fin** : le Point du jour dit 20:00, le calcul de l'ancien fichier utilisait 21:00 (20:30 le vendredi). Mis à 20:00.
+- **Prod du jour** : la vue `F_GESTOURPREP_TOUR` garde-t-elle les tournées terminées ? Requête C4 du fichier de contrôle. Sinon, la prod ne compte que les tournées encore actives.
+- **Zone MRL** : dans les longueurs de l'ancien fichier, classée en 3 m, à vérifier.
+- **Câble par allée** : la vue des tournées n'a pas l'emplacement. Le câble est découpé en coupes / rétract câble ; pour aller jusqu'à l'allée, il faut la colonne emplacement de `LIG_TOUR` (requête C5).
 
 ## Dépannage
 
 | Symptôme | Cause et solution |
 |---|---|
-| « Paramètre Logys à renseigner » | un jeton vaut encore `A_RENSEIGNER` (PARAMETRES, bloc 7) |
-| L'écran affiche MODE DÉMO | `donnees_dashboard.js` absent du dossier de `index.html` : vérifier le dossier d'export (PARAMETRES, bloc 6) |
-| Bandeau jaune « données non actualisées » | plus d'export depuis 15 min : Excel fermé, Auto OFF, ou erreur (voir DONNEES, cellule B4) |
-| « Lignes non ventilées » > 0 (PILOTAGE) | des lignes Logys ne tombent dans aucune ligne des tableaux : allée câble sans case libre, zone HG absente de PILOTAGE |
+| « DSN ODBC Logys à renseigner » | PARAMETRES bloc 7 |
+| L'écran affiche MODE DÉMO | `donnees_dashboard.js` absent du dossier de `index.html` : vérifier le dossier d'export |
+| Bandeau jaune « données non actualisées » | plus d'export depuis 15 min : Excel fermé, Auto OFF, ou erreur (DONNEES, cellule B4) |
+| « Lignes non ventilées » > 0 | un sous-type de tournée inconnu : onglet ZONES, colonnes G:I, choisir le service |
+| « À vérifier (zones) » > 0 | nouvelle zone de prise ajoutée dans ZONES : choisir sa zone dashboard |
 | L'actualisation auto échoue après une coupure réseau | la connexion est rouverte au tour suivant ; si le DSN ne garde pas le mot de passe, cliquer une fois « Actualiser Logys » |
-| Classeur dans OneDrive / SharePoint | renseigner un dossier d'export réseau (PARAMETRES, bloc 6) |
-| Pas de Logys (dépannage) | remplir les colonnes « ✎ manuel » de PILOTAGE, cliquer « Exporter (manuel) » |
+| Classeur dans OneDrive / SharePoint | renseigner un dossier d'export réseau (PARAMETRES, bloc 7) |
+| Pas de Logys | remplir les colonnes « ✎ manuel » de PILOTAGE, cliquer « Exporter (manuel) » |

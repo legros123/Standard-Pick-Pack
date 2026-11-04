@@ -1,138 +1,77 @@
 -- =====================================================================
---  DASHBOARD PRÉPARATION CLR — 00 · DÉCOUVERTE DU SCHÉMA LOGYS
---  Oracle, LECTURE SEULE. À lancer une fois dans SQL Developer (F5).
+--  DASHBOARD PRÉPARATION CLR — 00 · CONTRÔLES LOGYS (lecture seule)
+--  À lancer une fois dans SQL Developer (F5), avec le compte de lecture
+--  du fichier « Suivi activité préparation ».
 -- ---------------------------------------------------------------------
---  But : trouver la table (ou vue) des lignes de préparation et ses
---  colonnes pour remplir les DEFINE de requetes_prepa.sql et le bloc 7
---  de l'onglet PARAMETRES du classeur.
---
---  Seule colonne confirmée : ZONE_MVT (colonne D de l'extraction
---  journalière HG « JJ-MM-AAAA.xlsx », avec NOM en H et Nb de lignes
---  en M). La requête qui produit cette extraction donne directement la
---  table et les jointures : la récupérer si possible.
---
---  Ce qu'il faut repérer :
---    1. la table des lignes de préparation (une ligne = une ligne à préparer)
---    2. la colonne STATUT (et ses codes : lancée / en cours / validée)
---    3. la colonne EMPLACEMENT (pour l'allée câble)
---    4. la colonne PRÉPARATEUR (le NOM de l'extraction)
---    5. la colonne DATE DE VALIDATION (date + heure)
+--  Les tables viennent de l'ancien fichier (V4.69) :
+--    REXEL.F_GESTOURPREP_TOUR  tournées de préparation (temps réel)
+--    LIG_TOUR                  lignes de tournée (répartition du jour)
+--    REXEL.TOURNEE, REXEL.TRACE_REAL, REXEL.PERSONNE  préparateurs en cours
+--  Ces contrôles vérifient les valeurs utilisées par le classeur et
+--  cherchent la colonne emplacement (allée câble).
 -- =====================================================================
-SET DEFINE ON
-SET VERIFY OFF
+SET DEFINE OFF
 
 
--- D1. Version Oracle (peut être refusé selon les droits : sans gravité)
-SELECT banner
-FROM v$version;
-
-
--- D2. Tables et vues qui portent la colonne ZONE_MVT
+-- C1. Colonnes des tables utilisées (et recherche d'un emplacement / allée)
 SELECT
     owner,
     table_name,
     column_id,
+    column_name,
     data_type
 FROM all_tab_columns
-WHERE column_name LIKE '%ZONE%MVT%'
-ORDER BY owner, table_name;
+WHERE table_name IN ('F_GESTOURPREP_TOUR', 'LIG_TOUR', 'TOURNEE')
+ORDER BY owner, table_name, column_id;
 
 
--- D3. Toutes les colonnes de ces tables, avec leurs commentaires
---     (repérer statut, emplacement, préparateur, dates, nb de lignes)
+-- C2. Sous-types et états présents sur 7 jours (vérifier DETAIL, CARTON,
+--     HORS GAB, VRAC, LONGUEUR, PALETTE, CABLE et LANCEE, ENCOURS, PRELEVE)
 SELECT
-    c.owner,
-    c.table_name,
-    c.column_id,
-    c.column_name,
-    c.data_type,
-    cc.comments
-FROM all_tab_columns c
-LEFT JOIN all_col_comments cc
-       ON cc.owner       = c.owner
-      AND cc.table_name  = c.table_name
-      AND cc.column_name = c.column_name
-WHERE (c.owner, c.table_name) IN (
-        SELECT owner, table_name
-        FROM all_tab_columns
-        WHERE column_name LIKE '%ZONE%MVT%'
-      )
-ORDER BY c.owner, c.table_name, c.column_id;
+    UPPER(TRIM(t.L_STYP_TOUR))  AS styp,
+    t.L_ETAT_TOUR               AS etat,
+    COUNT(*)                    AS tournees,
+    SUM(t.NB_LIG_PREV)          AS lig_prev,
+    SUM(t.NB_LIG_TERM)          AS lig_term
+FROM REXEL.F_GESTOURPREP_TOUR t
+WHERE t.DAT_MAJ >= TRUNC(SYSDATE) - 7
+GROUP BY UPPER(TRIM(t.L_STYP_TOUR)), t.L_ETAT_TOUR
+ORDER BY 1, 2;
 
 
--- D4. Commentaires des tables trouvées (TABLE ou VIEW)
+-- C3. Zones de prise par sous-type sur 7 jours (compléter l'onglet ZONES)
 SELECT
-    t.owner,
-    t.table_name,
-    t.table_type,
-    t.comments
-FROM all_tab_comments t
-WHERE (t.owner, t.table_name) IN (
-        SELECT owner, table_name
-        FROM all_tab_columns
-        WHERE column_name LIKE '%ZONE%MVT%'
-      )
-ORDER BY t.owner, t.table_name;
+    UPPER(TRIM(t.L_STYP_TOUR))                   AS styp,
+    NVL(UPPER(TRIM(t.ZONE_MVT_PRISE)), '(VIDE)') AS zone,
+    COUNT(*)                                     AS tournees,
+    SUM(t.NB_LIG_PREV)                           AS lig_prev
+FROM REXEL.F_GESTOURPREP_TOUR t
+WHERE t.DAT_MAJ >= TRUNC(SYSDATE) - 7
+GROUP BY UPPER(TRIM(t.L_STYP_TOUR)), NVL(UPPER(TRIM(t.ZONE_MVT_PRISE)), '(VIDE)')
+ORDER BY 1, 4 DESC;
 
 
--- =====================================================================
---  Étape 2 : renseigner la table candidate trouvée ci-dessus, puis
---  relancer le script (F5). Les requêtes D5 à D8 sont des GROUP BY :
---  sur une très grosse table, les lancer hors pointe.
--- =====================================================================
-DEFINE TABLE_CANDIDATE      = "A_RENSEIGNER"
-DEFINE COL_STATUT_CANDIDATE = "A_RENSEIGNER"
-DEFINE COL_EMPL_CANDIDATE   = "A_RENSEIGNER"
-DEFINE COL_DATE_CANDIDATE   = "A_RENSEIGNER"
-
-
--- D5. Codes de statut et volumes des 7 derniers jours
---     (identifier : lancée = pas encore prise, en cours = prise par un
---      préparateur, validée = préparée)
+-- C4. La vue garde-t-elle les tournées terminées ? (sinon la « prod » du
+--     jour ne compterait que les tournées encore actives)
 SELECT
-    &&COL_STATUT_CANDIDATE AS statut,
-    COUNT(*)               AS nb_lignes,
-    MIN(&&COL_DATE_CANDIDATE) AS premiere_date,
-    MAX(&&COL_DATE_CANDIDATE) AS derniere_date
-FROM &&TABLE_CANDIDATE
-WHERE &&COL_DATE_CANDIDATE >= TRUNC(SYSDATE) - 7
-GROUP BY &&COL_STATUT_CANDIDATE
-ORDER BY nb_lignes DESC;
+    t.L_ETAT_TOUR       AS etat,
+    COUNT(*)            AS tournees,
+    SUM(t.NB_LIG_TERM)  AS lig_term
+FROM REXEL.F_GESTOURPREP_TOUR t
+WHERE t.DAT_MAJ >= TRUNC(SYSDATE)
+GROUP BY t.L_ETAT_TOUR
+ORDER BY 2 DESC;
 
 
--- D6. Zones présentes sur 7 jours (pour compléter l'onglet ZONES)
+-- C5. Colonnes de LIG_TOUR qui ressemblent à un emplacement (allée câble)
 SELECT
-    ZONE_MVT,
-    COUNT(*) AS nb_lignes
-FROM &&TABLE_CANDIDATE
-WHERE &&COL_DATE_CANDIDATE >= TRUNC(SYSDATE) - 7
-GROUP BY ZONE_MVT
-ORDER BY nb_lignes DESC;
-
-
--- D7. Emplacements de la zone CABLE : où se trouve l'allée dans le code ?
---     (ex. « 41-03-B » -> allée = SUBSTR(emplacement, 1, 2))
-SELECT *
-FROM (
-    SELECT
-        &&COL_EMPL_CANDIDATE AS emplacement,
-        COUNT(*)             AS nb_lignes
-    FROM &&TABLE_CANDIDATE
-    WHERE ZONE_MVT = 'CABLE'
-      AND &&COL_DATE_CANDIDATE >= TRUNC(SYSDATE) - 30
-    GROUP BY &&COL_EMPL_CANDIDATE
-    ORDER BY nb_lignes DESC
-)
-WHERE ROWNUM <= 60;
-
-
--- D8. Index de la table : statut et date doivent être indexés pour une
---     actualisation rapide toutes les 5 minutes
-SELECT
-    index_name,
+    owner,
     column_name,
-    column_position
-FROM all_ind_columns
-WHERE table_owner || '.' || table_name = UPPER('&&TABLE_CANDIDATE')
-   OR table_name = UPPER('&&TABLE_CANDIDATE')
-ORDER BY index_name, column_position;
+    data_type
+FROM all_tab_columns
+WHERE table_name = 'LIG_TOUR'
+  AND (   column_name LIKE '%EMP%'
+       OR column_name LIKE '%ALL%'
+       OR column_name LIKE '%ADR%'
+       OR column_name LIKE '%LOC%')
+ORDER BY owner, column_name;
