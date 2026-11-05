@@ -15,6 +15,10 @@ La saisie ne change pas : tout continue de se faire dans Excel.
 - Un clic sur un nom (classement, colonnes, actions, rail noir de la fiche, recherche) ouvre sa **fiche**.
 - **Exporter** / **Imprimer la fiche** : impression ou PDF (A4 paysage).
 - Le prénom affiché dans « Bonjour, … » se règle en cliquant sur le badge en haut à droite.
+- **Enregistrer avec les données** : télécharge une copie de la page qui contient le classeur
+  (`Pilotage_PP_jj-mm.html`, ~2 Mo). Elle s'ouvre directement, même sans internet et sur téléphone,
+  sans choisir de fichier. À refaire après chaque mise à jour du classeur. **Document interne : ne pas
+  le publier ni le déposer dans ce dépôt** (il contient les données des opérateurs).
 
 ## Ce qui est calculé
 
@@ -25,6 +29,10 @@ pour les erreurs), RH (fenêtre = période, ou 30 jours en vue jour), actions à
 individuelles (avérées en hausse, baisse de cadence, quota 30 j, progression), score de fiabilité.
 Contrôle fait sur le classeur d'octobre 2026 : S33 (accueil) et S42 (fiche) identiques aux valeurs
 d'Excel, alertes et scores identiques pour les 45 opérateurs.
+
+Compatible avec la version OPTI du classeur (04/11/2026) : journal SUIVI RH par catégorie + motif
+(sens et famille déduits de la catégorie, même avant recalcul par Excel) et répartition des décelées
+ERREUR REF, QTE +, QTE −, ORIENTATION, AUTRES.
 
 Seule différence volontaire : le score, la tendance et les alertes sont calculés au **dernier jour
 travaillé de la période lue** (Excel : la « journée analysée » de PARAMETRES).

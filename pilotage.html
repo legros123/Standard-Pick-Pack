@@ -474,6 +474,8 @@ details.tv .tbl{margin-top:8px}
 <input type="file" id="fileIn" accept=".xlsm,.xlsx,.xlsb" class="sr" tabindex="-1" aria-hidden="true">
 <input type="date" id="datePick" class="sr" tabindex="-1" aria-hidden="true">
 <datalist id="opsList"></datalist>
+<!-- données intégrées : vide dans le dépôt, rempli seulement par « Enregistrer avec les données » (copie locale) -->
+<script type="application/json" id="pp-data"></script>
 
 <script src="vendor/xlsx.full.min.js"></script>
 <script>
@@ -542,8 +544,31 @@ const PP = (() => {
   const col = (h, name, dflt) => (h.m[name] != null ? h.m[name] : dflt);
   const byDate = (a, b) => a.d - b.d;
 
-  function build(X, wb, fileName) {
-    const R = n => rowsOf(X, wb, n);
+  /* lignes brutes des onglets utiles, allégées (colonnes inutiles retirées) : c'est aussi ce qui est
+     enregistré dans la page quand on clique « Enregistrer avec les données » */
+  const KEEP = { ERREURS: 9, AVEREES: 11, ACTIVITES: 6, ANOMALIES: 5 };
+  const PROD_COLS = ['DATE', 'NOM PRENOM', 'HEURES', 'H. HORS PICK', 'LIGNES', 'NB TOURNEES', 'CONTENANTS', 'ERR. DECELEE', 'ERR. AVEREE', 'QUOTA %', 'HREEL', 'SOUMIS QUOTA', '_CODEPTG'];
+  function compact(rows) {
+    const out = rows.map(r => { if (!r) return []; let k = r.length; while (k > 0 && (r[k - 1] == null || r[k - 1] === '')) k--; return r.slice(0, k); });
+    let n = out.length; while (n > 0 && !out[n - 1].length) n--;
+    return out.slice(0, n);
+  }
+  function extract(X, wb) {
+    const D = {};
+    for (const n of NEEDED) {
+      let rows = rowsOf(X, wb, n); if (!rows) continue;
+      const h = header(rows, 'DATE');
+      if (n === 'PROD') {
+        const keep = new Set(PROD_COLS.map(c => h.m[c]).filter(j => j != null));
+        if (keep.size >= 8) rows = rows.map((r, i) => i <= h.row || !r ? r : r.map((v, j) => keep.has(j) ? v : null));
+      } else if (KEEP[n]) rows = rows.map((r, i) => i <= h.row || !r ? r : r.slice(0, KEEP[n]));
+      D[n] = compact(rows);
+    }
+    return D;
+  }
+  function build(X, wb, fileName) { return buildRows(extract(X, wb), fileName); }
+  function buildRows(D, fileName) {
+    const R = n => D[n] || null;
     const prodR = R('PROD');
     if (!prodR) throw new Error("Onglet PROD introuvable : ce fichier ne ressemble pas au classeur Suivi Op Pick & Pack.");
     const opsR = R('OPERATEURS') || [], parR = R('PARAMETRES') || [];
@@ -620,9 +645,22 @@ const PP = (() => {
       const r = rhR[i] || []; const n = up(r[1]); if (!n || !opBy.has(n)) continue;
       rhC.set(n, { maj: num(r[2]), sit: str(r[3]), cp: num(r[10]), rtt: num(r[11]), rec: num(r[12]) });
     }
+    const jc = { cat: 3, sens: 4, fam: 5, motif: -1, suite: 6, det: 7 };
+    if (jh > 0) (rhR[jh] || []).forEach((v, j) => {
+      const t = up(v);
+      if (/^(CAT.GORIE|TYPE)/.test(t)) jc.cat = j; else if (/^SENS/.test(t)) jc.sens = j; else if (/^FAMILLE/.test(t)) jc.fam = j;
+      else if (/^MOTIF/.test(t)) jc.motif = j; else if (/^SUITE/.test(t)) jc.suite = j; else if (/^D.TAIL/.test(t)) jc.det = j;
+    });
+    const refCat = new Map();   /* référentiel CATÉGORIE -> SENS, FAMILLE (colonnes T, U, V) */
+    for (let i = 0; i < (jh > 0 ? jh : rhR.length); i++) { const r = rhR[i] || []; const u = up(r[20]); if (str(r[19]) && /^(POSITIF|.CART)$/.test(u)) refCat.set(up(r[19]), { sens: u === 'POSITIF' ? '▲ POSITIF' : '▼ ÉCART', fam: up(r[21]) }); }
     if (jh > 0) for (let i = jh + 1; i < rhR.length; i++) {
       const r = rhR[i] || []; const n = up(r[1]), d = num(r[2]); if (!n || d == null) continue;
-      rhJ.push({ n, d: Math.floor(d), type: str(r[3]), sens: up(r[4]), fam: up(r[5]), suite: str(r[6]), det: str(r[7]) });
+      const cat = str(r[jc.cat]), ref = refCat.get(up(cat));
+      let sens = up(r[jc.sens]), fam = up(r[jc.fam]);
+      if (!sens) sens = ref ? ref.sens : /POSITIF/i.test(cat) ? '▲ POSITIF' : /CART/i.test(cat) ? '▼ ÉCART' : '';
+      if (!fam) fam = ref ? ref.fam : up(cat).replace(/^[^A-Z]*\s*/, '').replace(/^(POSITIF|.CART)\s*/, '');
+      const motif = jc.motif >= 0 ? str(r[jc.motif]) : '';
+      rhJ.push({ n, d: Math.floor(d), cat, type: motif || cat, sens, fam, suite: str(r[jc.suite]), det: str(r[jc.det]) });
     }
     rhJ.sort(byDate);
     const comptASaisir = rhR.slice(0, jh > 0 ? jh : 60).filter(r => r && /saisir/i.test(str(r[3]))).length;
@@ -805,7 +843,7 @@ const PP = (() => {
   }
 
   /* ── ACCUEIL ── */
-  const DEC_TYPES = [['ERREUR REF', 'Erreur de référence', /^ERREUR REF/], ['NON PRÉCISÉE', 'Non précisée', /^NON PR.CIS/], ['QTE +', 'Quantité en plus', /^QTE \+/], ['ORIENTATION', 'Orientation', /^ORIENTATION/]];
+  const DEC_TYPES = [['ERREUR REF', 'Erreur de référence', /^ERREUR REF/], ['QTE +', 'Quantité en plus', /^QTE \+/], ['QTE -', 'Quantité en moins', /^QTE -/], ['ORIENTATION', 'Orientation', /^ORIENTATION/]];
   const AVE_MOTIFS = [['MANQUANT', 'Manquant', /^MANQUANT/], ['NON CONFORME', 'Non conforme', /^NON CONFORME/], ['ENDOMMAGÉ', 'Endommagé', /^ENDOMMAG/], ['COLIS DÉVOYÉ', 'Colis dévoyé', /^COLIS D/]];
   function split(list, field, defs) {
     const out = defs.map(([k, label, re]) => ({ k, label, v: list.filter(r => re.test(r[field])).length }));
@@ -971,7 +1009,7 @@ const PP = (() => {
   const fr = (v, d = 0) => v == null || !isFinite(v) ? '—' : v.toLocaleString('fr-FR', { minimumFractionDigits: d, maximumFractionDigits: d }).replace(/\u202f/g, '\u00a0');
 
   return {
-    readOptions, build, period, step, agg, accueil, fiche, series, daily, indic, perOp, rh,
+    readOptions, build, buildRows, extract, period, step, agg, accueil, fiche, series, daily, indic, perOp, rh,
     stQ, stD, stA, stCad, court, joli, fr, toDate, ser, dm, dmy, jdm, wdi, monday, monthStart, isoWeek, moisNom, J, JL, MO, num
   };
 })();
@@ -985,6 +1023,8 @@ if (typeof module !== 'undefined') module.exports = PP;
    ════════════════════════════════════════════════════════════════ */
 (() => {
 'use strict';
+/* source de la page, capturée avant tout affichage : sert à « Enregistrer avec les données » */
+const SRC = '<!DOCTYPE html>\n' + document.documentElement.outerHTML;
 const $ = s => document.querySelector(s);
 const app = $('#app'), tip = $('#tip');
 const fr = PP.fr;
@@ -997,7 +1037,7 @@ const todaySer = () => { const n = new Date(); return PP.ser(n.getFullYear(), n.
 
 const S = {
   M: null, view: store.get('view', 'accueil'), mode: store.get('mode', 'SEMAINE'), date: null, op: store.get('op', null),
-  lb: 'q', perf: 'quota', errTab: 'all', handle: null, saved: null, loading: '', error: '', loadedAt: null, nom: store.get('nom', '')
+  lb: 'q', perf: 'quota', errTab: 'all', handle: null, saved: null, loading: '', error: '', loadedAt: null, nom: store.get('nom', ''), rows: null, embedded: null
 };
 
 /* ── icônes (traits 1,8 px) ── */
@@ -1018,6 +1058,7 @@ const IC = {
   arrow: '<path d="M7 17 17 7M9 7h8v8"/>',
   file: '<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8Z"/><path d="M14 3v5h5M9 13h6M9 17h4"/>',
   upload: '<path d="M12 15V4M7 9l5-5 5 5"/><path d="M5 15v3a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-3"/>',
+  save: '<path d="M12 4v11M7 10l5 5 5-5"/><path d="M5 15v3a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-3"/>',
   check: '<path d="m5 12.5 4.5 4.5L19 7.5"/>', bang: '<path d="M12 6v8M12 18.5v.01"/>', down: '<path d="M12 5v14M6 13l6 6 6-6"/>', info: '<path d="M12 11v6M12 7.5v.01"/>',
   up: '<path d="M12 19V5M6 11l6-6 6 6"/>', minus: '<path d="M6 12h12"/>',
   cal: '<rect x="3.5" y="5" width="17" height="15" rx="3"/><path d="M3.5 10h17M8 3v4M16 3v4"/>',
@@ -1223,7 +1264,8 @@ function topbar() {
       <button class="tab ${S.view === 'accueil' ? 'on' : ''}" data-act="view" data-v="accueil">${ic('home')}Accueil${nAct ? `<span class="cnt">${nAct}</span>` : ''}</button>
       <button class="tab ${S.view === 'fiche' ? 'on' : ''}" data-act="view" data-v="fiche">${ic('id')}<span class="long">Fiche opérateur</span><span class="short">Fiche</span></button>
       <button class="tab" data-act="open">${ic('file')}<span class="long">Changer de classeur</span><span class="short">Classeur</span></button>
-      <span class="sync">${ic('refresh')}${esc(M ? M.fileName : '')}${t ? ' · lu à ' + t : ''}</span>
+      <button class="tab" data-act="savehtml" title="Télécharge une copie de cette page qui contient les données du classeur : elle s'ouvre directement, sans choisir le fichier. Document interne, à ne pas publier.">${ic('save')}<span class="long">Enregistrer avec les données</span><span class="short">Enregistrer</span></button>
+      <span class="sync">${ic('refresh')}${S.embedded ? 'données intégrées · ' + esc(S.embedded.name) + ' · enregistrées le ' + esc(new Date(S.embedded.savedAt).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' })) + ' à ' + esc(new Date(S.embedded.savedAt).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })) : esc(M ? M.fileName : '') + (t ? ' · lu à ' + t : '')}</span>
     </nav>
   </header>`;
 }
@@ -1658,6 +1700,7 @@ app.addEventListener('click', e => {
   if (a === 'reopen') return reopen();
   if (a === 'reload') return reload();
   if (a === 'print') return print();
+  if (a === 'savehtml') return saveHtml();
   if (a === 'name') { const n = prompt('Votre prénom (affiché dans l\'accueil) :', S.nom || ''); if (n != null) { S.nom = n.trim(); store.set('nom', S.nom); render(); } return; }
   if (!M) return;
   if (a === 'view') return go(() => { S.view = b.dataset.v; scrollTo(0, 0); });
@@ -1763,7 +1806,9 @@ async function loadFile(f) {
     const buf = await f.arrayBuffer();
     await ensureXLSX();
     const wb = XLSX.read(new Uint8Array(buf), PP.readOptions());
-    const M = PP.build(XLSX, wb, f.name);
+    const rows = PP.extract(XLSX, wb);
+    const M = PP.buildRows(rows, f.name);
+    S.rows = rows; S.embedded = null;
     if (!M.prod.length) throw new Error('Aucune ligne de production dans PROD.');
     S.M = M; S.loading = ''; S.loadedAt = new Date();
     if (!keep || S.date == null) S.date = M.maxProd;
@@ -1773,8 +1818,31 @@ async function loadFile(f) {
   } catch (e) { document.body.style.cursor = ''; fail(e); }
 }
 
+/* copie de la page avec les données du classeur intégrées (s'ouvre sans choisir de fichier) */
+function saveHtml() {
+  if (!S.M || !S.rows) return;
+  const payload = JSON.stringify({ name: S.M.fileName, savedAt: new Date().toISOString(), rows: S.rows }).replace(/</g, '\\u003c');
+  const T = 'scr' + 'ipt', open = '<' + T + ' type="application/json" id="pp-data">';   /* balise écrite en morceaux : le code ne doit pas contenir la balise en clair */
+  const html = SRC.replace(new RegExp(open.replace(/[.*+?^${}()|[\]\\/]/g, '\\$&') + '[\\s\\S]*?</' + T + '>'), () => open + payload + '</' + T + '>');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([html], { type: 'text/html;charset=utf-8' }));
+  a.download = 'Pilotage_PP_' + PP.dm(S.M.maxProd).replace('/', '-') + '.html';
+  document.body.appendChild(a); a.click();
+  setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 2000);
+}
+function loadEmbedded() {
+  const el = document.getElementById('pp-data'), t = el && el.textContent.trim();
+  if (!t) return;
+  try {
+    const E = JSON.parse(t), M = PP.buildRows(E.rows, E.name);
+    S.M = M; S.rows = E.rows; S.embedded = E; S.loadedAt = new Date(E.savedAt); S.date = M.maxProd;
+    $('#opsList').innerHTML = M.ops.map(o => `<option value="${esc(PP.joli(o))}">${esc(o.np)}</option>`).join('');
+  } catch (e) { S.error = 'Les données intégrées à cette page sont illisibles : ouvrez le classeur.'; }
+}
+
 /* démarrage */
 (async () => {
+  loadEmbedded();
   render();
   const h = await idbGet('handle');
   if (h && h.getFile) { S.saved = h; render(); }
