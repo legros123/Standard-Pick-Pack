@@ -11,6 +11,7 @@ Aperçus : [Immersion](apercus/immersion.webp) · [Briefing équipe](apercus/bri
 
 | Cas | Comment |
 |---|---|
+| **Démo en un seul fichier** | `demo/PICK-Mission-Control-demo.html` (1 Mo, tout intégré) : à ouvrir directement, envoyer par mail ou copier sur clé USB. Régénérer avec `npm run demo`. |
 | **Sans installation** | Ouvrir `mission-control/index.html` dans Chrome / Edge (double-clic, clé USB ou dossier partagé). Tout est embarqué : moteur 3D, polices, données de démonstration. Aucun accès internet requis. |
 | **Site publié** | Après fusion sur `main` : `https://legros123.github.io/Standard-Pick-Pack/mission-control/` |
 | **Serveur local** | `node mission-control/outils/serveur.mjs 8080` puis `http://localhost:8080/mission-control/` |
