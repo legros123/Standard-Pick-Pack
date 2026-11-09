@@ -1,0 +1,7 @@
+node_modules/
+# données réelles d'exploitation : jamais dans le dépôt public
+donnees/pick_data.js
+donnees/*.csv
+donnees/*.json
+!donnees/exemple_journalier.csv
+*.tmp

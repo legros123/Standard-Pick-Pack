@@ -1,0 +1,19 @@
+{
+  "name": "pick-mission-control",
+  "version": "1.0.0",
+  "private": true,
+  "description": "PICK // MISSION CONTROL — pilotage du service Pick & Pack (Rexel CLR Champigneulles)",
+  "type": "module",
+  "scripts": {
+    "build": "node outils/build.mjs",
+    "dev": "node outils/build.mjs --watch",
+    "serve": "node outils/serveur.mjs"
+  },
+  "devDependencies": {
+    "esbuild": "0.28.2",
+    "three": "0.186.1",
+    "@fontsource/barlow": "5.3.0",
+    "@fontsource/barlow-condensed": "5.3.0",
+    "@fontsource/jetbrains-mono": "5.3.0"
+  }
+}
