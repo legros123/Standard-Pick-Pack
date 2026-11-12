@@ -220,6 +220,11 @@ ol,ul{padding:0;list-style:none}
 .e4 .col:last-child{grid-template-rows:auto minmax(0,1fr) minmax(0,1fr)}
 .e4 .col:last-child>.bloc{display:grid;grid-template-rows:auto minmax(0,1fr) auto;align-items:center}
 .vagues{display:grid;grid-auto-rows:minmax(0,6.4rem);align-content:start;min-height:0}
+.deux{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1.3rem;min-width:0}
+.deux.seul{grid-template-columns:minmax(0,1fr)}
+.liste-jauges.serre .lj{grid-template-columns:7.6rem minmax(0,1fr) 9.4rem;gap:.8rem;font-size:1.05rem}
+.deux.seul .liste-jauges.serre .lj{grid-template-columns:9rem minmax(0,1fr) 12.5rem;gap:1.1rem;font-size:1.15rem}
+.jauge.etat[data-niv=na]>i{background:#5A6E93}
 .vg{display:grid;grid-template-columns:5.2rem minmax(0,1fr) 12rem 11.5rem;align-items:center;gap:1.2rem;padding:0;min-height:0;border-bottom:1px solid var(--line-2);font:400 1.12rem/1.2 var(--f-t)}
 .vg:last-child{border-bottom:0}
 .vg-h{font:900 2.2rem/1 var(--f-d);letter-spacing:.02em}
@@ -461,6 +466,7 @@ kbd{display:inline-block;min-width:2rem;padding:.1rem .5rem;margin-right:.5rem;b
   .legende{font-size:.9rem}
   .verdict{max-width:none}
   .vagues{grid-auto-rows:auto}
+  .deux{grid-template-columns:minmax(0,1fr)}
   .vg{padding:.55rem 0}
   .vg-v,.vg .pastille{grid-column:1/-1}
   .dep-corps{grid-auto-rows:auto}
@@ -862,7 +868,12 @@ function calculer(d, forcer) {
   if (M.dec) M.dec.ppm = M.fait > 0 ? M.dec.total / M.fait * 1e6 : null;
 
   /* le reste, tel que fourni */
-  M.vagues = (d.vagues || []).map(v => ({ num: v.num, heure: v.heure, etat: v.etat || "", ligPrev: +v.ligPrev || 0, ligPrep: +v.ligPrep || 0, ligRupt: +v.ligRupt || 0, contPrev: v.contPrev, contSortie: v.contSortie }));
+  M.vagues = (d.vagues || []).map(v => ({ num: v.num, heure: v.heure, etat: v.etat || "", ligPrev: +v.ligPrev || 0, ligPrep: +v.ligPrep || 0, ligRupt: +v.ligRupt || 0, contPrev: v.contPrev, contSortie: v.contSortie, cdePrev: +v.cdePrev || 0, cdePrep: +v.cdePrep || 0 }));
+  /* reste à préparer par zone d'allées : affiché seulement s'il recoupe le reste à faire des tournées (écart de 15 % au plus) */
+  M.zones = (d.zones || []).map(z => ({ lib: z.lib, fait: +z.fait || 0, restant: +z.restant || 0 }));
+  const resteZones = M.zones.reduce((s, z) => s + z.restant, 0);
+  M.zonesEcart = M.zones.length > 0 && Math.abs(resteZones - M.restant) > Math.max(40, 0.15 * M.restant);
+  if (M.zonesEcart) M.zones = [];
   M.departs = (d.departs || []).map(x => ({ m: hm2min(x.heure), heure: x.heure, transp: x.transp || "", dest: x.dest || "", contReel: +x.contReel || 0, contMax: +x.contMax || 0, etat: x.etat || "" })).filter(x => x.m != null).sort((a, b) => a.m - b.m);
   M.services = (d.services || []).map(s => ({ lib: s.lib || s.code, fait: +s.fait || 0, restant: +s.restant || 0 }));
   M.stock = d.stock || null;
@@ -997,7 +1008,7 @@ const Demo = (() => {
     const restant = Math.max(0, lance - fait), aLancer = TOTAL - lance;
     const cont = Math.round(fait / 2.56), actifs = OPS.filter(o => o.deb <= t && o.fin > t).length;
     let cumul = 0;
-    const vagues = VAGUES.filter(v => v.m <= t).map((v, i) => { const prep = clamp(fait - cumul, 0, v.lig); cumul += v.lig; return { num: 481200 + i * 37, heure: min2hm(v.m), etat: prep >= v.lig ? "Terminée" : prep > 0 ? "En cours" : "Lancée", ligPrev: v.lig, ligPrep: Math.round(prep), ligRupt: Math.round(v.lig * 0.004), contPrev: Math.round(v.lig / 2.56), contSortie: Math.round(prep / 2.56 * 0.9) }; });
+    const vagues = VAGUES.filter(v => v.m <= t).map((v, i) => { const prep = clamp(fait - cumul, 0, v.lig); cumul += v.lig; return { num: 481200 + i * 37, heure: min2hm(v.m), etat: prep >= v.lig ? "Terminée" : prep > 0 ? "En cours" : "Lancée", ligPrev: v.lig, ligPrep: Math.round(prep), ligRupt: Math.round(v.lig * 0.004), contPrev: Math.round(v.lig / 2.56), contSortie: Math.round(prep / 2.56 * 0.9), cdePrev: Math.round(v.lig / 8.6), cdePrep: Math.floor(prep / 8.6 * (prep >= v.lig ? 1 : 0.93)) }; });
     const rejH = heures.map(x => ({ h: x.h, n: Math.round(x.lignes / 2.56 * (0.016 + 0.014 * alea(x.h, 3))) }));
     const errs = ERREURS.filter(x => x[0] <= t), types = {}, allees = {};
     TYPES_ERREUR.forEach(n => (types[n] = 0));
@@ -1026,7 +1037,8 @@ const Demo = (() => {
       services: [{ code: "HG", lib: "Hors gabarit", fait: Math.round(fait * 0.36), restant: Math.round(restant * 0.4) }, { code: "CABL", lib: "Câble", fait: Math.round(fait * 0.055), restant: Math.round(restant * 0.06) }],
       stock: { reappro: 9, critique: 2, ruptures: 6, critiques: [{ emp: "06-121-05", art: "LEG405821", reel: 2 }, { emp: "10-075-02", art: "SCH219340", reel: 0 }] }, retard: { commandes: 3, lignes: 21 }, carnet, historique: hist,
       mois: { lignes: sm("lignes"), jours: base.length, ed: sm("ed"), ea: sm("ea"), hPick: sm("hPick"), rejetsJour: Math.round(sm("rejets") / base.length), quota: Math.round(sm("quota") / base.length * 10) / 10 },
-      securite: { joursSansAccident: 187, message: "Je regarde derrière moi avant de reculer avec mon chariot." },
+      securite: { joursSansAccident: 187, message: "Je regarde derrière moi avant de reculer avec mon chariot.", remontees: 12 },
+      zones: [{ lib: "Allées 1 à 3", fait: Math.round(fait * 0.24), restant: Math.round(restant * 0.2) }, { lib: "Allées 4 à 10", fait: Math.round(fait * 0.55), restant: Math.round(restant * 0.56) }, { lib: "Allées 11 à 14", fait: fait - Math.round(fait * 0.24) - Math.round(fait * 0.55), restant: restant - Math.round(restant * 0.2) - Math.round(restant * 0.56) }],
       messages: ["Brief d'équipe à 13:00 au point Top 5."]
     };
   }
@@ -1811,7 +1823,10 @@ const ECRANS = [
     html: `<div class="corps e4">
       <div class="col">
         <div class="bloc anim" style="--i:0"><h3>${ic("couches")}Vagues lancées aujourd'hui</h3><div class="vagues" id="e4-vagues"></div></div>
-        <div class="bloc anim" style="--i:1"><h3>${ic("cible")}Toutes les préparations du site</h3><div class="liste-jauges" id="e4-services"></div></div>
+        <div class="deux anim" style="--i:1" id="e4-bas">
+          <div class="bloc"><h3>${ic("cible")}Toutes les préparations du site</h3><div class="liste-jauges serre" id="e4-services"></div></div>
+          <div class="bloc" id="e4-bloc-z"><h3>${ic("plan")}Reste à préparer, par zone d'allées</h3><div class="liste-jauges serre" id="e4-zones"></div></div>
+        </div>
       </div>
       <div class="col">
         <div class="bloc anim" style="--i:2"><h3>${ic("drapeau")}Prochain jalon de la journée</h3>
@@ -1839,7 +1854,11 @@ const ECRANS = [
       const tous = [{ lib: M.cfg.service, fait: M.fait, restant: M.restant }].concat(M.services);
       Hh("e4-services", tous.map(t => { const tot = t.fait + t.restant; return `<div class="lj"><span class="lj-n">${esc(t.lib)}</span><div class="jauge" style="--v:${tot ? (t.fait / tot * 100).toFixed(1) : 0}%"><i></i></div><span class="lj-v"><b>${n0(t.fait)}</b> / ${n0(tot)} lignes</span></div>`; }).join(""));
       const finies = M.vagues.filter(x => x.ligPrev > 0 && x.ligPrep >= x.ligPrev).length, reste = M.vagues.reduce((s, x) => s + Math.max(0, x.ligPrev - x.ligPrep), 0), rupt = M.vagues.reduce((s, x) => s + x.ligRupt, 0);
-      T("e4-reste", M.vagues.length ? n0(reste) : "–"); Hh("e4-reste-t", `lignes à préparer<br>dans <b>${M.vagues.length - finies} ${pluriel(M.vagues.length - finies, "vague")}</b> en cours`);
+      const cdeP = M.vagues.reduce((s, x) => s + x.cdePrev, 0), cdeF = M.vagues.reduce((s, x) => s + x.cdePrep, 0);
+      T("e4-reste", M.vagues.length ? n0(reste) : "–"); Hh("e4-reste-t", `lignes à préparer<br>dans <b>${M.vagues.length - finies} ${pluriel(M.vagues.length - finies, "vague")}</b> en cours` + (cdeP > 0 ? `<br>Commandes : <b>${n0(cdeF)}</b> préparées sur ${n0(cdeP)}` : ""));
+      const zmax = Math.max(1, ...M.zones.map(z => z.restant));
+      $("#e4-bloc-z").hidden = !M.zones.length; $("#e4-bas").classList.toggle("seul", !M.zones.length);
+      Hh("e4-zones", M.zones.map(z => `<div class="lj"><span class="lj-n">${esc(z.lib)}</span><div class="jauge etat" data-niv="na" style="--v:${(z.restant / zmax * 100).toFixed(1)}%"><i${z.restant ? "" : ' style="display:none"'}></i></div><span class="lj-v">reste <b>${n0(z.restant)}</b></span></div>`).join(""));
       T("e4-rupt", M.vagues.length ? n0(rupt) : "–"); Niv("e4-bloc-r", rupt > 0 ? "warn" : null);
       return M.vagues.length ? `<b>${M.vagues.length} ${pluriel(M.vagues.length, "vague")}</b> ${pluriel(M.vagues.length, "lancée")} aujourd'hui, dont <b>${finies} ${pluriel(finies, "terminée")}</b>. Il reste ${n0(reste)} lignes dans les vagues en cours.` : "Aucune vague lancée pour l'instant.";
     }
@@ -2003,7 +2022,8 @@ const ECRANS = [
       Hh("e8-rep", q.length ? `<b>${dessus}</b> ${pluriel(dessus, "préparateur est", "préparateurs sont")} à 100 % ou plus, <b>${q.length - dessus}</b> en dessous.` : "");
       grPoints($("#g-points"), M);
       const s = M.securite || {}, acc = reg.dernierAccident ? Math.floor((Date.now() - new Date(reg.dernierAccident + "T00:00:00").getTime()) / 864e5) : s.joursSansAccident;
-      T("e8-jsa", fini(acc) && acc >= 0 ? n0(acc) : "–"); T("e8-msg", reg.message || s.message || "La sécurité commence avant la production.");
+      T("e8-jsa", fini(acc) && acc >= 0 ? n0(acc) : "–");
+      Hh("e8-msg", esc(reg.message || s.message || "La sécurité commence avant la production.") + (fini(+s.remontees) && s.remontees != null && +s.remontees > 0 ? `<br><b>${n0(+s.remontees)}</b> ${pluriel(+s.remontees, "remontée")} « Œil sécurité » ce mois : merci.` : ""));
       const h = M.historique, rec = h.length ? h.reduce((a, b) => (b.lignes > a.lignes ? b : a)) : null, hier = h.length ? h[h.length - 1] : null;
       Hh("e8-bravo", rec ? `Record des ${h.length} derniers jours : <b>${n0(rec.lignes)} lignes</b> le ${jourLong(new Date(rec.d + "T12:00:00"))}.${hier ? `<br>Dernière journée complète : <b>${n0(hier.lignes)} lignes</b> à ${n0(hier.ops)}.` : ""}` : `Aujourd'hui, l'équipe a déjà préparé <b>${n0(M.fait)} lignes</b>.`);
       const st = stdDuJour(); Hh("e8-std", `<b>${esc(st[0])} · ${esc(st[1])}</b><br>${esc(st[2])}`);
@@ -2381,7 +2401,9 @@ const Appli = (() => {
       ["Préparateurs nécessaires pour finir à l'heure", n1(M.besoinOps), ""],
       ["Rejets (colis)", R ? n0(R.total) : "–", S.rejets.mot], ["Colis pesés", R ? n0(R.pese) : "–", ""], ["Erreurs décelées", D ? n0(D.total) : "–", S.dec.mot]]));
     if (M.heures.length) h.push("<h4>Heure par heure</h4>" + table(["Heure", "Lignes", "Préparateurs"], M.heures.map(x => [x.h + " h", n0(x.lignes), fini(x.ops) ? x.ops : "–"])));
-    if (M.vagues.length) h.push("<h4>Vagues</h4>" + table(["Lancée à", "N°", "Lignes prévues", "Lignes préparées", "En rupture", "État"], M.vagues.map(v => [v.heure || "", v.num || "", n0(v.ligPrev), n0(v.ligPrep), n0(v.ligRupt), v.etat])));
+    if (M.vagues.length) h.push("<h4>Vagues</h4>" + table(["Lancée à", "N°", "Lignes prévues", "Lignes préparées", "En rupture", "Commandes prévues", "Commandes préparées", "État"], M.vagues.map(v => [v.heure || "", v.num || "", n0(v.ligPrev), n0(v.ligPrep), n0(v.ligRupt), n0(v.cdePrev), n0(v.cdePrep), v.etat])));
+    if (M.zones.length) h.push("<h4>Par zone d'allées</h4>" + table(["Zone", "Lignes faites", "Lignes restantes"], M.zones.map(z => [z.lib, n0(z.fait), n0(z.restant)])));
+    else if (M.zonesEcart) h.push("<h4>Par zone d'allées</h4><p>Découpage non affiché : le total des lignes restantes par allée ne recoupe pas le reste à faire des tournées (écart de plus de 15 %).</p>");
     if (R && R.parHeure.length) h.push("<h4>Rejets par heure</h4>" + table(["Heure", "Rejets"], R.parHeure.map(x => [x.h + " h", n0(x.n)])));
     if (D) {
       h.push("<h4>Erreurs décelées aujourd'hui, par type</h4>" + table(["Type", "Nombre"], D.types.map(x => [x.nom, n0(x.n)])));

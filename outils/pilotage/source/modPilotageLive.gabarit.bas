@@ -90,9 +90,12 @@ Public Sub Pilotage_Installer()
     Poser ws, r, "R_STOCK", "OUI", "Lire les alertes de reappro et les ruptures (toutes les 15 min)."
     Poser ws, r, "R_RETARD", "OUI", "Lire les commandes en retard (toutes les 15 min)."
     Poser ws, r, "R_CARNET", "OUI", "Lire le carnet de commandes des 7 prochains jours (toutes les 15 min)."
+    Poser ws, r, "R_ALLEES", "NON", "Reste a preparer par zone d'allees. La page ne l'affiche que si le total recoupe le reste a faire."
+    Poser ws, r, "ZONES_ALLEES", "1-3;4-10;11-14", "Zones d'affectation : allees de debut et de fin, separees par des points-virgules."
     Poser ws, r, "R_PORTEFEUILLE", "NON", "Compter les lignes pas encore lancees en vague. A verifier sur l'ecran LOGYS avant de passer a OUI."
     Poser ws, r, "DATE_DERNIER_ACCIDENT", "", "jj/mm/aaaa : sert au compteur de jours sans accident."
     Poser ws, r, "MESSAGE_SECURITE", "", "Message securite du jour."
+    Poser ws, r, "REMONTEES_SECURITE", "", "Nombre de remontees Oeil securite du mois (facultatif)."
     Poser ws, r, "MESSAGE_1", "", "Message libre affiche dans le bandeau du bas."
     Poser ws, r, "MESSAGE_2", "", "Deuxieme message libre."
     finJaune = r
@@ -494,6 +497,7 @@ Private Function ConstruireJson() As String
     Ajouter p, SectionDecelees()
     If Oui("R_VAGUES", True) Then Ajouter p, SectionVagues()
     If Oui("R_DEPARTS", True) Then Ajouter p, SectionDeparts()
+    If Oui("R_ALLEES", False) Then Ajouter p, SectionZones()
     Ajouter p, mCacheLent
     Ajouter p, SectionSuiviOp()
     Ajouter p, SectionDivers()
@@ -666,7 +670,7 @@ Private Function SectionVagues() As String
         If i > 0 Then s = s & ","
         s = s & "{""num"":" & JS(t(0, i)) & ",""heure"":" & JS(t(1, i)) & ",""etat"":" & JS(t(2, i)) & _
             ",""ligPrev"":" & JN(t(3, i)) & ",""ligPrep"":" & JN(t(4, i)) & ",""ligRupt"":" & JN(t(5, i)) & _
-            ",""contPrev"":" & JN(t(6, i)) & ",""contSortie"":" & JN(t(7, i)) & "}"
+            ",""contPrev"":" & JN(t(6, i)) & ",""contSortie"":" & JN(t(7, i)) & ",""cdePrev"":" & JN(t(8, i)) & ",""cdePrep"":" & JN(t(9, i)) & "}"
     Next i
     SectionVagues = """vagues"":[" & s & "]"
     Exit Function
@@ -690,6 +694,50 @@ Private Function SectionDeparts() As String
 Erreur:
     Noter "departs", Err.Description
     SectionDeparts = ""
+End Function
+
+' Reste a preparer par zone d'allees (reglage ZONES_ALLEES : 1-3;4-10;11-14)
+Private Function SectionZones() As String
+    Dim t As Variant, n As Long, i As Long, k As Long, nz As Long, v As Variant, pos As Long, a As Long, s As String
+    Dim deb() As Long, fin() As Long, fait() As Double, reste() As Double
+    On Error GoTo Erreur
+    If mCn Is Nothing Then Exit Function
+    v = Split(Cfg("ZONES_ALLEES", "1-3;4-10;11-14"), ";")
+    nz = UBound(v) - LBound(v) + 1
+    If nz < 1 Then Exit Function
+    ReDim deb(1 To nz): ReDim fin(1 To nz): ReDim fait(1 To nz): ReDim reste(1 To nz)
+    For k = 1 To nz
+        pos = InStr(CStr(v(LBound(v) + k - 1)), "-")
+        If pos > 1 Then
+            deb(k) = Entier(Trim$(Left$(CStr(v(LBound(v) + k - 1)), pos - 1)), 0)
+            fin(k) = Entier(Trim$(Mid$(CStr(v(LBound(v) + k - 1)), pos + 1)), 0)
+        Else
+            deb(k) = Entier(Trim$(CStr(v(LBound(v) + k - 1))), 0)
+            fin(k) = deb(k)
+        End If
+    Next k
+    n = Lire(SqlAllees(), t)
+    For i = 0 To n - 1
+        If IsNumeric(Trim$(TexteCellule(t(0, i)))) Then
+            a = CLng(Val(Trim$(TexteCellule(t(0, i)))))
+            For k = 1 To nz
+                If a >= deb(k) And a <= fin(k) Then
+                    fait(k) = fait(k) + NZ(t(1, i))
+                    reste(k) = reste(k) + NZ(t(2, i))
+                    Exit For
+                End If
+            Next k
+        End If
+    Next i
+    For k = 1 To nz
+        If Len(s) > 0 Then s = s & ","
+        s = s & "{""lib"":" & JS("All" & ChrW$(233) & "es " & deb(k) & " " & ChrW$(224) & " " & fin(k)) & ",""fait"":" & JN(fait(k)) & ",""restant"":" & JN(reste(k)) & "}"
+    Next k
+    SectionZones = """zones"":[" & s & "]"
+    Exit Function
+Erreur:
+    Noter "reste par zone d'allees", Err.Description
+    SectionZones = ""
 End Function
 
 ' Requetes lourdes : relues toutes les MINUTES_LENT minutes, gardees en memoire entre-temps
@@ -804,7 +852,9 @@ Private Function SectionDivers() As String
             jours = JN(CLng(Date - DateSerial(CLng(v(2)), CLng(v(1)), CLng(v(0)))))
         End If
     End If
-    s = """securite"":{""joursSansAccident"":" & jours & ",""message"":" & JS(Cfg("MESSAGE_SECURITE", "")) & "}"
+    s = """securite"":{""joursSansAccident"":" & jours & ",""message"":" & JS(Cfg("MESSAGE_SECURITE", ""))
+    If IsNumeric(Cfg("REMONTEES_SECURITE", "")) Then s = s & ",""remontees"":" & JN(Reel(Cfg("REMONTEES_SECURITE", ""), 0))
+    s = s & "}"
     m = ""
     For i = 1 To 2
         If Len(Cfg("MESSAGE_" & i, "")) > 0 Then

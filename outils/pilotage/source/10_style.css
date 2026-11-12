@@ -209,6 +209,11 @@ ol,ul{padding:0;list-style:none}
 .e4 .col:last-child{grid-template-rows:auto minmax(0,1fr) minmax(0,1fr)}
 .e4 .col:last-child>.bloc{display:grid;grid-template-rows:auto minmax(0,1fr) auto;align-items:center}
 .vagues{display:grid;grid-auto-rows:minmax(0,6.4rem);align-content:start;min-height:0}
+.deux{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1.3rem;min-width:0}
+.deux.seul{grid-template-columns:minmax(0,1fr)}
+.liste-jauges.serre .lj{grid-template-columns:7.6rem minmax(0,1fr) 9.4rem;gap:.8rem;font-size:1.05rem}
+.deux.seul .liste-jauges.serre .lj{grid-template-columns:9rem minmax(0,1fr) 12.5rem;gap:1.1rem;font-size:1.15rem}
+.jauge.etat[data-niv=na]>i{background:#5A6E93}
 .vg{display:grid;grid-template-columns:5.2rem minmax(0,1fr) 12rem 11.5rem;align-items:center;gap:1.2rem;padding:0;min-height:0;border-bottom:1px solid var(--line-2);font:400 1.12rem/1.2 var(--f-t)}
 .vg:last-child{border-bottom:0}
 .vg-h{font:900 2.2rem/1 var(--f-d);letter-spacing:.02em}
@@ -450,6 +455,7 @@ kbd{display:inline-block;min-width:2rem;padding:.1rem .5rem;margin-right:.5rem;b
   .legende{font-size:.9rem}
   .verdict{max-width:none}
   .vagues{grid-auto-rows:auto}
+  .deux{grid-template-columns:minmax(0,1fr)}
   .vg{padding:.55rem 0}
   .vg-v,.vg .pastille{grid-column:1/-1}
   .dep-corps{grid-auto-rows:auto}

@@ -126,7 +126,8 @@ WHERE c.DAT_CREA >= TRUNC(SYSDATE)
        TO_CHAR(v.DAT_CREA, 'HH24:MI') AS HEURE,
        v.L_ETAT_ORDRE,
        v.LIG_CDE_NB_PREV, v.LIG_CDE_NB_PREP, v.LIG_CDE_NB_RUPT,
-       v.CONT_NB_PREV, v.CONT_NB_SORTIE
+       v.CONT_NB_PREV, v.CONT_NB_SORTIE,
+       v.CDE_NB_PREV, v.CDE_NB_PREP
 FROM REXEL.F_GESVAG_VAG v
 WHERE v.DAT_CREA >= TRUNC(SYSDATE)
 ORDER BY v.DAT_CREA"""),
@@ -140,6 +141,18 @@ FROM REXEL.F_GESOTE_OTE o
 WHERE o.DAT_EXP_PREV >= TRUNC(SYSDATE)
   AND o.DAT_EXP_PREV < TRUNC(SYSDATE) + 1
 ORDER BY o.DAT_EXP_PREV"""),
+
+ ("ALLEES", "SqlAllees", "chaque cycle (réglage R_ALLEES, NON par défaut)", {"l": "LIG_TOUR"},
+  """Par allée de prise : lignes préparées aujourd'hui et lignes encore à préparer (quantité prévue non réalisée, ni en rupture, ni annulée).
+La page n'affiche ce découpage que si le total des lignes restantes recoupe le reste à faire calculé sur les tournées (écart de 15 % au plus).""",
+  """SELECT l.ALLEE_MVT_PRISE,
+       SUM(CASE WHEN l.REEL > 0 AND l.DAT_MAJ >= TRUNC(SYSDATE) THEN 1 ELSE 0 END) AS FAIT,
+       SUM(CASE WHEN NVL(l.PREV, 0) - NVL(l.REEL, 0) - NVL(l.RUPT, 0) - NVL(l.ANNU, 0) > 0 THEN 1 ELSE 0 END) AS RESTANT
+FROM REXEL.LIG_TOUR l
+WHERE l.STYP_TOUR IN ('DETA','CART')
+  AND l.DAT_MAJ >= TRUNC(SYSDATE) - {JOURS}
+GROUP BY l.ALLEE_MVT_PRISE
+ORDER BY 1"""),
 
  ("PORTEFEUILLE", "SqlPortefeuille", "chaque cycle (réglage R_PORTEFEUILLE, NON par défaut)", {"e": "F_GESVAG_ENCO"},
   """En-cours de l'écran Gestion des vagues : lignes de détail reçues mais pas encore lancées.

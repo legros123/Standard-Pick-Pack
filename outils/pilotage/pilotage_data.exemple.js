@@ -356,7 +356,9 @@ window.PP_DATA={
    "ligPrep": 2600,
    "ligRupt": 10,
    "contPrev": 1016,
-   "contSortie": 914
+   "contSortie": 914,
+   "cdePrev": 302,
+   "cdePrep": 302
   },
   {
    "num": 481237,
@@ -366,7 +368,9 @@ window.PP_DATA={
    "ligPrep": 1500,
    "ligRupt": 6,
    "contPrev": 586,
-   "contSortie": 527
+   "contSortie": 527,
+   "cdePrev": 174,
+   "cdePrep": 174
   },
   {
    "num": 481274,
@@ -376,7 +380,9 @@ window.PP_DATA={
    "ligPrep": 1343,
    "ligRupt": 6,
    "contPrev": 547,
-   "contSortie": 472
+   "contSortie": 472,
+   "cdePrev": 163,
+   "cdePrep": 145
   },
   {
    "num": 481311,
@@ -386,7 +392,9 @@ window.PP_DATA={
    "ligPrep": 0,
    "ligRupt": 5,
    "contPrev": 508,
-   "contSortie": 0
+   "contSortie": 0,
+   "cdePrev": 151,
+   "cdePrep": 0
   }
  ],
  "rejets": {
@@ -961,8 +969,26 @@ window.PP_DATA={
  },
  "securite": {
   "joursSansAccident": 187,
-  "message": "Je regarde derrière moi avant de reculer avec mon chariot."
+  "message": "Je regarde derrière moi avant de reculer avec mon chariot.",
+  "remontees": 12
  },
+ "zones": [
+  {
+   "lib": "Allées 1 à 3",
+   "fait": 1306,
+   "restant": 271
+  },
+  {
+   "lib": "Allées 4 à 10",
+   "fait": 2994,
+   "restant": 760
+  },
+  {
+   "lib": "Allées 11 à 14",
+   "fait": 1143,
+   "restant": 326
+  }
+ ],
  "messages": [
   "Brief d'équipe à 13:00 au point Top 5."
  ]

@@ -51,8 +51,9 @@ Conseil : faire tourner ce classeur dans une fenêtre Excel à part, Excel reste
 | `PAUSES` | Ex. `09:00-09:20;16:30-16:50`. Déduites du calcul. |
 | `FICHIER_REJETS` | Chemin du classeur *Contrôle des rejets* : erreurs décelées du jour (onglet SAISIE) et des 7 derniers jours par allée et par type (onglet HISTORIQUE). Vide : estimation LOGYS. |
 | `FICHIER_SUIVI_OP` | Chemin du *Suivi Op* : historique 30 jours, quota moyen, PPM décelée et avérée du mois (onglet PROD). |
+| `R_ALLEES`, `ZONES_ALLEES` | `NON` par défaut. À `OUI`, l'écran « Les vagues » montre le reste à préparer par zone d'allées (`1-3;4-10;11-14`), pour savoir où mettre du monde. La page ne l'affiche que si le total recoupe le reste à faire (écart de 15 % au plus). |
 | `R_PORTEFEUILLE` | `NON` par défaut. À passer à `OUI` seulement après avoir vérifié sur l'écran *Gestion des vagues* que le compteur « détail » ne contient que la charge du jour. |
-| `DATE_DERNIER_ACCIDENT`, `MESSAGE_SECURITE` | Compteur et message de l'écran « L'équipe ». |
+| `DATE_DERNIER_ACCIDENT`, `MESSAGE_SECURITE`, `REMONTEES_SECURITE` | Compteur de jours sans accident, message du jour et nombre de remontées « Œil sécurité » du mois, sur l'écran « L'équipe ». |
 
 Les seuils (620 lignes par poste de 7,4 h, 120 rejets par jour, alerte à 15 et rouge à 20 erreurs décelées, PPM) reprennent PARAMETRES du Suivi Op et REGLAGES du Contrôle des rejets.
 
@@ -65,7 +66,7 @@ Les seuils (620 lignes par poste de 7,4 h, 120 rejets par jour, alerte à 15 et 
 - **Erreurs décelées** = vraies erreurs trouvées au poste de contrôle, saisies dans le classeur *Contrôle des rejets*.
 - **Prochains jours** = carnet de commandes par date d'expédition × 70 % (part du Pick & Pack), divisé par 620 pour obtenir le nombre de préparateurs.
 
-Les 19 requêtes sont dans `requetes_pilotage.sql`, commentées une à une. Elles sont en **lecture seule** (uniquement des `SELECT`) et chaque colonne a été contrôlée contre le dictionnaire LOGYS du catalogue de requêtes.
+Les 21 requêtes sont dans `requetes_pilotage.sql`, commentées une à une. Elles sont en **lecture seule** (uniquement des `SELECT`) et chaque colonne a été contrôlée contre le dictionnaire LOGYS du catalogue de requêtes.
 
 ## Confidentialité
 
@@ -75,7 +76,7 @@ Les 19 requêtes sont dans `requetes_pilotage.sql`, commentées une à une. Elle
 
 ## Au clavier
 
-`→` `←` écran suivant, précédent · `Espace` pause · `1`…`9` aller à un écran · `F` plein écran · `E` vue encadrement · `T` tableau des données · `R` réglages · `?` aide.
+`→` `←` écran suivant, précédent · `Espace` pause · `1`…`9` aller à un écran · `F` plein écran · `E` vue encadrement · `T` tableau des données et point du jour à copier dans un message · `R` réglages · `?` aide.
 
 ## Si quelque chose ne va pas
 

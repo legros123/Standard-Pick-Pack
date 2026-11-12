@@ -267,7 +267,12 @@ function calculer(d, forcer) {
   if (M.dec) M.dec.ppm = M.fait > 0 ? M.dec.total / M.fait * 1e6 : null;
 
   /* le reste, tel que fourni */
-  M.vagues = (d.vagues || []).map(v => ({ num: v.num, heure: v.heure, etat: v.etat || "", ligPrev: +v.ligPrev || 0, ligPrep: +v.ligPrep || 0, ligRupt: +v.ligRupt || 0, contPrev: v.contPrev, contSortie: v.contSortie }));
+  M.vagues = (d.vagues || []).map(v => ({ num: v.num, heure: v.heure, etat: v.etat || "", ligPrev: +v.ligPrev || 0, ligPrep: +v.ligPrep || 0, ligRupt: +v.ligRupt || 0, contPrev: v.contPrev, contSortie: v.contSortie, cdePrev: +v.cdePrev || 0, cdePrep: +v.cdePrep || 0 }));
+  /* reste à préparer par zone d'allées : affiché seulement s'il recoupe le reste à faire des tournées (écart de 15 % au plus) */
+  M.zones = (d.zones || []).map(z => ({ lib: z.lib, fait: +z.fait || 0, restant: +z.restant || 0 }));
+  const resteZones = M.zones.reduce((s, z) => s + z.restant, 0);
+  M.zonesEcart = M.zones.length > 0 && Math.abs(resteZones - M.restant) > Math.max(40, 0.15 * M.restant);
+  if (M.zonesEcart) M.zones = [];
   M.departs = (d.departs || []).map(x => ({ m: hm2min(x.heure), heure: x.heure, transp: x.transp || "", dest: x.dest || "", contReel: +x.contReel || 0, contMax: +x.contMax || 0, etat: x.etat || "" })).filter(x => x.m != null).sort((a, b) => a.m - b.m);
   M.services = (d.services || []).map(s => ({ lib: s.lib || s.code, fait: +s.fait || 0, restant: +s.restant || 0 }));
   M.stock = d.stock || null;
@@ -402,7 +407,7 @@ const Demo = (() => {
     const restant = Math.max(0, lance - fait), aLancer = TOTAL - lance;
     const cont = Math.round(fait / 2.56), actifs = OPS.filter(o => o.deb <= t && o.fin > t).length;
     let cumul = 0;
-    const vagues = VAGUES.filter(v => v.m <= t).map((v, i) => { const prep = clamp(fait - cumul, 0, v.lig); cumul += v.lig; return { num: 481200 + i * 37, heure: min2hm(v.m), etat: prep >= v.lig ? "Terminée" : prep > 0 ? "En cours" : "Lancée", ligPrev: v.lig, ligPrep: Math.round(prep), ligRupt: Math.round(v.lig * 0.004), contPrev: Math.round(v.lig / 2.56), contSortie: Math.round(prep / 2.56 * 0.9) }; });
+    const vagues = VAGUES.filter(v => v.m <= t).map((v, i) => { const prep = clamp(fait - cumul, 0, v.lig); cumul += v.lig; return { num: 481200 + i * 37, heure: min2hm(v.m), etat: prep >= v.lig ? "Terminée" : prep > 0 ? "En cours" : "Lancée", ligPrev: v.lig, ligPrep: Math.round(prep), ligRupt: Math.round(v.lig * 0.004), contPrev: Math.round(v.lig / 2.56), contSortie: Math.round(prep / 2.56 * 0.9), cdePrev: Math.round(v.lig / 8.6), cdePrep: Math.floor(prep / 8.6 * (prep >= v.lig ? 1 : 0.93)) }; });
     const rejH = heures.map(x => ({ h: x.h, n: Math.round(x.lignes / 2.56 * (0.016 + 0.014 * alea(x.h, 3))) }));
     const errs = ERREURS.filter(x => x[0] <= t), types = {}, allees = {};
     TYPES_ERREUR.forEach(n => (types[n] = 0));
@@ -431,7 +436,8 @@ const Demo = (() => {
       services: [{ code: "HG", lib: "Hors gabarit", fait: Math.round(fait * 0.36), restant: Math.round(restant * 0.4) }, { code: "CABL", lib: "Câble", fait: Math.round(fait * 0.055), restant: Math.round(restant * 0.06) }],
       stock: { reappro: 9, critique: 2, ruptures: 6, critiques: [{ emp: "06-121-05", art: "LEG405821", reel: 2 }, { emp: "10-075-02", art: "SCH219340", reel: 0 }] }, retard: { commandes: 3, lignes: 21 }, carnet, historique: hist,
       mois: { lignes: sm("lignes"), jours: base.length, ed: sm("ed"), ea: sm("ea"), hPick: sm("hPick"), rejetsJour: Math.round(sm("rejets") / base.length), quota: Math.round(sm("quota") / base.length * 10) / 10 },
-      securite: { joursSansAccident: 187, message: "Je regarde derrière moi avant de reculer avec mon chariot." },
+      securite: { joursSansAccident: 187, message: "Je regarde derrière moi avant de reculer avec mon chariot.", remontees: 12 },
+      zones: [{ lib: "Allées 1 à 3", fait: Math.round(fait * 0.24), restant: Math.round(restant * 0.2) }, { lib: "Allées 4 à 10", fait: Math.round(fait * 0.55), restant: Math.round(restant * 0.56) }, { lib: "Allées 11 à 14", fait: fait - Math.round(fait * 0.24) - Math.round(fait * 0.55), restant: restant - Math.round(restant * 0.2) - Math.round(restant * 0.56) }],
       messages: ["Brief d'équipe à 13:00 au point Top 5."]
     };
   }

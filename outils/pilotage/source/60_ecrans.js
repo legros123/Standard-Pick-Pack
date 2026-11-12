@@ -148,7 +148,10 @@ const ECRANS = [
     html: `<div class="corps e4">
       <div class="col">
         <div class="bloc anim" style="--i:0"><h3>${ic("couches")}Vagues lancées aujourd'hui</h3><div class="vagues" id="e4-vagues"></div></div>
-        <div class="bloc anim" style="--i:1"><h3>${ic("cible")}Toutes les préparations du site</h3><div class="liste-jauges" id="e4-services"></div></div>
+        <div class="deux anim" style="--i:1" id="e4-bas">
+          <div class="bloc"><h3>${ic("cible")}Toutes les préparations du site</h3><div class="liste-jauges serre" id="e4-services"></div></div>
+          <div class="bloc" id="e4-bloc-z"><h3>${ic("plan")}Reste à préparer, par zone d'allées</h3><div class="liste-jauges serre" id="e4-zones"></div></div>
+        </div>
       </div>
       <div class="col">
         <div class="bloc anim" style="--i:2"><h3>${ic("drapeau")}Prochain jalon de la journée</h3>
@@ -176,7 +179,11 @@ const ECRANS = [
       const tous = [{ lib: M.cfg.service, fait: M.fait, restant: M.restant }].concat(M.services);
       Hh("e4-services", tous.map(t => { const tot = t.fait + t.restant; return `<div class="lj"><span class="lj-n">${esc(t.lib)}</span><div class="jauge" style="--v:${tot ? (t.fait / tot * 100).toFixed(1) : 0}%"><i></i></div><span class="lj-v"><b>${n0(t.fait)}</b> / ${n0(tot)} lignes</span></div>`; }).join(""));
       const finies = M.vagues.filter(x => x.ligPrev > 0 && x.ligPrep >= x.ligPrev).length, reste = M.vagues.reduce((s, x) => s + Math.max(0, x.ligPrev - x.ligPrep), 0), rupt = M.vagues.reduce((s, x) => s + x.ligRupt, 0);
-      T("e4-reste", M.vagues.length ? n0(reste) : "–"); Hh("e4-reste-t", `lignes à préparer<br>dans <b>${M.vagues.length - finies} ${pluriel(M.vagues.length - finies, "vague")}</b> en cours`);
+      const cdeP = M.vagues.reduce((s, x) => s + x.cdePrev, 0), cdeF = M.vagues.reduce((s, x) => s + x.cdePrep, 0);
+      T("e4-reste", M.vagues.length ? n0(reste) : "–"); Hh("e4-reste-t", `lignes à préparer<br>dans <b>${M.vagues.length - finies} ${pluriel(M.vagues.length - finies, "vague")}</b> en cours` + (cdeP > 0 ? `<br>Commandes : <b>${n0(cdeF)}</b> préparées sur ${n0(cdeP)}` : ""));
+      const zmax = Math.max(1, ...M.zones.map(z => z.restant));
+      $("#e4-bloc-z").hidden = !M.zones.length; $("#e4-bas").classList.toggle("seul", !M.zones.length);
+      Hh("e4-zones", M.zones.map(z => `<div class="lj"><span class="lj-n">${esc(z.lib)}</span><div class="jauge etat" data-niv="na" style="--v:${(z.restant / zmax * 100).toFixed(1)}%"><i${z.restant ? "" : ' style="display:none"'}></i></div><span class="lj-v">reste <b>${n0(z.restant)}</b></span></div>`).join(""));
       T("e4-rupt", M.vagues.length ? n0(rupt) : "–"); Niv("e4-bloc-r", rupt > 0 ? "warn" : null);
       return M.vagues.length ? `<b>${M.vagues.length} ${pluriel(M.vagues.length, "vague")}</b> ${pluriel(M.vagues.length, "lancée")} aujourd'hui, dont <b>${finies} ${pluriel(finies, "terminée")}</b>. Il reste ${n0(reste)} lignes dans les vagues en cours.` : "Aucune vague lancée pour l'instant.";
     }
@@ -340,7 +347,8 @@ const ECRANS = [
       Hh("e8-rep", q.length ? `<b>${dessus}</b> ${pluriel(dessus, "préparateur est", "préparateurs sont")} à 100 % ou plus, <b>${q.length - dessus}</b> en dessous.` : "");
       grPoints($("#g-points"), M);
       const s = M.securite || {}, acc = reg.dernierAccident ? Math.floor((Date.now() - new Date(reg.dernierAccident + "T00:00:00").getTime()) / 864e5) : s.joursSansAccident;
-      T("e8-jsa", fini(acc) && acc >= 0 ? n0(acc) : "–"); T("e8-msg", reg.message || s.message || "La sécurité commence avant la production.");
+      T("e8-jsa", fini(acc) && acc >= 0 ? n0(acc) : "–");
+      Hh("e8-msg", esc(reg.message || s.message || "La sécurité commence avant la production.") + (fini(+s.remontees) && s.remontees != null && +s.remontees > 0 ? `<br><b>${n0(+s.remontees)}</b> ${pluriel(+s.remontees, "remontée")} « Œil sécurité » ce mois : merci.` : ""));
       const h = M.historique, rec = h.length ? h.reduce((a, b) => (b.lignes > a.lignes ? b : a)) : null, hier = h.length ? h[h.length - 1] : null;
       Hh("e8-bravo", rec ? `Record des ${h.length} derniers jours : <b>${n0(rec.lignes)} lignes</b> le ${jourLong(new Date(rec.d + "T12:00:00"))}.${hier ? `<br>Dernière journée complète : <b>${n0(hier.lignes)} lignes</b> à ${n0(hier.ops)}.` : ""}` : `Aujourd'hui, l'équipe a déjà préparé <b>${n0(M.fait)} lignes</b>.`);
       const st = stdDuJour(); Hh("e8-std", `<b>${esc(st[0])} · ${esc(st[1])}</b><br>${esc(st[2])}`);
