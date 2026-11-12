@@ -179,8 +179,7 @@ const ECRANS = [
       const tous = [{ lib: M.cfg.service, fait: M.fait, restant: M.restant }].concat(M.services);
       Hh("e4-services", tous.map(t => { const tot = t.fait + t.restant; return `<div class="lj"><span class="lj-n">${esc(t.lib)}</span><div class="jauge" style="--v:${tot ? (t.fait / tot * 100).toFixed(1) : 0}%"><i></i></div><span class="lj-v"><b>${n0(t.fait)}</b> / ${n0(tot)} lignes</span></div>`; }).join(""));
       const finies = M.vagues.filter(x => x.ligPrev > 0 && x.ligPrep >= x.ligPrev).length, reste = M.vagues.reduce((s, x) => s + Math.max(0, x.ligPrev - x.ligPrep), 0), rupt = M.vagues.reduce((s, x) => s + x.ligRupt, 0);
-      const cdeP = M.vagues.reduce((s, x) => s + x.cdePrev, 0), cdeF = M.vagues.reduce((s, x) => s + x.cdePrep, 0);
-      T("e4-reste", M.vagues.length ? n0(reste) : "–"); Hh("e4-reste-t", `lignes à préparer<br>dans <b>${M.vagues.length - finies} ${pluriel(M.vagues.length - finies, "vague")}</b> en cours` + (cdeP > 0 ? `<br>Commandes : <b>${n0(cdeF)}</b> préparées sur ${n0(cdeP)}` : ""));
+      T("e4-reste", M.vagues.length ? n0(reste) : "–"); Hh("e4-reste-t", `lignes à préparer<br>dans <b>${M.vagues.length - finies} ${pluriel(M.vagues.length - finies, "vague")}</b> en cours`);
       const zmax = Math.max(1, ...M.zones.map(z => z.restant));
       $("#e4-bloc-z").hidden = !M.zones.length; $("#e4-bas").classList.toggle("seul", !M.zones.length);
       Hh("e4-zones", M.zones.map(z => `<div class="lj"><span class="lj-n">${esc(z.lib)}</span><div class="jauge etat" data-niv="na" style="--v:${(z.restant / zmax * 100).toFixed(1)}%"><i${z.restant ? "" : ' style="display:none"'}></i></div><span class="lj-v">reste <b>${n0(z.restant)}</b></span></div>`).join(""));

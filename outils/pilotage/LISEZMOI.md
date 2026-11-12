@@ -12,7 +12,7 @@ En haut, cinq chiffres toujours visibles : **charge du jour, reste à faire, heu
 | 4 | Les vagues | Où en sont les vagues ? | pilotes, expédition |
 | 5 | La qualité | Travaille-t-on juste ? | équipe, qualité |
 | 6 | Les allées | Où faut-il redoubler d'attention ? | équipe, qualité, méthodes |
-| 7 | Les départs | Les camions partent-ils à l'heure ? | expédition, service client |
+| 7 | Les départs | Les camions partent-ils à l'heure ? | expédition |
 | 8 | L'équipe | Comment va l'équipe ? | équipe, RH, sécurité |
 | 9 | Les prochains jours | Que nous réserve la suite ? | superviseur, RH, direction |
 | 10 | Le mois | Tient-on nos objectifs ? | direction, qualité |

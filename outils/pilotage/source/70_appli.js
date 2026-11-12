@@ -265,7 +265,7 @@ const Appli = (() => {
       ["Préparateurs nécessaires pour finir à l'heure", n1(M.besoinOps), ""],
       ["Rejets (colis)", R ? n0(R.total) : "–", S.rejets.mot], ["Colis pesés", R ? n0(R.pese) : "–", ""], ["Erreurs décelées", D ? n0(D.total) : "–", S.dec.mot]]));
     if (M.heures.length) h.push("<h4>Heure par heure</h4>" + table(["Heure", "Lignes", "Préparateurs"], M.heures.map(x => [x.h + " h", n0(x.lignes), fini(x.ops) ? x.ops : "–"])));
-    if (M.vagues.length) h.push("<h4>Vagues</h4>" + table(["Lancée à", "N°", "Lignes prévues", "Lignes préparées", "En rupture", "Commandes prévues", "Commandes préparées", "État"], M.vagues.map(v => [v.heure || "", v.num || "", n0(v.ligPrev), n0(v.ligPrep), n0(v.ligRupt), n0(v.cdePrev), n0(v.cdePrep), v.etat])));
+    if (M.vagues.length) h.push("<h4>Vagues</h4>" + table(["Lancée à", "N°", "Lignes prévues", "Lignes préparées", "En rupture", "État"], M.vagues.map(v => [v.heure || "", v.num || "", n0(v.ligPrev), n0(v.ligPrep), n0(v.ligRupt), v.etat])));
     if (M.zones.length) h.push("<h4>Par zone d'allées</h4>" + table(["Zone", "Lignes faites", "Lignes restantes"], M.zones.map(z => [z.lib, n0(z.fait), n0(z.restant)])));
     else if (M.zonesEcart) h.push("<h4>Par zone d'allées</h4><p>Découpage non affiché : le total des lignes restantes par allée ne recoupe pas le reste à faire des tournées (écart de plus de 15 %).</p>");
     if (R && R.parHeure.length) h.push("<h4>Rejets par heure</h4>" + table(["Heure", "Rejets"], R.parHeure.map(x => [x.h + " h", n0(x.n)])));
