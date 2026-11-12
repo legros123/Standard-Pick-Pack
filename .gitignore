@@ -3,3 +3,7 @@ bilan/
 *.xlsx
 *.xlsm
 __pycache__/
+
+# données temps réel du tableau de bord (noms de préparateurs) : ne jamais versionner
+pilotage_data.js
+pilotage_data.js.tmp

@@ -1,0 +1,4 @@
+Polices embarquées dans pilotage.html, sous licence SIL Open Font License 1.1 (https://openfontlicense.org) :
+- Big Shoulders Display — Copyright The Big Shoulders Project Authors (https://github.com/xotypeco/big_shoulders)
+- Lexend — Copyright 2019 The Lexend Project Authors (https://github.com/googlefonts/lexend)
+Fichiers woff2 (sous-ensemble latin) issus des paquets @fontsource/big-shoulders-display et @fontsource/lexend, version 5.3.0.
