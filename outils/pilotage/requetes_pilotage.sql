@@ -222,6 +222,20 @@ WHERE s.ZONE_MVT = '{ZONE}'
   AND s.REEL <= s.ALERTE
 
 -- ----------------------------------------------------------------------------
+--  REAPPRO_LISTE   (toutes les 15 minutes (réglage R_STOCK))
+--  Les 4 emplacements picking les plus urgents à réapprovisionner (stock au niveau critique).
+--  Tables : REXEL.F_LISSTKE_EMP
+-- ----------------------------------------------------------------------------
+SELECT * FROM (
+  SELECT s.EMP, s.NUM_ART_AFF, s.REEL
+  FROM REXEL.F_LISSTKE_EMP s
+  WHERE s.ZONE_MVT = '{ZONE}'
+    AND s.NUM_ART_AFF IS NOT NULL
+    AND s.REEL <= s.CRITIQUE
+  ORDER BY s.REEL, s.EMP
+) WHERE ROWNUM <= 4
+
+-- ----------------------------------------------------------------------------
 --  RUPTURES   (toutes les 15 minutes (réglage R_STOCK))
 --  Lignes du jour avec une quantité en rupture au picking.
 --  Tables : REXEL.LIG_TOUR

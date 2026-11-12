@@ -68,6 +68,7 @@ function avancer(depart, travail, pauses) {
 const CFG_DEFAUT = {
   site: "CLR Champigneulles", service: "Pick & Pack",
   debut: "06:00", finVisee: "19:00", pauses: [], jalons: ["12:15", "15:15", "17:15", "19:00"],
+  effectifPrevu: [],                      // préparateurs prévus par tranche : [["06:00", 6], ["12:30", 15], ["13:30", 9]]
   quotaJour: 620, hRef: 7.4,              // standard Rexel : 620 lignes par poste de 7,4 h
   quotaRouge: 90, quotaVert: 100, quotaMax: 150,   // % du quota : rouge en dessous, vert à partir de, plafond affiché
   milP: 20.5, milM: 60.5, milG: 100.5,    // milieu des tranches de chariots : petits (< 40 lignes), moyens (40 à 79), grands (80 et +)
@@ -145,28 +146,24 @@ function calculer(d, forcer) {
   M.debut = hm2min(d.premiere) != null ? hm2min(d.premiere) : premieres.length ? Math.min(...premieres) : hActives.length ? Math.min(...hActives) : hm2min(cfg.debut);
   if (!fini(M.debut) || M.debut > now) M.debut = Math.min(now, hm2min(cfg.debut) || now);
 
-  /* débit de l'équipe : moyenne du poste et dernière heure */
+  /* ── rythme ──
+     Débit de l'équipe = lignes validées par heure. Cadence = lignes par heure et par préparateur, calculée sur les
+     heures de présence au picking de chacun : elle reste juste quand deux équipes se croisent. */
   const prodJour = minutesProductives(M.debut, now, pauses);
-  M.debitJour = prodJour >= 10 && M.fait > 0 ? M.fait / (prodJour / 60) : null;
-  let recent = null;
-  const prodFen = minutesProductives(now - 60, now, pauses);
-  if (M.quarts.length && prodFen >= 20) {
-    let s = 0;
+  M.debitJour = prodJour >= 20 && M.fait >= 30 ? M.fait / (prodJour / 60) : null;      // pas d'estimation sur les toutes premières minutes
+  const w0 = Math.max(now - 60, M.debut), prodFen = minutesProductives(w0, now, pauses);
+  let lignesFen = null;
+  if (M.quarts.length) {
+    lignesFen = 0;
     for (const q of M.quarts) {
-      const fin = q.m + 15, courant = now < fin;
-      const lon = courant ? Math.max(1, now - q.m) : 15;
-      const rec = Math.max(0, Math.min(fin, now) - Math.max(q.m, now - 60));
-      if (rec > 0) s += q.lignes * Math.min(1, rec / lon);
+      const fin = q.m + 15, lon = now < fin ? Math.max(1, now - q.m) : 15, rec = Math.max(0, Math.min(fin, now) - Math.max(q.m, w0));
+      if (rec > 0) lignesFen += q.lignes * Math.min(1, rec / lon);
     }
-    recent = s / (prodFen / 60);
-  } else if (M.heures.length && prodFen >= 20) {
-    const hc = Math.floor(now / 60), a = M.heures.find(x => x.h === hc), b = M.heures.find(x => x.h === hc - 1);
-    const fen = now - (hc - 1) * 60, pf = minutesProductives((hc - 1) * 60, now, pauses);
-    if (pf >= 20) recent = ((a ? a.lignes : 0) + (b ? b.lignes : 0)) / (pf / 60) * (fen > 0 ? 1 : 0);
+  } else if (M.heures.length) {
+    const hc = Math.floor(now / 60), ha = M.heures.find(x => x.h === hc), hb = M.heures.find(x => x.h === hc - 1), dansH = now - hc * 60;
+    lignesFen = (ha ? ha.lignes : 0) + (hb ? hb.lignes * clamp((60 - dansH) / 60, 0, 1) : 0);
   }
-  M.debitRecent = recent;
-  if (fini(recent) && fini(M.debitJour)) M.debit = recent < 0.4 * M.debitJour ? M.debitJour : 0.65 * recent + 0.35 * M.debitJour;
-  else M.debit = fini(recent) && recent > 0 ? recent : M.debitJour;
+  M.debitRecent = fini(lignesFen) && prodFen >= 20 ? lignesFen / (prodFen / 60) : null;
 
   /* effectif */
   const avecLignes = M.operateurs.filter(o => o.lignes > 0);
@@ -178,38 +175,73 @@ function calculer(d, forcer) {
     M.presents = opsH.length ? Math.max(...opsH.map(x => x.ops)) : null;
     M.actifs = opsH.length ? opsH[opsH.length - 1].ops : null;
   }
-  M.cadenceOp = fini(M.debit) && M.actifs > 0 ? M.debit / M.actifs : null;
-  M.pctStandard = fini(M.cadenceOp) ? M.cadenceOp * M.w / M.standardH * 100 : null;      // quota de l'équipe en ce moment
-  /* cadence de chacun depuis sa première validation (amplitude, pas un temps de travail) */
+
+  /* heures de présence et cadence de chacun (amplitude entre première et dernière validation, pas un temps de travail) */
+  let hJour = 0, hFen = 0, ligOps = 0, ligPond = 0;
   for (const o of M.operateurs) {
-    const fin = fini(o.derniere) ? Math.min(now, o.derniere + 5) : now;
+    const actif = fini(o.derniere) && now - o.derniere <= cfg.actifMin;
+    const fin = !fini(o.derniere) ? now : actif ? now : Math.min(now, o.derniere + 5);
     const h = fini(o.premiere) ? minutesProductives(o.premiere, fin, pauses) / 60 : null;
     o.heures = h;
     o.cadence = h && h >= 0.5 ? o.lignes / h : null;
     o.quota = fini(o.cadence) ? Math.min(cfg.quotaMax, o.cadence * o.w / M.standardH * 100) : null;
     o.inactif = fini(o.derniere) ? Math.max(0, now - o.derniere) : null;
+    if (h) { hJour += h; ligOps += o.lignes; ligPond += o.lignes * o.w; hFen += minutesProductives(Math.max(o.premiere, w0), fin, pauses) / 60; }
   }
-  const hTot = M.operateurs.reduce((s, o) => s + (o.heures || 0), 0);
-  M.pctStandardJour = hTot > 1 ? M.operateurs.reduce((s, o) => s + o.lignes * o.w, 0) / hTot / M.standardH * 100 : null;   // quota de l'équipe depuis le début du poste
+  const cadJour = hJour >= 1 && ligOps >= 30 ? ligOps / hJour : null;
+  const cadRecente = fini(lignesFen) && hFen >= 0.5 && prodFen >= 20 ? lignesFen / hFen : null;
+  M.pctStandardJour = hJour >= 1 ? ligPond / hJour / M.standardH * 100 : null;                // quota de l'équipe depuis le début du poste
+  const melange = (r, j) => (fini(r) && fini(j) ? (r < 0.4 * j ? j : 0.65 * r + 0.35 * j) : fini(r) && r > 0 ? r : j);
+  if (fini(cadJour) || fini(cadRecente)) {
+    M.cadenceOp = melange(cadRecente, cadJour);
+    M.debit = M.actifs > 0 ? M.cadenceOp * M.actifs : melange(M.debitRecent, M.debitJour);
+  } else {
+    M.debit = melange(M.debitRecent, M.debitJour);
+    M.cadenceOp = fini(M.debit) && M.actifs > 0 ? M.debit / M.actifs : null;
+  }
+  M.pctStandard = fini(M.cadenceOp) ? M.cadenceOp * M.w / M.standardH * 100 : null;           // quota de l'équipe en ce moment
 
-  /* heure de fin */
+  /* ── heure de fin ──
+     Sans planning : l'équipe du moment reste jusqu'au bout. Avec « effectifPrevu » : on applique la cadence
+     constatée à l'effectif prévu de chaque tranche horaire. */
   M.finVisee = hm2min(cfg.finVisee);
-  M.eta = null; M.etaTot = null; M.etaTard = null;
-  if (M.aCharge && M.reste <= 0 && M.fait > 0) M.eta = now;
-  else if (fini(M.debit) && M.debit > 0 && M.reste > 0) {
-    M.eta = avancer(now, M.reste / M.debit * 60, pauses);
-    const v = [M.debitRecent, M.debitJour].filter(x => fini(x) && x > 0);
-    if (v.length === 2) {
-      M.etaTot = avancer(now, M.reste / Math.max(...v) * 60, pauses);
-      M.etaTard = avancer(now, M.reste / Math.min(...v) * 60, pauses);
+  M.eta = null; M.etaTot = null; M.etaTard = null; M.horsJour = false;
+  M.effectif = (Array.isArray(cfg.effectifPrevu) ? cfg.effectifPrevu : []).map(x => [hm2min(x[0]), +x[1]]).filter(x => x[0] != null && fini(x[1]) && x[1] >= 0).sort((a, b) => a[0] - b[0]);
+  const profil = M.effectif.length > 0 && M.actifs > 0 && fini(M.cadenceOp);
+  const prevuA = t => { let n = M.actifs; for (const e of M.effectif) if (e[0] <= t && e[0] > now) n = e[1]; return n; };
+  const projeter = cad => {                               // cad : lignes par heure et par préparateur
+    if (!(cad > 0)) return null;
+    if (!(M.actifs > 0)) return null;
+    let t = now, r = M.reste, n = M.actifs;
+    for (const b of (profil ? M.effectif.map(e => e[0]).filter(h => h > now) : []).concat([1440])) {
+      const cap = cad * n * minutesProductives(t, b, pauses) / 60;
+      if (n > 0 && cap >= r) return avancer(t, r / (cad * n) * 60, pauses);
+      r -= cap; t = b; n = prevuA(b);
     }
+    return null;
+  };
+  if (M.aCharge && M.reste <= 0 && M.fait > 0) M.eta = now;
+  else if (M.reste > 0 && fini(M.cadenceOp) && M.actifs > 0) {
+    M.eta = projeter(M.cadenceOp);
+    M.horsJour = M.eta == null;
+    if (!M.horsJour && fini(cadJour) && fini(cadRecente)) { M.etaTot = projeter(Math.max(cadJour, cadRecente)); M.etaTard = projeter(Math.min(cadJour, cadRecente)); }
+  } else if (M.reste > 0 && fini(M.debit) && M.debit > 0) {
+    const f = avancer(now, M.reste / M.debit * 60, pauses);
+    if (f < 1440) M.eta = f; else M.horsJour = true;
   }
   M.ecart = fini(M.eta) && fini(M.finVisee) ? M.finVisee - M.eta : null;      // positif = avance
   const hRest = fini(M.finVisee) ? minutesProductives(now, M.finVisee, pauses) / 60 : 0;
   M.hRestantes = hRest;
   M.debitNecessaire = hRest > 0.05 && M.reste > 0 ? M.reste / hRest : null;
   M.besoinOps = fini(M.cadenceOp) && M.cadenceOp > 0 && fini(M.debitNecessaire) ? M.debitNecessaire / M.cadenceOp : null;
-  M.margeOps = fini(M.besoinOps) && fini(M.actifs) ? M.actifs - M.besoinOps : null;
+  /* effectif de référence d'ici l'heure visée : la moyenne prévue si le planning est fourni, sinon les actifs du moment */
+  M.opsRef = M.actifs; M.opsPrevus = false;
+  if (profil && hRest > 0.05) {
+    let t = now, n = M.actifs, somme = 0;
+    for (const b of M.effectif.map(e => e[0]).filter(h => h > now && h < M.finVisee).concat([M.finVisee])) { somme += n * minutesProductives(t, b, pauses); t = b; n = prevuA(b); }
+    M.opsRef = somme / (hRest * 60); M.opsPrevus = M.effectif.some(e => e[0] > now && e[0] < M.finVisee);
+  }
+  M.margeOps = fini(M.besoinOps) && fini(M.opsRef) ? M.opsRef - M.besoinOps : null;
 
   /* rejets (contrôle pondéral du convoyeur) */
   const r = d.rejets || null;
@@ -252,7 +284,8 @@ function calculer(d, forcer) {
 
   /* ── états ── */
   const S = M.statut = {};
-  if (!M.aCharge || !fini(M.eta)) S.fin = { niv: "na", mot: M.aCharge ? "Estimation en attente" : "Charge inconnue" };
+  if (M.horsJour) S.fin = { niv: "crit", mot: "Ne finit pas aujourd'hui" };
+  else if (!M.aCharge || !fini(M.eta)) S.fin = { niv: "na", mot: M.aCharge ? "Estimation en attente" : "Charge inconnue" };
   else if (M.reste <= 0) S.fin = { niv: "ok", mot: "Charge terminée" };
   else if (!fini(M.ecart)) S.fin = { niv: "na", mot: "Pas d'heure visée" };
   else if (M.ecart >= 5) S.fin = { niv: "ok", mot: duree(M.ecart) + " d'avance" };
@@ -288,7 +321,8 @@ function construireAlertes(M) {
   const A = [], cfg = M.cfg, S = M.statut;
   const push = (niv, titre, texte, action) => A.push({ niv, titre, texte, action });
   if (M.perime) push("warn", "Les données ne sont plus actualisées", `Dernière mise à jour à ${min2hm(M.now)}, il y a ${duree(M.ageMin)}.`, "Vérifier que le classeur Excel d'alimentation tourne toujours sur le poste.");
-  if (S.fin.niv === "warn" || S.fin.niv === "crit") {
+  if (M.horsJour) push("crit", "Au rythme actuel, la charge ne sera pas terminée aujourd'hui", `Il reste ${n0(M.reste)} lignes et l'équipe en valide ${n0(M.debit)} par heure.`, fini(M.margeOps) && M.margeOps < 0 ? `Il manque ${n1(-M.margeOps)} préparateur${-M.margeOps >= 2 ? "s" : ""} pour finir à ${min2hm(M.finVisee)} : demander un renfort ou reporter une vague.` : "Demander un renfort ou reporter une vague.");
+  else if (S.fin.niv === "warn" || S.fin.niv === "crit") {
     const manque = fini(M.margeOps) && M.margeOps < 0 ? -M.margeOps : null;
     push(S.fin.niv, `Fin estimée à ${min2hm(M.eta)} : ${S.fin.mot}`,
       `Il reste ${n0(M.reste)} lignes et l'équipe en valide ${n0(M.debit)} par heure. L'heure visée est ${min2hm(M.finVisee)}.`,
@@ -356,7 +390,7 @@ const Demo = (() => {
       quarts.push({ m: q, l: s }); brut += s;
     }
     const lance = VAGUES.filter(v => v.m <= t).reduce((s, v) => s + v.lig, 0);
-    const k = brut > 0 ? Math.min(1, (lance - 60) / brut, TOTAL / brut) : 1;           // on ne prépare pas plus que ce qui est lancé
+    const k = brut > 0 ? Math.min(1, (lance - (lance < TOTAL ? 60 : 0)) / brut) : 1;    // on ne prépare pas plus que ce qui est lancé
     const fait = Math.round(brut * k);
     const heures = [];
     for (let h = 6; h <= Math.floor((t - 0.01) / 60); h++) {
@@ -385,7 +419,7 @@ const Demo = (() => {
     const sm = k2 => base.reduce((s, x) => s + x[k2], 0);
     return {
       v: 1, source: "DEMO", maj: maj.toISOString().slice(0, 10) + "T" + min2hm(t) + ":" + String(Math.floor((t % 1) * 60)).padStart(2, "0"),
-      cfg: { site: "CLR Champigneulles", debut: "06:00", finVisee: "19:00", pauses: PAUSES, jalons: ["12:15", "15:15", "17:15", "19:00"], inclureALancer: true },
+      cfg: { site: "CLR Champigneulles", debut: "06:00", finVisee: "19:00", pauses: PAUSES, jalons: ["12:15", "15:15", "17:15", "19:00"], inclureALancer: true, effectifPrevu: [["06:00", 6], ["12:30", 15], ["13:30", 9], ["20:00", 0]] },
       charge: { fait, restant, aLancer, contFaits: cont, tourneesFaites: Math.round(fait / 49), tourneesOuvertes: Math.round(restant / 47), tourneesLibres: Math.max(0, Math.round(restant / 47) - actifs),
         classes: { p: operateurs.reduce((s, o) => s + o.p, 0), m: operateurs.reduce((s, o) => s + o.m, 0), g: operateurs.reduce((s, o) => s + o.g, 0) },
         types: [{ code: "DETAIL", lib: "Détail", fait: Math.round(fait * 0.86), restant: Math.round(restant * 0.86) }, { code: "CARTON", lib: "Carton", fait: fait - Math.round(fait * 0.86), restant: restant - Math.round(restant * 0.86) }] },
@@ -395,7 +429,7 @@ const Demo = (() => {
         hist: { jours: 7, total: 148, allees: { "01": 10, "02": 13, "03": 14, "04": 11, "05": 11, "06": 8, "07": 10, "08": 11, "09": 12, "10": 17, "11": 7, "12": 3, "13": 5, "14": 3 }, types: { "Orientation": 41, "Quantité -": 36, "Quantité +": 33, "Référence": 32, "Manquante": 4, "Casse": 2 } } },
       departs,
       services: [{ code: "HG", lib: "Hors gabarit", fait: Math.round(fait * 0.36), restant: Math.round(restant * 0.4) }, { code: "CABL", lib: "Câble", fait: Math.round(fait * 0.055), restant: Math.round(restant * 0.06) }],
-      stock: { reappro: 9, critique: 2, ruptures: 6 }, retard: { commandes: 3, lignes: 21 }, carnet, historique: hist,
+      stock: { reappro: 9, critique: 2, ruptures: 6, critiques: [{ emp: "06-121-05", art: "LEG405821", reel: 2 }, { emp: "10-075-02", art: "SCH219340", reel: 0 }] }, retard: { commandes: 3, lignes: 21 }, carnet, historique: hist,
       mois: { lignes: sm("lignes"), jours: base.length, ed: sm("ed"), ea: sm("ea"), hPick: sm("hPick"), rejetsJour: Math.round(sm("rejets") / base.length), quota: Math.round(sm("quota") / base.length * 10) / 10 },
       securite: { joursSansAccident: 187, message: "Je regarde derrière moi avant de reculer avec mon chariot." },
       messages: ["Brief d'équipe à 13:00 au point Top 5."]

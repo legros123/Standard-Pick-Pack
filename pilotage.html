@@ -18,7 +18,7 @@
   --bg:#050912; --bg-2:#0A1325; --panel:#0E1930; --panel-2:#13213C;
   --line:rgba(150,180,240,.17); --line-2:rgba(150,180,240,.07);
   --ink:#F3F6FB; --ink-2:#BCC8DD; --ink-3:#8696B0;
-  --data:#3987E5; --data-hi:#7DB8FF; --data-lo:#184F95; --data-ghost:#22324E;
+  --data:#3987E5; --data-hi:#7DB8FF; --data-lo:#184F95; --data-ghost:#22324E; --contexte:#A9B4C6;
   --ok:#0CA30C; --ok-bg:rgba(12,163,12,.20); --ok-bd:rgba(40,190,40,.65); --ok-ic:#5FDB5F;
   --warn:#FAB219; --warn-bg:rgba(250,178,25,.16); --warn-bd:rgba(250,178,25,.65); --warn-ic:#FAB219;
   --crit:#D03B3B; --crit-bg:rgba(208,59,59,.24); --crit-bd:rgba(240,100,100,.75); --crit-ic:#FF8A8A;
@@ -75,6 +75,7 @@ ol,ul{padding:0;list-style:none}
 .ess::before{content:"";position:absolute;left:0;right:0;top:0;height:.32rem;background:var(--st,transparent);transition:background .6s}
 .ess-l{display:flex;align-items:center;gap:.5rem;font:500 .98rem/1.2 var(--f-t);letter-spacing:.1em;text-transform:uppercase;color:var(--ink-2);white-space:nowrap}
 .ess-l .ic{width:1.2rem;height:1.2rem;color:var(--data-hi)}
+.ess-l em{margin-left:auto;padding-left:.4rem;font-style:normal;font-weight:400;font-size:.9rem;letter-spacing:0;text-transform:none;color:var(--ink-2)}
 .ess-v{display:flex;align-items:baseline;gap:.55rem;min-width:0;white-space:nowrap}
 .ess-v .num{font:900 5.1rem/.92 var(--f-d);letter-spacing:.01em}
 .ess-v .u{font:400 1.12rem/1 var(--f-t);color:var(--ink-2)}
@@ -141,7 +142,7 @@ ol,ul{padding:0;list-style:none}
 .legende span{display:inline-flex;align-items:center;gap:.5rem}
 .cle{display:inline-block;width:1.7rem;height:.28rem;border-radius:2px;background:var(--data)}
 .cle.zone{height:.9rem;border-radius:.2rem;background:rgba(57,135,229,.28);border-top:.2rem solid var(--data)}
-.cle.gris{background:var(--ink-3)}
+.cle.gris{background:var(--contexte)}
 .cle.tirets{background:repeating-linear-gradient(90deg,var(--data-hi) 0 .45rem,transparent .45rem .75rem)}
 .cle.trait{width:.22rem;height:1.1rem;background:var(--ink)}
 .cle.carre{width:.95rem;height:.95rem;border-radius:.2rem}
@@ -280,10 +281,18 @@ ol,ul{padding:0;list-style:none}
 .dep-l.suivant{background:linear-gradient(90deg,rgba(57,135,229,.22),rgba(57,135,229,.04))}
 .dep-l.parti{opacity:.5}
 .dep-l .pastille{justify-self:end}
-.pile-mini{display:grid;gap:1.3rem;grid-template-rows:repeat(3,minmax(0,1fr))}
+.pile-mini{display:grid;gap:1.3rem;grid-template-rows:minmax(0,1fr) minmax(0,1fr) minmax(0,1.55fr)}
 .pile-mini .mini{grid-template-columns:auto minmax(0,1fr);column-gap:1.2rem;align-items:center}
-.pile-mini .mini b{grid-row:1/3;font-size:4rem;min-width:5.2rem;text-align:right}
+.pile-mini .mini>b{grid-row:1/3;font-size:4rem;min-width:5.2rem;text-align:right}
 .pile-mini .mini .l{align-self:end}.pile-mini .mini .s{align-self:start}
+.crit{grid-column:1/-1;display:grid;gap:.2rem;margin-top:.5rem;padding-top:.5rem;border-top:1px solid var(--line-2)}
+.crit:empty{display:none}
+.crit li{display:grid;grid-template-columns:8.5rem minmax(0,1fr) auto;gap:.8rem;font:400 1rem/1.3 var(--f-t);color:var(--ink-2);white-space:nowrap}
+.crit li b{font:500 1rem/1.3 var(--f-t);color:var(--ink);letter-spacing:0}
+.crit li span{overflow:hidden;text-overflow:ellipsis}
+.pile-mini .mini#e7-m3{grid-template-rows:auto auto auto}
+.quad .bloc.q4{grid-template-rows:auto auto auto minmax(0,1fr)}
+.point{width:100%;min-height:11rem;padding:.8rem 1rem;border-radius:.8rem;border:1px solid var(--line);background:var(--bg);color:var(--ink);font:400 1rem/1.5 var(--f-t);resize:vertical}
 
 /* E8 équipe */
 .e8{grid-template-columns:1fr 1.15fr 1fr}
@@ -439,6 +448,26 @@ kbd{display:inline-block;min-width:2rem;padding:.1rem .5rem;margin-right:.5rem;b
   .btn{width:44px;height:44px}
   .btn.rot{display:none}
   .fenetre{padding:1.2rem}
+  .app{overflow-x:clip}
+  .duo{flex-wrap:wrap;gap:.5rem 1rem}
+  .barre3-leg{flex-wrap:wrap;justify-content:flex-start;gap:.3rem 1.2rem}
+  .kpi-v,.ess-v{flex-wrap:wrap;white-space:normal}
+  .bloc{padding:1.1rem 1.1rem 1.2rem}
+  .quatre{grid-template-columns:minmax(0,1fr)}
+  .e8-quota .duo{flex-wrap:nowrap}
+  .jalon{font-size:1.2rem}
+  .tm,.types-mini.grand .tm{grid-template-columns:6.5rem minmax(0,1fr) 2.4rem;font-size:1rem}
+  .pile-mini{grid-template-rows:none}
+  .legende{font-size:.9rem}
+  .verdict{max-width:none}
+  .vagues{grid-auto-rows:auto}
+  .vg{padding:.55rem 0}
+  .vg-v,.vg .pastille{grid-column:1/-1}
+  .dep-corps{grid-auto-rows:auto}
+  .dep-corps .dep-l{padding-top:.75rem;padding-bottom:.75rem}
+  .ess-s{flex-wrap:wrap;overflow:visible;white-space:normal}
+  .e4 .col:first-child>.bloc:first-child,.e4 .col:last-child>.bloc,.e8>.bloc,.quad .bloc,.kpi,.graphe,.e9 .col .bloc:last-child{display:block}
+  .quad .bloc>*+*,.kpi>*+*{margin-top:.5rem}
 }
 @media (prefers-reduced-motion:reduce){
   .ecran,.ecran.actif,.ecran.sorti{transform:none!important;transition:opacity .3s,visibility 0s!important}
@@ -516,7 +545,7 @@ kbd{display:inline-block;min-width:2rem;padding:.1rem .5rem;margin-right:.5rem;b
         <div class="ess-s"><div class="jauge" id="j-reste"><i></i></div><span id="s-reste">–</span></div>
       </article>
       <article class="ess" id="ess-fin">
-        <div class="ess-l"><svg class="ic"><use href="#i-horloge"/></svg>Fin estimée</div>
+        <div class="ess-l"><svg class="ic"><use href="#i-horloge"/></svg>Fin estimée<em id="vise-fin"></em></div>
         <div class="ess-v"><span class="num" id="v-fin">–</span><span class="u" id="u-fin"></span></div>
         <div class="ess-s" id="s-fin"></div>
       </article>
@@ -634,6 +663,7 @@ function avancer(depart, travail, pauses) {
 const CFG_DEFAUT = {
   site: "CLR Champigneulles", service: "Pick & Pack",
   debut: "06:00", finVisee: "19:00", pauses: [], jalons: ["12:15", "15:15", "17:15", "19:00"],
+  effectifPrevu: [],                      // préparateurs prévus par tranche : [["06:00", 6], ["12:30", 15], ["13:30", 9]]
   quotaJour: 620, hRef: 7.4,              // standard Rexel : 620 lignes par poste de 7,4 h
   quotaRouge: 90, quotaVert: 100, quotaMax: 150,   // % du quota : rouge en dessous, vert à partir de, plafond affiché
   milP: 20.5, milM: 60.5, milG: 100.5,    // milieu des tranches de chariots : petits (< 40 lignes), moyens (40 à 79), grands (80 et +)
@@ -711,28 +741,24 @@ function calculer(d, forcer) {
   M.debut = hm2min(d.premiere) != null ? hm2min(d.premiere) : premieres.length ? Math.min(...premieres) : hActives.length ? Math.min(...hActives) : hm2min(cfg.debut);
   if (!fini(M.debut) || M.debut > now) M.debut = Math.min(now, hm2min(cfg.debut) || now);
 
-  /* débit de l'équipe : moyenne du poste et dernière heure */
+  /* ── rythme ──
+     Débit de l'équipe = lignes validées par heure. Cadence = lignes par heure et par préparateur, calculée sur les
+     heures de présence au picking de chacun : elle reste juste quand deux équipes se croisent. */
   const prodJour = minutesProductives(M.debut, now, pauses);
-  M.debitJour = prodJour >= 10 && M.fait > 0 ? M.fait / (prodJour / 60) : null;
-  let recent = null;
-  const prodFen = minutesProductives(now - 60, now, pauses);
-  if (M.quarts.length && prodFen >= 20) {
-    let s = 0;
+  M.debitJour = prodJour >= 20 && M.fait >= 30 ? M.fait / (prodJour / 60) : null;      // pas d'estimation sur les toutes premières minutes
+  const w0 = Math.max(now - 60, M.debut), prodFen = minutesProductives(w0, now, pauses);
+  let lignesFen = null;
+  if (M.quarts.length) {
+    lignesFen = 0;
     for (const q of M.quarts) {
-      const fin = q.m + 15, courant = now < fin;
-      const lon = courant ? Math.max(1, now - q.m) : 15;
-      const rec = Math.max(0, Math.min(fin, now) - Math.max(q.m, now - 60));
-      if (rec > 0) s += q.lignes * Math.min(1, rec / lon);
+      const fin = q.m + 15, lon = now < fin ? Math.max(1, now - q.m) : 15, rec = Math.max(0, Math.min(fin, now) - Math.max(q.m, w0));
+      if (rec > 0) lignesFen += q.lignes * Math.min(1, rec / lon);
     }
-    recent = s / (prodFen / 60);
-  } else if (M.heures.length && prodFen >= 20) {
-    const hc = Math.floor(now / 60), a = M.heures.find(x => x.h === hc), b = M.heures.find(x => x.h === hc - 1);
-    const fen = now - (hc - 1) * 60, pf = minutesProductives((hc - 1) * 60, now, pauses);
-    if (pf >= 20) recent = ((a ? a.lignes : 0) + (b ? b.lignes : 0)) / (pf / 60) * (fen > 0 ? 1 : 0);
+  } else if (M.heures.length) {
+    const hc = Math.floor(now / 60), ha = M.heures.find(x => x.h === hc), hb = M.heures.find(x => x.h === hc - 1), dansH = now - hc * 60;
+    lignesFen = (ha ? ha.lignes : 0) + (hb ? hb.lignes * clamp((60 - dansH) / 60, 0, 1) : 0);
   }
-  M.debitRecent = recent;
-  if (fini(recent) && fini(M.debitJour)) M.debit = recent < 0.4 * M.debitJour ? M.debitJour : 0.65 * recent + 0.35 * M.debitJour;
-  else M.debit = fini(recent) && recent > 0 ? recent : M.debitJour;
+  M.debitRecent = fini(lignesFen) && prodFen >= 20 ? lignesFen / (prodFen / 60) : null;
 
   /* effectif */
   const avecLignes = M.operateurs.filter(o => o.lignes > 0);
@@ -744,38 +770,73 @@ function calculer(d, forcer) {
     M.presents = opsH.length ? Math.max(...opsH.map(x => x.ops)) : null;
     M.actifs = opsH.length ? opsH[opsH.length - 1].ops : null;
   }
-  M.cadenceOp = fini(M.debit) && M.actifs > 0 ? M.debit / M.actifs : null;
-  M.pctStandard = fini(M.cadenceOp) ? M.cadenceOp * M.w / M.standardH * 100 : null;      // quota de l'équipe en ce moment
-  /* cadence de chacun depuis sa première validation (amplitude, pas un temps de travail) */
+
+  /* heures de présence et cadence de chacun (amplitude entre première et dernière validation, pas un temps de travail) */
+  let hJour = 0, hFen = 0, ligOps = 0, ligPond = 0;
   for (const o of M.operateurs) {
-    const fin = fini(o.derniere) ? Math.min(now, o.derniere + 5) : now;
+    const actif = fini(o.derniere) && now - o.derniere <= cfg.actifMin;
+    const fin = !fini(o.derniere) ? now : actif ? now : Math.min(now, o.derniere + 5);
     const h = fini(o.premiere) ? minutesProductives(o.premiere, fin, pauses) / 60 : null;
     o.heures = h;
     o.cadence = h && h >= 0.5 ? o.lignes / h : null;
     o.quota = fini(o.cadence) ? Math.min(cfg.quotaMax, o.cadence * o.w / M.standardH * 100) : null;
     o.inactif = fini(o.derniere) ? Math.max(0, now - o.derniere) : null;
+    if (h) { hJour += h; ligOps += o.lignes; ligPond += o.lignes * o.w; hFen += minutesProductives(Math.max(o.premiere, w0), fin, pauses) / 60; }
   }
-  const hTot = M.operateurs.reduce((s, o) => s + (o.heures || 0), 0);
-  M.pctStandardJour = hTot > 1 ? M.operateurs.reduce((s, o) => s + o.lignes * o.w, 0) / hTot / M.standardH * 100 : null;   // quota de l'équipe depuis le début du poste
+  const cadJour = hJour >= 1 && ligOps >= 30 ? ligOps / hJour : null;
+  const cadRecente = fini(lignesFen) && hFen >= 0.5 && prodFen >= 20 ? lignesFen / hFen : null;
+  M.pctStandardJour = hJour >= 1 ? ligPond / hJour / M.standardH * 100 : null;                // quota de l'équipe depuis le début du poste
+  const melange = (r, j) => (fini(r) && fini(j) ? (r < 0.4 * j ? j : 0.65 * r + 0.35 * j) : fini(r) && r > 0 ? r : j);
+  if (fini(cadJour) || fini(cadRecente)) {
+    M.cadenceOp = melange(cadRecente, cadJour);
+    M.debit = M.actifs > 0 ? M.cadenceOp * M.actifs : melange(M.debitRecent, M.debitJour);
+  } else {
+    M.debit = melange(M.debitRecent, M.debitJour);
+    M.cadenceOp = fini(M.debit) && M.actifs > 0 ? M.debit / M.actifs : null;
+  }
+  M.pctStandard = fini(M.cadenceOp) ? M.cadenceOp * M.w / M.standardH * 100 : null;           // quota de l'équipe en ce moment
 
-  /* heure de fin */
+  /* ── heure de fin ──
+     Sans planning : l'équipe du moment reste jusqu'au bout. Avec « effectifPrevu » : on applique la cadence
+     constatée à l'effectif prévu de chaque tranche horaire. */
   M.finVisee = hm2min(cfg.finVisee);
-  M.eta = null; M.etaTot = null; M.etaTard = null;
-  if (M.aCharge && M.reste <= 0 && M.fait > 0) M.eta = now;
-  else if (fini(M.debit) && M.debit > 0 && M.reste > 0) {
-    M.eta = avancer(now, M.reste / M.debit * 60, pauses);
-    const v = [M.debitRecent, M.debitJour].filter(x => fini(x) && x > 0);
-    if (v.length === 2) {
-      M.etaTot = avancer(now, M.reste / Math.max(...v) * 60, pauses);
-      M.etaTard = avancer(now, M.reste / Math.min(...v) * 60, pauses);
+  M.eta = null; M.etaTot = null; M.etaTard = null; M.horsJour = false;
+  M.effectif = (Array.isArray(cfg.effectifPrevu) ? cfg.effectifPrevu : []).map(x => [hm2min(x[0]), +x[1]]).filter(x => x[0] != null && fini(x[1]) && x[1] >= 0).sort((a, b) => a[0] - b[0]);
+  const profil = M.effectif.length > 0 && M.actifs > 0 && fini(M.cadenceOp);
+  const prevuA = t => { let n = M.actifs; for (const e of M.effectif) if (e[0] <= t && e[0] > now) n = e[1]; return n; };
+  const projeter = cad => {                               // cad : lignes par heure et par préparateur
+    if (!(cad > 0)) return null;
+    if (!(M.actifs > 0)) return null;
+    let t = now, r = M.reste, n = M.actifs;
+    for (const b of (profil ? M.effectif.map(e => e[0]).filter(h => h > now) : []).concat([1440])) {
+      const cap = cad * n * minutesProductives(t, b, pauses) / 60;
+      if (n > 0 && cap >= r) return avancer(t, r / (cad * n) * 60, pauses);
+      r -= cap; t = b; n = prevuA(b);
     }
+    return null;
+  };
+  if (M.aCharge && M.reste <= 0 && M.fait > 0) M.eta = now;
+  else if (M.reste > 0 && fini(M.cadenceOp) && M.actifs > 0) {
+    M.eta = projeter(M.cadenceOp);
+    M.horsJour = M.eta == null;
+    if (!M.horsJour && fini(cadJour) && fini(cadRecente)) { M.etaTot = projeter(Math.max(cadJour, cadRecente)); M.etaTard = projeter(Math.min(cadJour, cadRecente)); }
+  } else if (M.reste > 0 && fini(M.debit) && M.debit > 0) {
+    const f = avancer(now, M.reste / M.debit * 60, pauses);
+    if (f < 1440) M.eta = f; else M.horsJour = true;
   }
   M.ecart = fini(M.eta) && fini(M.finVisee) ? M.finVisee - M.eta : null;      // positif = avance
   const hRest = fini(M.finVisee) ? minutesProductives(now, M.finVisee, pauses) / 60 : 0;
   M.hRestantes = hRest;
   M.debitNecessaire = hRest > 0.05 && M.reste > 0 ? M.reste / hRest : null;
   M.besoinOps = fini(M.cadenceOp) && M.cadenceOp > 0 && fini(M.debitNecessaire) ? M.debitNecessaire / M.cadenceOp : null;
-  M.margeOps = fini(M.besoinOps) && fini(M.actifs) ? M.actifs - M.besoinOps : null;
+  /* effectif de référence d'ici l'heure visée : la moyenne prévue si le planning est fourni, sinon les actifs du moment */
+  M.opsRef = M.actifs; M.opsPrevus = false;
+  if (profil && hRest > 0.05) {
+    let t = now, n = M.actifs, somme = 0;
+    for (const b of M.effectif.map(e => e[0]).filter(h => h > now && h < M.finVisee).concat([M.finVisee])) { somme += n * minutesProductives(t, b, pauses); t = b; n = prevuA(b); }
+    M.opsRef = somme / (hRest * 60); M.opsPrevus = M.effectif.some(e => e[0] > now && e[0] < M.finVisee);
+  }
+  M.margeOps = fini(M.besoinOps) && fini(M.opsRef) ? M.opsRef - M.besoinOps : null;
 
   /* rejets (contrôle pondéral du convoyeur) */
   const r = d.rejets || null;
@@ -818,7 +879,8 @@ function calculer(d, forcer) {
 
   /* ── états ── */
   const S = M.statut = {};
-  if (!M.aCharge || !fini(M.eta)) S.fin = { niv: "na", mot: M.aCharge ? "Estimation en attente" : "Charge inconnue" };
+  if (M.horsJour) S.fin = { niv: "crit", mot: "Ne finit pas aujourd'hui" };
+  else if (!M.aCharge || !fini(M.eta)) S.fin = { niv: "na", mot: M.aCharge ? "Estimation en attente" : "Charge inconnue" };
   else if (M.reste <= 0) S.fin = { niv: "ok", mot: "Charge terminée" };
   else if (!fini(M.ecart)) S.fin = { niv: "na", mot: "Pas d'heure visée" };
   else if (M.ecart >= 5) S.fin = { niv: "ok", mot: duree(M.ecart) + " d'avance" };
@@ -854,7 +916,8 @@ function construireAlertes(M) {
   const A = [], cfg = M.cfg, S = M.statut;
   const push = (niv, titre, texte, action) => A.push({ niv, titre, texte, action });
   if (M.perime) push("warn", "Les données ne sont plus actualisées", `Dernière mise à jour à ${min2hm(M.now)}, il y a ${duree(M.ageMin)}.`, "Vérifier que le classeur Excel d'alimentation tourne toujours sur le poste.");
-  if (S.fin.niv === "warn" || S.fin.niv === "crit") {
+  if (M.horsJour) push("crit", "Au rythme actuel, la charge ne sera pas terminée aujourd'hui", `Il reste ${n0(M.reste)} lignes et l'équipe en valide ${n0(M.debit)} par heure.`, fini(M.margeOps) && M.margeOps < 0 ? `Il manque ${n1(-M.margeOps)} préparateur${-M.margeOps >= 2 ? "s" : ""} pour finir à ${min2hm(M.finVisee)} : demander un renfort ou reporter une vague.` : "Demander un renfort ou reporter une vague.");
+  else if (S.fin.niv === "warn" || S.fin.niv === "crit") {
     const manque = fini(M.margeOps) && M.margeOps < 0 ? -M.margeOps : null;
     push(S.fin.niv, `Fin estimée à ${min2hm(M.eta)} : ${S.fin.mot}`,
       `Il reste ${n0(M.reste)} lignes et l'équipe en valide ${n0(M.debit)} par heure. L'heure visée est ${min2hm(M.finVisee)}.`,
@@ -922,7 +985,7 @@ const Demo = (() => {
       quarts.push({ m: q, l: s }); brut += s;
     }
     const lance = VAGUES.filter(v => v.m <= t).reduce((s, v) => s + v.lig, 0);
-    const k = brut > 0 ? Math.min(1, (lance - 60) / brut, TOTAL / brut) : 1;           // on ne prépare pas plus que ce qui est lancé
+    const k = brut > 0 ? Math.min(1, (lance - (lance < TOTAL ? 60 : 0)) / brut) : 1;    // on ne prépare pas plus que ce qui est lancé
     const fait = Math.round(brut * k);
     const heures = [];
     for (let h = 6; h <= Math.floor((t - 0.01) / 60); h++) {
@@ -951,7 +1014,7 @@ const Demo = (() => {
     const sm = k2 => base.reduce((s, x) => s + x[k2], 0);
     return {
       v: 1, source: "DEMO", maj: maj.toISOString().slice(0, 10) + "T" + min2hm(t) + ":" + String(Math.floor((t % 1) * 60)).padStart(2, "0"),
-      cfg: { site: "CLR Champigneulles", debut: "06:00", finVisee: "19:00", pauses: PAUSES, jalons: ["12:15", "15:15", "17:15", "19:00"], inclureALancer: true },
+      cfg: { site: "CLR Champigneulles", debut: "06:00", finVisee: "19:00", pauses: PAUSES, jalons: ["12:15", "15:15", "17:15", "19:00"], inclureALancer: true, effectifPrevu: [["06:00", 6], ["12:30", 15], ["13:30", 9], ["20:00", 0]] },
       charge: { fait, restant, aLancer, contFaits: cont, tourneesFaites: Math.round(fait / 49), tourneesOuvertes: Math.round(restant / 47), tourneesLibres: Math.max(0, Math.round(restant / 47) - actifs),
         classes: { p: operateurs.reduce((s, o) => s + o.p, 0), m: operateurs.reduce((s, o) => s + o.m, 0), g: operateurs.reduce((s, o) => s + o.g, 0) },
         types: [{ code: "DETAIL", lib: "Détail", fait: Math.round(fait * 0.86), restant: Math.round(restant * 0.86) }, { code: "CARTON", lib: "Carton", fait: fait - Math.round(fait * 0.86), restant: restant - Math.round(restant * 0.86) }] },
@@ -961,7 +1024,7 @@ const Demo = (() => {
         hist: { jours: 7, total: 148, allees: { "01": 10, "02": 13, "03": 14, "04": 11, "05": 11, "06": 8, "07": 10, "08": 11, "09": 12, "10": 17, "11": 7, "12": 3, "13": 5, "14": 3 }, types: { "Orientation": 41, "Quantité -": 36, "Quantité +": 33, "Référence": 32, "Manquante": 4, "Casse": 2 } } },
       departs,
       services: [{ code: "HG", lib: "Hors gabarit", fait: Math.round(fait * 0.36), restant: Math.round(restant * 0.4) }, { code: "CABL", lib: "Câble", fait: Math.round(fait * 0.055), restant: Math.round(restant * 0.06) }],
-      stock: { reappro: 9, critique: 2, ruptures: 6 }, retard: { commandes: 3, lignes: 21 }, carnet, historique: hist,
+      stock: { reappro: 9, critique: 2, ruptures: 6, critiques: [{ emp: "06-121-05", art: "LEG405821", reel: 2 }, { emp: "10-075-02", art: "SCH219340", reel: 0 }] }, retard: { commandes: 3, lignes: 21 }, carnet, historique: hist,
       mois: { lignes: sm("lignes"), jours: base.length, ed: sm("ed"), ea: sm("ea"), hPick: sm("hPick"), rejetsJour: Math.round(sm("rejets") / base.length), quota: Math.round(sm("quota") / base.length * 10) / 10 },
       securite: { joursSansAccident: 187, message: "Je regarde derrière moi avant de reculer avec mon chariot." },
       messages: ["Brief d'équipe à 13:00 au point Top 5."]
@@ -1417,16 +1480,16 @@ function grAvancement(el, M) {
     s += `<line x1="${mg.g}" x2="${w - mg.d}" y1="${f(Y(v))}" y2="${f(Y(v))}" stroke="var(--line-2)"/>`;
     s += `<text x="${mg.g - 0.6 * R}" y="${f(Y(v) + 0.32 * R)}" text-anchor="end" font-size="${0.9 * R}">${n0(v)}</text>`;
   }
-  const xV = fini(M.finVisee) ? X(M.finVisee) : -999, pasH = (t1 - t0) / 60 > 11 ? 2 : 1;
+  const etroit = w < 36 * R, xV = fini(M.finVisee) ? X(M.finVisee) : -999, pasH = etroit ? 4 : (t1 - t0) / 60 > 11 ? 2 : 1;
   for (let t = Math.ceil(t0 / 60) * 60; t <= t1; t += 60 * pasH) if (Math.abs(X(t) - xV) > 5.6 * R) s += `<text x="${f(X(t))}" y="${h - 0.55 * R}" text-anchor="middle" font-size="${0.9 * R}">${t / 60} h</text>`;
   s += `<line x1="${mg.g}" x2="${w - mg.d}" y1="${f(Y(0))}" y2="${f(Y(0))}" stroke="var(--line)"/>`;
   /* charge du jour */
   s += `<line x1="${mg.g}" x2="${w - mg.d}" y1="${f(Y(M.charge))}" y2="${f(Y(M.charge))}" stroke="var(--ink-3)" stroke-width="1"/>`;
-  s += `<text x="${mg.g + 0.5 * R}" y="${f(Y(M.charge) - 0.6 * R)}" font-size="${1 * R}" fill="var(--ink-2)">charge du jour : <tspan font-weight="700" fill="var(--ink)">${n0(M.charge)} lignes</tspan></text>`;
+  if (!etroit) s += `<text x="${mg.g + 0.5 * R}" y="${f(Y(M.charge) - 0.6 * R)}" font-size="${1 * R}" fill="var(--ink-2)">charge du jour : <tspan font-weight="700" fill="var(--ink)">${n0(M.charge)} lignes</tspan></text>`;
   /* rythme à tenir */
   if (fini(M.finVisee) && M.finVisee > M.debut) {
-    s += `<line x1="${f(X(M.debut))}" y1="${f(Y(0))}" x2="${f(xV)}" y2="${f(Y(M.charge))}" stroke="var(--ink-3)" stroke-width="${0.14 * R}"/>`;
-    s += `<circle cx="${f(xV)}" cy="${f(Y(M.charge))}" r="${0.36 * R}" fill="var(--ink-3)" stroke="var(--panel)" stroke-width="2"/>`;
+    s += `<line x1="${f(X(M.debut))}" y1="${f(Y(0))}" x2="${f(xV)}" y2="${f(Y(M.charge))}" stroke="var(--contexte)" stroke-width="${0.14 * R}"/>`;
+    s += `<circle cx="${f(xV)}" cy="${f(Y(M.charge))}" r="${0.36 * R}" fill="var(--contexte)" stroke="var(--panel)" stroke-width="2"/>`;
     s += `<line x1="${f(xV)}" x2="${f(xV)}" y1="${f(Y(0))}" y2="${f(Y(0) + 0.5 * R)}" stroke="var(--ink)" stroke-width="2"/>`;
     s += `<text x="${f(xV)}" y="${h - 0.55 * R}" text-anchor="middle" font-size="${0.95 * R}" font-weight="700" fill="var(--ink)">visée ${min2hm(M.finVisee)}</text>`;
   }
@@ -1456,9 +1519,9 @@ function grAvancement(el, M) {
 function grHeures(el, M) {
   const g = Gr.dims(el); if (!g) return;
   if (!M.heures.length) { el.innerHTML = vide("Aucune ligne validée pour l'instant."); return; }
-  const { w, h, R } = g, f = Gr.f, mg = { g: 8.2 * R, d: 0.8 * R, h: 2.4 * R, b: 5.6 * R }, pw = w - mg.g - mg.d, ph = h - mg.h - mg.b;
+  const { w, h, R } = g, f = Gr.f, large = w >= 44 * R, mg = { g: (large ? 8.2 : 3.4) * R, d: 0.8 * R, h: 2.4 * R, b: (large ? 5.6 : 2.4) * R }, pw = w - mg.g - mg.d, ph = h - mg.h - mg.b;
   const h0 = Math.min(M.heures[0].h, Math.floor(M.debut / 60)), h1 = Math.max(M.heures[M.heures.length - 1].h, fini(M.finVisee) ? Math.ceil(M.finVisee / 60) - 1 : 0);
-  const n = h1 - h0 + 1, bande = pw / n, lc = Math.min(2.5 * R, bande * 0.56), hc = Math.floor(M.now / 60);
+  const n = h1 - h0 + 1, bande = pw / n, lc = Math.min(2.5 * R, bande * 0.56), hc = Math.floor(M.now / 60), pasE = Math.max(1, Math.ceil(2.6 * R / bande));
   const maxL = Math.max(...M.heures.map(x => x.lignes)), besoin = fini(M.debitNecessaire) ? M.debitNecessaire : 0, yMax = Math.max(maxL, besoin) * 1.2 || 1;
   const Y = v => mg.h + ph - v / yMax * ph, yb = Y(0);
   let s = "";
@@ -1468,23 +1531,24 @@ function grHeures(el, M) {
   }
   s += `<line x1="${mg.g}" x2="${w - mg.d}" y1="${f(yb)}" y2="${f(yb)}" stroke="var(--line)"/>`;
   const yH = yb + 1.5 * R, yL = yb + 3.2 * R, yO = yb + 4.75 * R;
-  s += `<text x="${mg.g - 0.6 * R}" y="${f(yL)}" text-anchor="end" font-size="${0.92 * R}">lignes</text><text x="${mg.g - 0.6 * R}" y="${f(yO)}" text-anchor="end" font-size="${0.92 * R}">préparateurs</text>`;
-  s += `<line x1="${0.4 * R}" x2="${w - mg.d}" y1="${f(yb + 2.05 * R)}" y2="${f(yb + 2.05 * R)}" stroke="var(--line-2)"/><line x1="${0.4 * R}" x2="${w - mg.d}" y1="${f(yb + 3.65 * R)}" y2="${f(yb + 3.65 * R)}" stroke="var(--line-2)"/>`;
+  if (large) s += `<text x="${mg.g - 0.6 * R}" y="${f(yL)}" text-anchor="end" font-size="${0.92 * R}">lignes</text><text x="${mg.g - 0.6 * R}" y="${f(yO)}" text-anchor="end" font-size="${0.92 * R}">préparateurs</text>`;
+  if (large) s += `<line x1="${0.4 * R}" x2="${w - mg.d}" y1="${f(yb + 2.05 * R)}" y2="${f(yb + 2.05 * R)}" stroke="var(--line-2)"/><line x1="${0.4 * R}" x2="${w - mg.d}" y1="${f(yb + 3.65 * R)}" y2="${f(yb + 3.65 * R)}" stroke="var(--line-2)"/>`;
   for (let i = 0; i < n; i++) {
     const hh = h0 + i, xc = mg.g + bande * (i + 0.5), x = M.heures.find(q => q.h === hh), enCours = hh === hc;
-    s += `<text x="${f(xc)}" y="${f(yH)}" text-anchor="middle" font-size="${0.95 * R}" ${enCours ? 'font-weight="700" fill="var(--ink)"' : ""}>${hh} h</text>`;
+    if (i % pasE === 0) s += `<text x="${f(xc)}" y="${f(yH)}" text-anchor="middle" font-size="${0.95 * R}" ${enCours && large ? 'font-weight="700" fill="var(--ink)"' : ""}>${hh} h</text>`;
     if (!x) continue;
     const y1 = Y(x.lignes);
     s += `<path d="${Gr.colonne(f(xc - lc / 2), f(xc + lc / 2), f(y1), f(yb), 0.3 * R)}" fill="var(--data)" ${enCours ? 'opacity=".55"' : ""} data-bulle="${hh} h : ${n0(x.lignes)} lignes${fini(x.ops) ? " · " + x.ops + " préparateurs" : ""}"/>`;
-    if (x.lignes === maxL || enCours) s += `<text x="${f(xc)}" y="${f(y1 - 0.55 * R)}" text-anchor="middle" font-size="${1.05 * R}" font-weight="700" fill="var(--ink)">${enCours ? "en cours" : n0(x.lignes)}</text>`;
+    if (x.lignes === maxL || (enCours && large)) s += `<text x="${f(xc)}" y="${f(y1 - 0.55 * R)}" text-anchor="middle" font-size="${1.05 * R}" font-weight="700" fill="var(--ink)">${enCours ? "en cours" : n0(x.lignes)}</text>`;
+    if (!large) continue;
     s += `<text x="${f(xc)}" y="${f(yL)}" text-anchor="middle" font-size="${1 * R}" fill="var(--ink)" style="font-variant-numeric:tabular-nums">${n0(x.lignes)}</text>`;
     if (fini(x.ops)) s += `<text x="${f(xc)}" y="${f(yO)}" text-anchor="middle" font-size="${1 * R}" style="font-variant-numeric:tabular-nums">${x.ops}</text>`;
   }
   /* débit à tenir : de l'heure en cours à l'heure visée */
   if (besoin > 0 && hc >= h0 && hc <= h1) {
     const xa = mg.g + bande * (hc - h0) + bande * 0.08, xb = w - mg.d, yy = Y(besoin);
-    s += `<line x1="${f(xa)}" x2="${f(xb)}" y1="${f(yy)}" y2="${f(yy)}" stroke="var(--ink-3)" stroke-width="${0.16 * R}" stroke-linecap="round"/>`;
-    s += `<text x="${f(xb)}" y="${f(yy - 0.6 * R)}" text-anchor="end" font-size="${1 * R}" fill="var(--ink)">à tenir : <tspan font-weight="700">${n0(besoin)} par heure</tspan></text>`;
+    s += `<line x1="${f(xa)}" x2="${f(xb)}" y1="${f(yy)}" y2="${f(yy)}" stroke="var(--contexte)" stroke-width="${0.16 * R}" stroke-linecap="round"/>`;
+    if (large) s += `<text x="${f(xb)}" y="${f(yy - 0.6 * R)}" text-anchor="end" font-size="${1 * R}" fill="var(--ink)">à tenir : <tspan font-weight="700">${n0(besoin)} par heure</tspan></text>`;
   }
   el.innerHTML = Gr.svg(w, h, "Lignes préparées par heure", s);
 }
@@ -1533,11 +1597,12 @@ function grCarnet(el, M) {
   d.forEach((x, i) => {
     const xc = mg.g + bande * (i + 0.5), y1 = Y(x.lig), besoin = x.lig / M.cfg.quotaJour;
     s += `<path d="${Gr.colonne(f(xc - lc / 2), f(xc + lc / 2), f(y1), f(yb), 0.35 * R)}" fill="var(--data)" data-bulle="${n0(x.lig)} lignes estimées pour le Pick &amp; Pack"/>`;
-    s += `<text x="${f(xc)}" y="${f(y1 - 0.6 * R)}" text-anchor="middle" font-size="${1.25 * R}" font-weight="700" fill="var(--ink)">${n0(x.lig)}</text>`;
-    s += `<text x="${f(xc)}" y="${f(yb + 1.6 * R)}" text-anchor="middle" font-size="${1.05 * R}" fill="var(--ink)">${esc(x.date.toLocaleDateString("fr-FR", { weekday: "long", day: "numeric" }))}</text>`;
+    const serre = bande < 9 * R;
+    s += `<text x="${f(xc)}" y="${f(y1 - 0.6 * R)}" text-anchor="middle" font-size="${(serre ? 0.95 : 1.25) * R}" font-weight="700" fill="var(--ink)">${n0(x.lig)}</text>`;
+    s += `<text x="${f(xc)}" y="${f(yb + 1.6 * R)}" text-anchor="middle" font-size="${(serre ? 0.9 : 1.05) * R}" fill="var(--ink)">${esc(x.date.toLocaleDateString("fr-FR", serre ? { weekday: "short", day: "numeric" } : { weekday: "long", day: "numeric" }))}</text>`;
     const lp = Math.min(bande * 0.92, 11.2 * R);
     s += `<rect x="${f(xc - lp / 2)}" y="${f(yb + 2.4 * R)}" width="${f(lp)}" height="${2.1 * R}" rx="${1.05 * R}" fill="rgba(57,135,229,.2)" stroke="rgba(125,184,255,.55)"/>`;
-    s += `<text x="${f(xc)}" y="${f(yb + 3.8 * R)}" text-anchor="middle" font-size="${1.05 * R}" font-weight="700" fill="var(--ink)">${n1(besoin)} préparateurs</text>`;
+    s += `<text x="${f(xc)}" y="${f(yb + 3.8 * R)}" text-anchor="middle" font-size="${1.05 * R}" font-weight="700" fill="var(--ink)">${n1(besoin)}${serre ? "" : " préparateurs"}</text>`;
   });
   el.innerHTML = Gr.svg(w, h, "Lignes à préparer sur les prochains jours", s);
 }
@@ -1555,7 +1620,7 @@ function grHistorique(el, serie, o) {
   const ligne = v.map((x, i) => (i ? "L" : "M") + f(X(i)) + " " + f(Y(x.v))).join("");
   let s = `<path d="${ligne}L${f(X(v.length - 1))} ${f(mg.h + ph)}L${f(X(0))} ${f(mg.h + ph)}Z" fill="var(--data)" opacity=".13"/>`;
   if (fini(repere)) {
-    s += `<line x1="${mg.g}" x2="${f(mg.g + pw)}" y1="${f(Y(repere))}" y2="${f(Y(repere))}" stroke="var(--ink-3)" stroke-width="1"/>`;
+    s += `<line x1="${mg.g}" x2="${f(mg.g + pw)}" y1="${f(Y(repere))}" y2="${f(Y(repere))}" stroke="var(--contexte)" stroke-width="1.5"/>`;
     if (!compact) s += `<text x="${f(mg.g + 0.3 * R)}" y="${f(Y(repere) - 0.45 * R)}" font-size="${0.9 * R}">${esc(o.repereTxt || "")}</text>`;
   }
   s += `<path d="${ligne}" fill="none" stroke="var(--data)" stroke-width="${(compact ? 0.15 : 0.18) * R}" stroke-linejoin="round" stroke-linecap="round"/>`;
@@ -1644,7 +1709,8 @@ const ECRANS = [
       T("e1-fait", n0(M.fait)); T("e1-reste", n0(M.restant)); T("e1-venir", n0(M.aLancer));
       T("e1-cont", n0(M.contFaits)); T("e1-tf", n0(M.tournees.faites)); T("e1-tl", n0(M.tournees.libres));
       Hh("e1-types", M.types.length ? M.types.map(t => { const tot = t.fait + t.restant; return `<div class="lj"><span class="lj-n">${esc(t.lib)}</span><div class="jauge" style="--v:${tot ? (t.fait / tot * 100).toFixed(1) : 0}%"><i></i></div><span class="lj-v"><b>${n0(t.fait)}</b> / ${n0(tot)} lignes</span></div>`; }).join("") : vide("Détail par type non fourni."));
-      T("e1-note", !venir && M.aLancerInfo ? `En plus : ${n0(M.aLancerInfo)} lignes reçues mais pas encore lancées en vague (hors charge).` : fini(M.tournees.ouvertes) ? `${n0(M.tournees.ouvertes)} chariots encore ouverts, en cours ou en attente.` : "");
+      const ratios = [M.tournees.faites > 0 ? `${n0(M.fait / M.tournees.faites)} lignes par chariot terminé` : "", M.contFaits > 0 ? `${n1(M.fait / M.contFaits)} lignes par colis` : ""].filter(Boolean).join(" · ");
+      T("e1-note", (!venir && M.aLancerInfo ? `En plus : ${n0(M.aLancerInfo)} lignes reçues mais pas encore lancées en vague (hors charge). ` : fini(M.tournees.ouvertes) ? `${n0(M.tournees.ouvertes)} chariots encore ouverts, en cours ou en attente. ` : "") + ratios);
       Scenes.pile.donnees(M.fait, M.restant, venir ? M.aLancer : null);
       T("e1-unite", `1 cube = ${n0(Scenes.pile.unite)} lignes`);
       return !M.aCharge ? "La charge du jour n'est pas encore connue."
@@ -1679,17 +1745,20 @@ const ECRANS = [
       T("e2-eta", fini(M.eta) ? min2hm(M.eta) : "–:–");
       Hh("e2-past", pastille(S.niv, S.mot, true)); Niv("e2-bloc", S.niv === "na" ? null : S.niv);
       T("e2-vise", fini(M.finVisee) ? `heure visée : ${fin}` : "");
-      T("e2-four", fini(M.etaTot) && M.etaTard - M.etaTot >= 4 ? `Fourchette : entre ${min2hm(M.etaTot)} et ${min2hm(M.etaTard)}, selon que l'équipe garde le rythme de la dernière heure ou celui de la journée.` : "Calcul : lignes restantes ÷ lignes validées par heure, pauses déduites.");
-      Hh("e2-ops", bonshommes(M.actifs, M.reste > 0 ? M.besoinOps : null));
+      T("e2-four", M.horsJour ? "Au rythme actuel et avec l'effectif prévu, il reste trop de lignes pour finir avant minuit." : fini(M.etaTot) && fini(M.etaTard) && M.etaTard - M.etaTot >= 4 ? `Fourchette : entre ${min2hm(M.etaTot)} et ${min2hm(M.etaTard)}, selon que l'équipe garde le rythme de la dernière heure ou celui de la journée.` : (M.effectif.length ? "Calcul : lignes restantes ÷ cadence constatée × effectif prévu par tranche horaire, pauses déduites." : "Calcul : lignes restantes ÷ lignes validées par heure, pauses déduites."));
+      Hh("e2-ops", bonshommes(M.opsRef, M.reste > 0 ? M.besoinOps : null));
+      const dispo = M.opsPrevus ? `<b>${n1(M.opsRef)}</b> sont prévus en moyenne d'ici là` : `<b>${n0(M.actifs)}</b> sont actifs`;
       let b;
       if (!fini(M.actifs) || !fini(M.cadenceOp)) b = "Estimation en attente des premières lignes validées.";
       else if (M.reste <= 0) b = "Plus rien à préparer dans la charge connue.";
       else if (M.hRestantes <= 0.05) b = `L'heure visée (${fin}) est passée : il reste <b>${n0(M.reste)} lignes</b>.`;
-      else if (M.margeOps >= 0.5) b = `Pour finir à ${fin}, il faut <b>${n1(M.besoinOps)} préparateurs</b>. <b>${n0(M.actifs)}</b> sont actifs : <b>${n1(M.margeOps)} de marge</b>.`;
-      else if (M.margeOps > -0.5) b = `Pour finir à ${fin}, il faut <b>${n1(M.besoinOps)} préparateurs</b>. <b>${n0(M.actifs)}</b> sont actifs : l'effectif est <b>juste suffisant</b>.`;
-      else b = `Pour finir à ${fin}, il faut <b>${n1(M.besoinOps)} préparateurs</b>. <b>${n0(M.actifs)}</b> sont actifs : <b>il en manque ${n1(-M.margeOps)}</b>.`;
+      else if (M.margeOps >= 0.5) b = `Pour finir à ${fin}, il faut <b>${n1(M.besoinOps)} préparateurs</b>. ${dispo} : <b>${n1(M.margeOps)} de marge</b>.`;
+      else if (M.margeOps > -0.5) b = `Pour finir à ${fin}, il faut <b>${n1(M.besoinOps)} préparateurs</b>. ${dispo} : l'effectif est <b>juste suffisant</b>.`;
+      else b = `Pour finir à ${fin}, il faut <b>${n1(M.besoinOps)} préparateurs</b>. ${dispo} : <b>il en manque ${n1(-M.margeOps)}</b>.`;
+      if (fini(M.cadenceOp) && M.cadenceOp > 0 && M.reste > 0) b += ` Il reste <b>${n0(M.reste / M.cadenceOp)} heures de picking</b> à fournir.`;
       Hh("e2-besoin", b);
       grAvancement($("#g-avancement"), M);
+      if (M.horsJour) return `Au rythme actuel, la charge <b>ne sera pas terminée aujourd'hui</b> : il reste <b>${n0(M.reste)} lignes</b>.`;
       if (!fini(M.eta)) return "Pas encore assez de lignes validées pour estimer l'heure de fin.";
       if (M.reste <= 0) return "La charge connue est terminée.";
       if (!fini(M.ecart)) return `Au rythme actuel, tout sera prêt à <b>${min2hm(M.eta)}</b>.`;
@@ -1780,7 +1849,7 @@ const ECRANS = [
   {
     id: "qualite", nom: "La qualité", question: "Travaille-t-on juste ?", scene: "conv",
     html: `<div class="corps e5">
-      <div class="vue3d anim" style="--i:0"><canvas id="c-conv" aria-label="Illustration : le convoyeur, la balance et la voie de contrôle" role="img"></canvas>
+      <div class="vue3d avec-leg anim" style="--i:0"><canvas id="c-conv" aria-label="Illustration : le convoyeur, la balance et la voie de contrôle" role="img"></canvas>
         <div class="cpts"><div class="cpt"><span>Colis pesés</span><b id="e5-pes">–</b></div><div class="cpt rej"><span>Partis au contrôle</span><b id="e5-rej">–</b></div></div>
         <div class="leg3d"><span class="note" style="margin-left:0">Illustration. Chaque colis est pesé : si son poids ne correspond pas au poids attendu, il part au poste de contrôle. Une vraie erreur trouvée là s'appelle une erreur décelée.</span></div>
       </div>
@@ -1793,8 +1862,9 @@ const ECRANS = [
           <div class="duo"><div class="gros" id="e5-dec">–</div><div><span id="e5-past-d"></span><p class="note" id="e5-seuils" style="margin-top:.4rem"></p></div></div>
           <div class="types-mini" id="e5-types"></div>
         </div>
-        <div class="bloc anim" style="--i:3"><h3>${ic("cible")}Taux de rejet</h3>
+        <div class="bloc q4 anim" style="--i:3"><h3>${ic("cible")}Taux de rejet</h3>
           <div class="duo"><div class="moyen" id="e5-taux">–</div><p class="expl" id="e5-sur"></p></div>
+          <p class="note" id="e5-utile"></p>
           <div class="gr" id="g-rejh"></div>
         </div>
         <div class="bloc anim" style="--i:4" id="e5-d"><h3>${ic("camion")}Erreurs arrivées chez le client, ce mois</h3>
@@ -1816,6 +1886,7 @@ const ECRANS = [
       Hh("e5-types", D ? barresRang(D.types.filter(x => x.n > 0).slice(0, 3)) : "");
       T("e5-taux", R && fini(R.taux) ? n1(R.taux * 100) + " %" : "–");
       Hh("e5-sur", R && R.total > 0 && R.pese > 0 ? `soit <b>1 colis sur ${n0(R.pese / R.total)}</b><br>écarté par la balance` : "des colis écartés par la balance");
+      Hh("e5-utile", R && D && R.total > 0 && D.source.indexOf("estimation") < 0 ? `Rejets utiles : <b>${n0(Math.min(D.total, R.total))} sur ${n0(R.total)}</b> cachaient une vraie erreur (${n0(Math.min(1, D.total / R.total) * 100)} %). Les autres colis étaient justes.` : "");
       grMiniColonnes($("#g-rejh"), R ? R.parHeure : [], "rejets");
       const m = M.mois, pa = m ? ppm(+m.ea || 0, +m.lignes || 0) : null, na = nivSeuils(pa, cfg.ppmAveOrange, cfg.ppmAveRouge);
       T("e5-ave", m ? n0(m.ea) : "–"); Hh("e5-past-a", pastille(na, na === "ok" ? "Dans l'objectif" : na === "warn" ? "À surveiller" : na === "crit" ? "Hors objectif" : "Non branché")); Niv("e5-d", na === "na" ? null : na);
@@ -1830,7 +1901,7 @@ const ECRANS = [
   {
     id: "allees", nom: "Les allées", question: "Où faut-il redoubler d'attention ?", scene: "allees",
     html: `<div class="corps e6">
-      <div class="vue3d anim" style="--i:0"><canvas id="c-allees" aria-label="Plan des allées : hauteur selon le nombre d'erreurs décelées" role="img"></canvas>
+      <div class="vue3d avec-leg anim" style="--i:0"><canvas id="c-allees" aria-label="Plan des allées : hauteur selon le nombre d'erreurs décelées" role="img"></canvas>
         <div class="titre3d"><div class="titre3">${ic("plan")}<span id="e6-titre">Erreurs décelées par allée</span></div></div>
         <div class="leg3d"><span>Plus la travée est haute et claire, plus il y a eu d'erreurs.</span><span><svg viewBox="0 0 12 12" width="14" height="14" aria-hidden="true"><path d="M6 1.500 11 10.500H1z" fill="#FAB219"/></svg>les trois allées à surveiller</span><span class="note" id="e6-hors"></span></div>
       </div>
@@ -1867,7 +1938,7 @@ const ECRANS = [
         <div class="pile-mini anim" style="--i:2">
           <div class="mini" id="e7-m1"><b id="e7-ret">–</b><span class="l">Commandes en retard</span><span class="s">date d'expédition dépassée</span></div>
           <div class="mini"><b id="e7-rup">–</b><span class="l">Lignes en rupture</span><span class="s">aujourd'hui, au picking</span></div>
-          <div class="mini" id="e7-m3"><b id="e7-rea">–</b><span class="l">Emplacements à réapprovisionner</span><span class="s" id="e7-rea-s">sous le seuil d'alerte</span></div>
+          <div class="mini" id="e7-m3"><b id="e7-rea">–</b><span class="l">Emplacements à réapprovisionner</span><span class="s" id="e7-rea-s">sous le seuil d'alerte</span><ul class="crit" id="e7-crit"></ul></div>
         </div>
       </div>
     </div>`,
@@ -1886,6 +1957,7 @@ const ECRANS = [
       T("e7-ret", r ? n0(r.commandes) : "–"); Niv("e7-m1", r && +r.commandes > 0 ? "warn" : null);
       T("e7-rup", st && st.ruptures != null ? n0(st.ruptures) : "–");
       T("e7-rea", st && st.reappro != null ? n0(st.reappro) : "–"); T("e7-rea-s", st && +st.critique > 0 ? `dont ${n0(st.critique)} au niveau critique` : "sous le seuil d'alerte");
+      Hh("e7-crit", st && Array.isArray(st.critiques) ? st.critiques.slice(0, 3).map(c => `<li><b>${esc(c.emp)}</b><span>${esc(c.art || "")}</span><span>reste ${n0(c.reel)}</span></li>`).join("") : "");
       const partis = d.filter(parti).length;
       return pr ? `Prochain départ à <b>${min2hm(pr.m)}</b>, dans <b>${duree(pr.m - M.now)}</b>. ${partis} ${pluriel(partis, "départ")} sur ${d.length} ${pluriel(partis, "est déjà parti", "sont déjà partis")}.` : `Les ${d.length} départs du jour sont passés.`;
     }
@@ -2151,7 +2223,8 @@ const Appli = (() => {
     $("#j-reste").style.setProperty("--v", (M.pct * 100).toFixed(1) + "%");
     T("s-reste", M.aCharge ? `${Math.floor(M.pct * 100 + 1e-6)} % fait` : "");
     T("v-fin", fini(M.eta) ? min2hm(M.eta) : "–:–");
-    Hh("s-fin", pastille(S.fin.niv, S.fin.mot) + (fini(M.finVisee) ? `<span>visée ${min2hm(M.finVisee)}</span>` : "")); Niv("ess-fin", S.fin.niv === "na" ? null : S.fin.niv);
+    T("vise-fin", fini(M.finVisee) ? `visée ${min2hm(M.finVisee)}` : "");
+    Hh("s-fin", pastille(S.fin.niv, S.fin.mot)); Niv("ess-fin", S.fin.niv === "na" ? null : S.fin.niv);
     compter($("#v-rejets"), M.rejets ? M.rejets.total : null); T("u-rejets", `/ ${cfg.rejetsMax} max`);
     Hh("s-rejets", pastille(S.rejets.niv, S.rejets.mot)); Niv("ess-rejets", S.rejets.niv === "na" ? null : S.rejets.niv);
     compter($("#v-dec"), M.dec ? M.dec.total : null);
@@ -2282,9 +2355,24 @@ const Appli = (() => {
     rendre();
   }
 
+  /* résumé en texte simple, à coller dans un message */
+  function pointDuJour() {
+    const S = M.statut, L = [];
+    L.push(`Point ${M.cfg.service}, ${M.cfg.site} : ${jourLong(M.maj)}, ${min2hm(M.now)}${mode === "demo" ? " (démonstration, chiffres simulés)" : ""}`);
+    if (M.aCharge) L.push(`Charge du jour : ${n0(M.charge)} lignes. Fait : ${n0(M.fait)} (${Math.floor(M.pct * 100)} %). Reste à faire : ${n0(M.reste)}.`);
+    L.push(fini(M.eta) ? `Fin estimée : ${min2hm(M.eta)} (${S.fin.mot.toLowerCase()}${fini(M.finVisee) ? ", heure visée " + min2hm(M.finVisee) : ""}).` : `Fin estimée : ${S.fin.mot.toLowerCase()}.`);
+    if (fini(M.pctStandard)) L.push(`Quota de l'équipe : ${n0(M.pctStandard)} % (${n0(M.cadenceOp)} lignes par heure et par préparateur, ${n0(M.actifs)} actifs).`);
+    if (M.rejets) L.push(`Rejets : ${n0(M.rejets.total)} pour un maximum de ${M.cfg.rejetsMax} (${S.rejets.mot.toLowerCase()}).`);
+    if (M.dec) L.push(`Erreurs décelées : ${n0(M.dec.total)} (${S.dec.mot.toLowerCase()}).`);
+    if (M.alertes.length) { L.push("", "À faire :"); M.alertes.slice(0, 5).forEach(a => L.push(`- ${a.titre}. ${a.action}`)); }
+    else L.push("Aucune alerte.");
+    return L.join("\n");
+  }
+
   function vueDonnees() {
     if (!M) return;
     const S = M.statut, D = M.dec, R = M.rejets, h = [];
+    h.push(`<h4>Le point du jour, à coller dans un message</h4><textarea class="point" id="pt-txt" readonly aria-label="Le point du jour en texte">${esc(pointDuJour())}</textarea><div class="ligne" style="margin-top:.6rem"><button class="bouton" type="button" id="pt-copier">Copier le texte</button><span class="note" id="pt-ok" role="status"></span></div>`);
     h.push(`<p>Toutes les valeurs affichées sur les écrans, sous forme de tableaux. Source : ${mode === "demo" ? "données simulées (démonstration)" : "Logys, Contrôle des rejets et Suivi Op, à " + min2hm(M.now)}.</p>`);
     h.push("<h4>Les essentiels</h4>" + table(["Indicateur", "Valeur", "État"], [
       ["Charge du jour (lignes)", n0(M.charge), ""], ["Lignes faites", n0(M.fait), ""], ["Reste à faire (lignes)", n0(M.reste), `${Math.floor(M.pct * 100)} % fait`],
@@ -2304,6 +2392,11 @@ const Appli = (() => {
     if (M.carnet.length) h.push("<h4>Carnet de commandes</h4>" + table(["Jour d'expédition", "Lignes (tous services)", "Estimation Pick & Pack", "Préparateurs au standard"], M.carnet.map(x => [jourLong(new Date(x.date + "T12:00:00")), n0(x.lignes), n0(x.lignes * M.cfg.partPick), n1(x.lignes * M.cfg.partPick / M.cfg.quotaJour)])));
     if (M.historique.length) h.push("<h4>Historique</h4>" + table(["Jour", "Lignes", "Heures de picking", "Préparateurs", "Décelées", "Avérées", "Rejets"], M.historique.slice().reverse().map(x => [new Date(x.d + "T12:00:00").toLocaleDateString("fr-FR"), n0(x.lignes), n1(x.hPick), n0(x.ops), n0(x.ed), n0(x.ea), fini(x.rejets) ? n0(x.rejets) : "–"])));
     ouvrir("donnees", "Tableau des données", h.join(""));
+    $("#pt-copier").addEventListener("click", () => {
+      const z = $("#pt-txt"), dit = t => { $("#pt-ok").textContent = t; };
+      const secours = () => { z.focus(); z.select(); dit("Texte sélectionné : Ctrl+C pour le copier."); };
+      try { navigator.clipboard.writeText(z.value).then(() => dit("Copié."), secours); } catch (e) { secours(); }
+    });
   }
 
   function vueReglages() {

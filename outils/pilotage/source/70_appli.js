@@ -107,7 +107,8 @@ const Appli = (() => {
     $("#j-reste").style.setProperty("--v", (M.pct * 100).toFixed(1) + "%");
     T("s-reste", M.aCharge ? `${Math.floor(M.pct * 100 + 1e-6)} % fait` : "");
     T("v-fin", fini(M.eta) ? min2hm(M.eta) : "–:–");
-    Hh("s-fin", pastille(S.fin.niv, S.fin.mot) + (fini(M.finVisee) ? `<span>visée ${min2hm(M.finVisee)}</span>` : "")); Niv("ess-fin", S.fin.niv === "na" ? null : S.fin.niv);
+    T("vise-fin", fini(M.finVisee) ? `visée ${min2hm(M.finVisee)}` : "");
+    Hh("s-fin", pastille(S.fin.niv, S.fin.mot)); Niv("ess-fin", S.fin.niv === "na" ? null : S.fin.niv);
     compter($("#v-rejets"), M.rejets ? M.rejets.total : null); T("u-rejets", `/ ${cfg.rejetsMax} max`);
     Hh("s-rejets", pastille(S.rejets.niv, S.rejets.mot)); Niv("ess-rejets", S.rejets.niv === "na" ? null : S.rejets.niv);
     compter($("#v-dec"), M.dec ? M.dec.total : null);
@@ -238,9 +239,24 @@ const Appli = (() => {
     rendre();
   }
 
+  /* résumé en texte simple, à coller dans un message */
+  function pointDuJour() {
+    const S = M.statut, L = [];
+    L.push(`Point ${M.cfg.service}, ${M.cfg.site} : ${jourLong(M.maj)}, ${min2hm(M.now)}${mode === "demo" ? " (démonstration, chiffres simulés)" : ""}`);
+    if (M.aCharge) L.push(`Charge du jour : ${n0(M.charge)} lignes. Fait : ${n0(M.fait)} (${Math.floor(M.pct * 100)} %). Reste à faire : ${n0(M.reste)}.`);
+    L.push(fini(M.eta) ? `Fin estimée : ${min2hm(M.eta)} (${S.fin.mot.toLowerCase()}${fini(M.finVisee) ? ", heure visée " + min2hm(M.finVisee) : ""}).` : `Fin estimée : ${S.fin.mot.toLowerCase()}.`);
+    if (fini(M.pctStandard)) L.push(`Quota de l'équipe : ${n0(M.pctStandard)} % (${n0(M.cadenceOp)} lignes par heure et par préparateur, ${n0(M.actifs)} actifs).`);
+    if (M.rejets) L.push(`Rejets : ${n0(M.rejets.total)} pour un maximum de ${M.cfg.rejetsMax} (${S.rejets.mot.toLowerCase()}).`);
+    if (M.dec) L.push(`Erreurs décelées : ${n0(M.dec.total)} (${S.dec.mot.toLowerCase()}).`);
+    if (M.alertes.length) { L.push("", "À faire :"); M.alertes.slice(0, 5).forEach(a => L.push(`- ${a.titre}. ${a.action}`)); }
+    else L.push("Aucune alerte.");
+    return L.join("\n");
+  }
+
   function vueDonnees() {
     if (!M) return;
     const S = M.statut, D = M.dec, R = M.rejets, h = [];
+    h.push(`<h4>Le point du jour, à coller dans un message</h4><textarea class="point" id="pt-txt" readonly aria-label="Le point du jour en texte">${esc(pointDuJour())}</textarea><div class="ligne" style="margin-top:.6rem"><button class="bouton" type="button" id="pt-copier">Copier le texte</button><span class="note" id="pt-ok" role="status"></span></div>`);
     h.push(`<p>Toutes les valeurs affichées sur les écrans, sous forme de tableaux. Source : ${mode === "demo" ? "données simulées (démonstration)" : "Logys, Contrôle des rejets et Suivi Op, à " + min2hm(M.now)}.</p>`);
     h.push("<h4>Les essentiels</h4>" + table(["Indicateur", "Valeur", "État"], [
       ["Charge du jour (lignes)", n0(M.charge), ""], ["Lignes faites", n0(M.fait), ""], ["Reste à faire (lignes)", n0(M.reste), `${Math.floor(M.pct * 100)} % fait`],
@@ -260,6 +276,11 @@ const Appli = (() => {
     if (M.carnet.length) h.push("<h4>Carnet de commandes</h4>" + table(["Jour d'expédition", "Lignes (tous services)", "Estimation Pick & Pack", "Préparateurs au standard"], M.carnet.map(x => [jourLong(new Date(x.date + "T12:00:00")), n0(x.lignes), n0(x.lignes * M.cfg.partPick), n1(x.lignes * M.cfg.partPick / M.cfg.quotaJour)])));
     if (M.historique.length) h.push("<h4>Historique</h4>" + table(["Jour", "Lignes", "Heures de picking", "Préparateurs", "Décelées", "Avérées", "Rejets"], M.historique.slice().reverse().map(x => [new Date(x.d + "T12:00:00").toLocaleDateString("fr-FR"), n0(x.lignes), n1(x.hPick), n0(x.ops), n0(x.ed), n0(x.ea), fini(x.rejets) ? n0(x.rejets) : "–"])));
     ouvrir("donnees", "Tableau des données", h.join(""));
+    $("#pt-copier").addEventListener("click", () => {
+      const z = $("#pt-txt"), dit = t => { $("#pt-ok").textContent = t; };
+      const secours = () => { z.focus(); z.select(); dit("Texte sélectionné : Ctrl+C pour le copier."); };
+      try { navigator.clipboard.writeText(z.value).then(() => dit("Copié."), secours); } catch (e) { secours(); }
+    });
   }
 
   function vueReglages() {

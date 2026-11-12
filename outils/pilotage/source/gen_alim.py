@@ -184,6 +184,17 @@ WHERE s.ZONE_MVT = '{ZONE}'
   AND s.NUM_ART_AFF IS NOT NULL
   AND s.REEL <= s.ALERTE"""),
 
+ ("REAPPRO_LISTE", "SqlReapproListe", "toutes les 15 minutes (réglage R_STOCK)", {"s": "F_LISSTKE_EMP"},
+  "Les 4 emplacements picking les plus urgents à réapprovisionner (stock au niveau critique).",
+  """SELECT * FROM (
+  SELECT s.EMP, s.NUM_ART_AFF, s.REEL
+  FROM REXEL.F_LISSTKE_EMP s
+  WHERE s.ZONE_MVT = '{ZONE}'
+    AND s.NUM_ART_AFF IS NOT NULL
+    AND s.REEL <= s.CRITIQUE
+  ORDER BY s.REEL, s.EMP
+) WHERE ROWNUM <= 4"""),
+
  ("RUPTURES", "SqlRuptures", "toutes les 15 minutes (réglage R_STOCK)", {"l": "LIG_TOUR"},
   "Lignes du jour avec une quantité en rupture au picking.",
   f"""SELECT COUNT(*) AS LIGNES

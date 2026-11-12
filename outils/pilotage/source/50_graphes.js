@@ -32,16 +32,16 @@ function grAvancement(el, M) {
     s += `<line x1="${mg.g}" x2="${w - mg.d}" y1="${f(Y(v))}" y2="${f(Y(v))}" stroke="var(--line-2)"/>`;
     s += `<text x="${mg.g - 0.6 * R}" y="${f(Y(v) + 0.32 * R)}" text-anchor="end" font-size="${0.9 * R}">${n0(v)}</text>`;
   }
-  const xV = fini(M.finVisee) ? X(M.finVisee) : -999, pasH = (t1 - t0) / 60 > 11 ? 2 : 1;
+  const etroit = w < 36 * R, xV = fini(M.finVisee) ? X(M.finVisee) : -999, pasH = etroit ? 4 : (t1 - t0) / 60 > 11 ? 2 : 1;
   for (let t = Math.ceil(t0 / 60) * 60; t <= t1; t += 60 * pasH) if (Math.abs(X(t) - xV) > 5.6 * R) s += `<text x="${f(X(t))}" y="${h - 0.55 * R}" text-anchor="middle" font-size="${0.9 * R}">${t / 60} h</text>`;
   s += `<line x1="${mg.g}" x2="${w - mg.d}" y1="${f(Y(0))}" y2="${f(Y(0))}" stroke="var(--line)"/>`;
   /* charge du jour */
   s += `<line x1="${mg.g}" x2="${w - mg.d}" y1="${f(Y(M.charge))}" y2="${f(Y(M.charge))}" stroke="var(--ink-3)" stroke-width="1"/>`;
-  s += `<text x="${mg.g + 0.5 * R}" y="${f(Y(M.charge) - 0.6 * R)}" font-size="${1 * R}" fill="var(--ink-2)">charge du jour : <tspan font-weight="700" fill="var(--ink)">${n0(M.charge)} lignes</tspan></text>`;
+  if (!etroit) s += `<text x="${mg.g + 0.5 * R}" y="${f(Y(M.charge) - 0.6 * R)}" font-size="${1 * R}" fill="var(--ink-2)">charge du jour : <tspan font-weight="700" fill="var(--ink)">${n0(M.charge)} lignes</tspan></text>`;
   /* rythme à tenir */
   if (fini(M.finVisee) && M.finVisee > M.debut) {
-    s += `<line x1="${f(X(M.debut))}" y1="${f(Y(0))}" x2="${f(xV)}" y2="${f(Y(M.charge))}" stroke="var(--ink-3)" stroke-width="${0.14 * R}"/>`;
-    s += `<circle cx="${f(xV)}" cy="${f(Y(M.charge))}" r="${0.36 * R}" fill="var(--ink-3)" stroke="var(--panel)" stroke-width="2"/>`;
+    s += `<line x1="${f(X(M.debut))}" y1="${f(Y(0))}" x2="${f(xV)}" y2="${f(Y(M.charge))}" stroke="var(--contexte)" stroke-width="${0.14 * R}"/>`;
+    s += `<circle cx="${f(xV)}" cy="${f(Y(M.charge))}" r="${0.36 * R}" fill="var(--contexte)" stroke="var(--panel)" stroke-width="2"/>`;
     s += `<line x1="${f(xV)}" x2="${f(xV)}" y1="${f(Y(0))}" y2="${f(Y(0) + 0.5 * R)}" stroke="var(--ink)" stroke-width="2"/>`;
     s += `<text x="${f(xV)}" y="${h - 0.55 * R}" text-anchor="middle" font-size="${0.95 * R}" font-weight="700" fill="var(--ink)">visée ${min2hm(M.finVisee)}</text>`;
   }
@@ -71,9 +71,9 @@ function grAvancement(el, M) {
 function grHeures(el, M) {
   const g = Gr.dims(el); if (!g) return;
   if (!M.heures.length) { el.innerHTML = vide("Aucune ligne validée pour l'instant."); return; }
-  const { w, h, R } = g, f = Gr.f, mg = { g: 8.2 * R, d: 0.8 * R, h: 2.4 * R, b: 5.6 * R }, pw = w - mg.g - mg.d, ph = h - mg.h - mg.b;
+  const { w, h, R } = g, f = Gr.f, large = w >= 44 * R, mg = { g: (large ? 8.2 : 3.4) * R, d: 0.8 * R, h: 2.4 * R, b: (large ? 5.6 : 2.4) * R }, pw = w - mg.g - mg.d, ph = h - mg.h - mg.b;
   const h0 = Math.min(M.heures[0].h, Math.floor(M.debut / 60)), h1 = Math.max(M.heures[M.heures.length - 1].h, fini(M.finVisee) ? Math.ceil(M.finVisee / 60) - 1 : 0);
-  const n = h1 - h0 + 1, bande = pw / n, lc = Math.min(2.5 * R, bande * 0.56), hc = Math.floor(M.now / 60);
+  const n = h1 - h0 + 1, bande = pw / n, lc = Math.min(2.5 * R, bande * 0.56), hc = Math.floor(M.now / 60), pasE = Math.max(1, Math.ceil(2.6 * R / bande));
   const maxL = Math.max(...M.heures.map(x => x.lignes)), besoin = fini(M.debitNecessaire) ? M.debitNecessaire : 0, yMax = Math.max(maxL, besoin) * 1.2 || 1;
   const Y = v => mg.h + ph - v / yMax * ph, yb = Y(0);
   let s = "";
@@ -83,23 +83,24 @@ function grHeures(el, M) {
   }
   s += `<line x1="${mg.g}" x2="${w - mg.d}" y1="${f(yb)}" y2="${f(yb)}" stroke="var(--line)"/>`;
   const yH = yb + 1.5 * R, yL = yb + 3.2 * R, yO = yb + 4.75 * R;
-  s += `<text x="${mg.g - 0.6 * R}" y="${f(yL)}" text-anchor="end" font-size="${0.92 * R}">lignes</text><text x="${mg.g - 0.6 * R}" y="${f(yO)}" text-anchor="end" font-size="${0.92 * R}">préparateurs</text>`;
-  s += `<line x1="${0.4 * R}" x2="${w - mg.d}" y1="${f(yb + 2.05 * R)}" y2="${f(yb + 2.05 * R)}" stroke="var(--line-2)"/><line x1="${0.4 * R}" x2="${w - mg.d}" y1="${f(yb + 3.65 * R)}" y2="${f(yb + 3.65 * R)}" stroke="var(--line-2)"/>`;
+  if (large) s += `<text x="${mg.g - 0.6 * R}" y="${f(yL)}" text-anchor="end" font-size="${0.92 * R}">lignes</text><text x="${mg.g - 0.6 * R}" y="${f(yO)}" text-anchor="end" font-size="${0.92 * R}">préparateurs</text>`;
+  if (large) s += `<line x1="${0.4 * R}" x2="${w - mg.d}" y1="${f(yb + 2.05 * R)}" y2="${f(yb + 2.05 * R)}" stroke="var(--line-2)"/><line x1="${0.4 * R}" x2="${w - mg.d}" y1="${f(yb + 3.65 * R)}" y2="${f(yb + 3.65 * R)}" stroke="var(--line-2)"/>`;
   for (let i = 0; i < n; i++) {
     const hh = h0 + i, xc = mg.g + bande * (i + 0.5), x = M.heures.find(q => q.h === hh), enCours = hh === hc;
-    s += `<text x="${f(xc)}" y="${f(yH)}" text-anchor="middle" font-size="${0.95 * R}" ${enCours ? 'font-weight="700" fill="var(--ink)"' : ""}>${hh} h</text>`;
+    if (i % pasE === 0) s += `<text x="${f(xc)}" y="${f(yH)}" text-anchor="middle" font-size="${0.95 * R}" ${enCours && large ? 'font-weight="700" fill="var(--ink)"' : ""}>${hh} h</text>`;
     if (!x) continue;
     const y1 = Y(x.lignes);
     s += `<path d="${Gr.colonne(f(xc - lc / 2), f(xc + lc / 2), f(y1), f(yb), 0.3 * R)}" fill="var(--data)" ${enCours ? 'opacity=".55"' : ""} data-bulle="${hh} h : ${n0(x.lignes)} lignes${fini(x.ops) ? " · " + x.ops + " préparateurs" : ""}"/>`;
-    if (x.lignes === maxL || enCours) s += `<text x="${f(xc)}" y="${f(y1 - 0.55 * R)}" text-anchor="middle" font-size="${1.05 * R}" font-weight="700" fill="var(--ink)">${enCours ? "en cours" : n0(x.lignes)}</text>`;
+    if (x.lignes === maxL || (enCours && large)) s += `<text x="${f(xc)}" y="${f(y1 - 0.55 * R)}" text-anchor="middle" font-size="${1.05 * R}" font-weight="700" fill="var(--ink)">${enCours ? "en cours" : n0(x.lignes)}</text>`;
+    if (!large) continue;
     s += `<text x="${f(xc)}" y="${f(yL)}" text-anchor="middle" font-size="${1 * R}" fill="var(--ink)" style="font-variant-numeric:tabular-nums">${n0(x.lignes)}</text>`;
     if (fini(x.ops)) s += `<text x="${f(xc)}" y="${f(yO)}" text-anchor="middle" font-size="${1 * R}" style="font-variant-numeric:tabular-nums">${x.ops}</text>`;
   }
   /* débit à tenir : de l'heure en cours à l'heure visée */
   if (besoin > 0 && hc >= h0 && hc <= h1) {
     const xa = mg.g + bande * (hc - h0) + bande * 0.08, xb = w - mg.d, yy = Y(besoin);
-    s += `<line x1="${f(xa)}" x2="${f(xb)}" y1="${f(yy)}" y2="${f(yy)}" stroke="var(--ink-3)" stroke-width="${0.16 * R}" stroke-linecap="round"/>`;
-    s += `<text x="${f(xb)}" y="${f(yy - 0.6 * R)}" text-anchor="end" font-size="${1 * R}" fill="var(--ink)">à tenir : <tspan font-weight="700">${n0(besoin)} par heure</tspan></text>`;
+    s += `<line x1="${f(xa)}" x2="${f(xb)}" y1="${f(yy)}" y2="${f(yy)}" stroke="var(--contexte)" stroke-width="${0.16 * R}" stroke-linecap="round"/>`;
+    if (large) s += `<text x="${f(xb)}" y="${f(yy - 0.6 * R)}" text-anchor="end" font-size="${1 * R}" fill="var(--ink)">à tenir : <tspan font-weight="700">${n0(besoin)} par heure</tspan></text>`;
   }
   el.innerHTML = Gr.svg(w, h, "Lignes préparées par heure", s);
 }
@@ -148,11 +149,12 @@ function grCarnet(el, M) {
   d.forEach((x, i) => {
     const xc = mg.g + bande * (i + 0.5), y1 = Y(x.lig), besoin = x.lig / M.cfg.quotaJour;
     s += `<path d="${Gr.colonne(f(xc - lc / 2), f(xc + lc / 2), f(y1), f(yb), 0.35 * R)}" fill="var(--data)" data-bulle="${n0(x.lig)} lignes estimées pour le Pick &amp; Pack"/>`;
-    s += `<text x="${f(xc)}" y="${f(y1 - 0.6 * R)}" text-anchor="middle" font-size="${1.25 * R}" font-weight="700" fill="var(--ink)">${n0(x.lig)}</text>`;
-    s += `<text x="${f(xc)}" y="${f(yb + 1.6 * R)}" text-anchor="middle" font-size="${1.05 * R}" fill="var(--ink)">${esc(x.date.toLocaleDateString("fr-FR", { weekday: "long", day: "numeric" }))}</text>`;
+    const serre = bande < 9 * R;
+    s += `<text x="${f(xc)}" y="${f(y1 - 0.6 * R)}" text-anchor="middle" font-size="${(serre ? 0.95 : 1.25) * R}" font-weight="700" fill="var(--ink)">${n0(x.lig)}</text>`;
+    s += `<text x="${f(xc)}" y="${f(yb + 1.6 * R)}" text-anchor="middle" font-size="${(serre ? 0.9 : 1.05) * R}" fill="var(--ink)">${esc(x.date.toLocaleDateString("fr-FR", serre ? { weekday: "short", day: "numeric" } : { weekday: "long", day: "numeric" }))}</text>`;
     const lp = Math.min(bande * 0.92, 11.2 * R);
     s += `<rect x="${f(xc - lp / 2)}" y="${f(yb + 2.4 * R)}" width="${f(lp)}" height="${2.1 * R}" rx="${1.05 * R}" fill="rgba(57,135,229,.2)" stroke="rgba(125,184,255,.55)"/>`;
-    s += `<text x="${f(xc)}" y="${f(yb + 3.8 * R)}" text-anchor="middle" font-size="${1.05 * R}" font-weight="700" fill="var(--ink)">${n1(besoin)} préparateurs</text>`;
+    s += `<text x="${f(xc)}" y="${f(yb + 3.8 * R)}" text-anchor="middle" font-size="${1.05 * R}" font-weight="700" fill="var(--ink)">${n1(besoin)}${serre ? "" : " préparateurs"}</text>`;
   });
   el.innerHTML = Gr.svg(w, h, "Lignes à préparer sur les prochains jours", s);
 }
@@ -170,7 +172,7 @@ function grHistorique(el, serie, o) {
   const ligne = v.map((x, i) => (i ? "L" : "M") + f(X(i)) + " " + f(Y(x.v))).join("");
   let s = `<path d="${ligne}L${f(X(v.length - 1))} ${f(mg.h + ph)}L${f(X(0))} ${f(mg.h + ph)}Z" fill="var(--data)" opacity=".13"/>`;
   if (fini(repere)) {
-    s += `<line x1="${mg.g}" x2="${f(mg.g + pw)}" y1="${f(Y(repere))}" y2="${f(Y(repere))}" stroke="var(--ink-3)" stroke-width="1"/>`;
+    s += `<line x1="${mg.g}" x2="${f(mg.g + pw)}" y1="${f(Y(repere))}" y2="${f(Y(repere))}" stroke="var(--contexte)" stroke-width="1.5"/>`;
     if (!compact) s += `<text x="${f(mg.g + 0.3 * R)}" y="${f(Y(repere) - 0.45 * R)}" font-size="${0.9 * R}">${esc(o.repereTxt || "")}</text>`;
   }
   s += `<path d="${ligne}" fill="none" stroke="var(--data)" stroke-width="${(compact ? 0.15 : 0.18) * R}" stroke-linejoin="round" stroke-linecap="round"/>`;

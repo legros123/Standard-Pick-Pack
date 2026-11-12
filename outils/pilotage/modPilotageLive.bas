@@ -76,6 +76,7 @@ Public Sub Pilotage_Installer()
     Poser ws, r, "FIN_VISEE", "19:00", "Heure a laquelle toute la charge doit etre preparee."
     Poser ws, r, "PAUSES", "", "Pauses de l'equipe, ex. 09:00-09:20;16:30-16:50 (deduites du calcul de l'heure de fin)."
     Poser ws, r, "JALONS", "12:15;15:15;17:15;19:00", "Heures reperes de la journee (departs, fins de vague)."
+    Poser ws, r, "EFFECTIF_PREVU", "", "Preparateurs prevus par tranche, ex. 06:00=6;12:30=15;13:30=9;20:00=0. Vide = l'equipe du moment reste jusqu'au bout."
     Poser ws, r, "QUOTA_JOUR", "620", "Standard : lignes par poste (PARAMETRES du Suivi Op)."
     Poser ws, r, "H_REF", "7,4", "Duree d'un poste en heures."
     Poser ws, r, "REJETS_MAX", "120", "Objectif site : rejets par jour au maximum."
@@ -530,6 +531,21 @@ Private Function SectionReglages() As String
         End If
     Next i
     s = s & ",""jalons"":[" & x & "]"
+    ' effectif prevu : 06:00=6;12:30=15
+    x = ""
+    v = Split(Cfg("EFFECTIF_PREVU", ""), ";")
+    For i = LBound(v) To UBound(v)
+        pos = InStr(CStr(v(i)), "=")
+        If pos > 1 Then
+            a = Heure(Left$(CStr(v(i)), pos - 1))
+            b = Trim$(Mid$(CStr(v(i)), pos + 1))
+            If Len(a) > 0 And IsNumeric(b) Then
+                If Len(x) > 0 Then x = x & ","
+                x = x & "[" & JS(a) & "," & JN(Reel(b, 0)) & "]"
+            End If
+        End If
+    Next i
+    If Len(x) > 0 Then s = s & ",""effectifPrevu"":[" & x & "]"
     s = s & ",""quotaJour"":" & JN(Reel(Cfg("QUOTA_JOUR", "620"), 620))
     s = s & ",""hRef"":" & JN(Reel(Cfg("H_REF", "7.4"), 7.4))
     s = s & ",""rejetsMax"":" & JN(Reel(Cfg("REJETS_MAX", "120"), 120))
@@ -728,7 +744,7 @@ Erreur:
 End Function
 
 Private Function LentStock() As String
-    Dim t As Variant, n As Long, alerte As String, critique As String, rupt As String
+    Dim t As Variant, n As Long, i As Long, alerte As String, critique As String, rupt As String, liste As String
     On Error GoTo Erreur
     alerte = "null"
     critique = "null"
@@ -740,7 +756,12 @@ Private Function LentStock() As String
     End If
     n = Lire(SqlRuptures(), t)
     If n > 0 Then rupt = JN(NZ(t(0, 0)))
-    LentStock = """stock"":{""reappro"":" & alerte & ",""critique"":" & critique & ",""ruptures"":" & rupt & "}"
+    n = Lire(SqlReapproListe(), t)
+    For i = 0 To n - 1
+        If i > 0 Then liste = liste & ","
+        liste = liste & "{""emp"":" & JS(t(0, i)) & ",""art"":" & JS(t(1, i)) & ",""reel"":" & JN(t(2, i)) & "}"
+    Next i
+    LentStock = """stock"":{""reappro"":" & alerte & ",""critique"":" & critique & ",""ruptures"":" & rupt & ",""critiques"":[" & liste & "]}"
     Exit Function
 Erreur:
     Noter "reappro et ruptures", Err.Description
@@ -1361,6 +1382,20 @@ Private Function SqlReappro() As String
     s = s & "  AND s.REEL <= s.ALERTE" & vbLf
     s = Replace(s, "{ZONE}", Propre(Cfg("ZONE_PICK", "PICK01A14")))
     SqlReappro = s
+End Function
+
+Private Function SqlReapproListe() As String
+    Dim s As String
+    s = s & "SELECT * FROM (" & vbLf
+    s = s & "  SELECT s.EMP, s.NUM_ART_AFF, s.REEL" & vbLf
+    s = s & "  FROM REXEL.F_LISSTKE_EMP s" & vbLf
+    s = s & "  WHERE s.ZONE_MVT = '{ZONE}'" & vbLf
+    s = s & "    AND s.NUM_ART_AFF IS NOT NULL" & vbLf
+    s = s & "    AND s.REEL <= s.CRITIQUE" & vbLf
+    s = s & "  ORDER BY s.REEL, s.EMP" & vbLf
+    s = s & ") WHERE ROWNUM <= 4" & vbLf
+    s = Replace(s, "{ZONE}", Propre(Cfg("ZONE_PICK", "PICK01A14")))
+    SqlReapproListe = s
 End Function
 
 Private Function SqlRuptures() As String

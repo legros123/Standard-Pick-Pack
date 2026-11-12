@@ -46,7 +46,8 @@ const ECRANS = [
       T("e1-fait", n0(M.fait)); T("e1-reste", n0(M.restant)); T("e1-venir", n0(M.aLancer));
       T("e1-cont", n0(M.contFaits)); T("e1-tf", n0(M.tournees.faites)); T("e1-tl", n0(M.tournees.libres));
       Hh("e1-types", M.types.length ? M.types.map(t => { const tot = t.fait + t.restant; return `<div class="lj"><span class="lj-n">${esc(t.lib)}</span><div class="jauge" style="--v:${tot ? (t.fait / tot * 100).toFixed(1) : 0}%"><i></i></div><span class="lj-v"><b>${n0(t.fait)}</b> / ${n0(tot)} lignes</span></div>`; }).join("") : vide("Détail par type non fourni."));
-      T("e1-note", !venir && M.aLancerInfo ? `En plus : ${n0(M.aLancerInfo)} lignes reçues mais pas encore lancées en vague (hors charge).` : fini(M.tournees.ouvertes) ? `${n0(M.tournees.ouvertes)} chariots encore ouverts, en cours ou en attente.` : "");
+      const ratios = [M.tournees.faites > 0 ? `${n0(M.fait / M.tournees.faites)} lignes par chariot terminé` : "", M.contFaits > 0 ? `${n1(M.fait / M.contFaits)} lignes par colis` : ""].filter(Boolean).join(" · ");
+      T("e1-note", (!venir && M.aLancerInfo ? `En plus : ${n0(M.aLancerInfo)} lignes reçues mais pas encore lancées en vague (hors charge). ` : fini(M.tournees.ouvertes) ? `${n0(M.tournees.ouvertes)} chariots encore ouverts, en cours ou en attente. ` : "") + ratios);
       Scenes.pile.donnees(M.fait, M.restant, venir ? M.aLancer : null);
       T("e1-unite", `1 cube = ${n0(Scenes.pile.unite)} lignes`);
       return !M.aCharge ? "La charge du jour n'est pas encore connue."
@@ -81,17 +82,20 @@ const ECRANS = [
       T("e2-eta", fini(M.eta) ? min2hm(M.eta) : "–:–");
       Hh("e2-past", pastille(S.niv, S.mot, true)); Niv("e2-bloc", S.niv === "na" ? null : S.niv);
       T("e2-vise", fini(M.finVisee) ? `heure visée : ${fin}` : "");
-      T("e2-four", fini(M.etaTot) && M.etaTard - M.etaTot >= 4 ? `Fourchette : entre ${min2hm(M.etaTot)} et ${min2hm(M.etaTard)}, selon que l'équipe garde le rythme de la dernière heure ou celui de la journée.` : "Calcul : lignes restantes ÷ lignes validées par heure, pauses déduites.");
-      Hh("e2-ops", bonshommes(M.actifs, M.reste > 0 ? M.besoinOps : null));
+      T("e2-four", M.horsJour ? "Au rythme actuel et avec l'effectif prévu, il reste trop de lignes pour finir avant minuit." : fini(M.etaTot) && fini(M.etaTard) && M.etaTard - M.etaTot >= 4 ? `Fourchette : entre ${min2hm(M.etaTot)} et ${min2hm(M.etaTard)}, selon que l'équipe garde le rythme de la dernière heure ou celui de la journée.` : (M.effectif.length ? "Calcul : lignes restantes ÷ cadence constatée × effectif prévu par tranche horaire, pauses déduites." : "Calcul : lignes restantes ÷ lignes validées par heure, pauses déduites."));
+      Hh("e2-ops", bonshommes(M.opsRef, M.reste > 0 ? M.besoinOps : null));
+      const dispo = M.opsPrevus ? `<b>${n1(M.opsRef)}</b> sont prévus en moyenne d'ici là` : `<b>${n0(M.actifs)}</b> sont actifs`;
       let b;
       if (!fini(M.actifs) || !fini(M.cadenceOp)) b = "Estimation en attente des premières lignes validées.";
       else if (M.reste <= 0) b = "Plus rien à préparer dans la charge connue.";
       else if (M.hRestantes <= 0.05) b = `L'heure visée (${fin}) est passée : il reste <b>${n0(M.reste)} lignes</b>.`;
-      else if (M.margeOps >= 0.5) b = `Pour finir à ${fin}, il faut <b>${n1(M.besoinOps)} préparateurs</b>. <b>${n0(M.actifs)}</b> sont actifs : <b>${n1(M.margeOps)} de marge</b>.`;
-      else if (M.margeOps > -0.5) b = `Pour finir à ${fin}, il faut <b>${n1(M.besoinOps)} préparateurs</b>. <b>${n0(M.actifs)}</b> sont actifs : l'effectif est <b>juste suffisant</b>.`;
-      else b = `Pour finir à ${fin}, il faut <b>${n1(M.besoinOps)} préparateurs</b>. <b>${n0(M.actifs)}</b> sont actifs : <b>il en manque ${n1(-M.margeOps)}</b>.`;
+      else if (M.margeOps >= 0.5) b = `Pour finir à ${fin}, il faut <b>${n1(M.besoinOps)} préparateurs</b>. ${dispo} : <b>${n1(M.margeOps)} de marge</b>.`;
+      else if (M.margeOps > -0.5) b = `Pour finir à ${fin}, il faut <b>${n1(M.besoinOps)} préparateurs</b>. ${dispo} : l'effectif est <b>juste suffisant</b>.`;
+      else b = `Pour finir à ${fin}, il faut <b>${n1(M.besoinOps)} préparateurs</b>. ${dispo} : <b>il en manque ${n1(-M.margeOps)}</b>.`;
+      if (fini(M.cadenceOp) && M.cadenceOp > 0 && M.reste > 0) b += ` Il reste <b>${n0(M.reste / M.cadenceOp)} heures de picking</b> à fournir.`;
       Hh("e2-besoin", b);
       grAvancement($("#g-avancement"), M);
+      if (M.horsJour) return `Au rythme actuel, la charge <b>ne sera pas terminée aujourd'hui</b> : il reste <b>${n0(M.reste)} lignes</b>.`;
       if (!fini(M.eta)) return "Pas encore assez de lignes validées pour estimer l'heure de fin.";
       if (M.reste <= 0) return "La charge connue est terminée.";
       if (!fini(M.ecart)) return `Au rythme actuel, tout sera prêt à <b>${min2hm(M.eta)}</b>.`;
@@ -182,7 +186,7 @@ const ECRANS = [
   {
     id: "qualite", nom: "La qualité", question: "Travaille-t-on juste ?", scene: "conv",
     html: `<div class="corps e5">
-      <div class="vue3d anim" style="--i:0"><canvas id="c-conv" aria-label="Illustration : le convoyeur, la balance et la voie de contrôle" role="img"></canvas>
+      <div class="vue3d avec-leg anim" style="--i:0"><canvas id="c-conv" aria-label="Illustration : le convoyeur, la balance et la voie de contrôle" role="img"></canvas>
         <div class="cpts"><div class="cpt"><span>Colis pesés</span><b id="e5-pes">–</b></div><div class="cpt rej"><span>Partis au contrôle</span><b id="e5-rej">–</b></div></div>
         <div class="leg3d"><span class="note" style="margin-left:0">Illustration. Chaque colis est pesé : si son poids ne correspond pas au poids attendu, il part au poste de contrôle. Une vraie erreur trouvée là s'appelle une erreur décelée.</span></div>
       </div>
@@ -195,8 +199,9 @@ const ECRANS = [
           <div class="duo"><div class="gros" id="e5-dec">–</div><div><span id="e5-past-d"></span><p class="note" id="e5-seuils" style="margin-top:.4rem"></p></div></div>
           <div class="types-mini" id="e5-types"></div>
         </div>
-        <div class="bloc anim" style="--i:3"><h3>${ic("cible")}Taux de rejet</h3>
+        <div class="bloc q4 anim" style="--i:3"><h3>${ic("cible")}Taux de rejet</h3>
           <div class="duo"><div class="moyen" id="e5-taux">–</div><p class="expl" id="e5-sur"></p></div>
+          <p class="note" id="e5-utile"></p>
           <div class="gr" id="g-rejh"></div>
         </div>
         <div class="bloc anim" style="--i:4" id="e5-d"><h3>${ic("camion")}Erreurs arrivées chez le client, ce mois</h3>
@@ -218,6 +223,7 @@ const ECRANS = [
       Hh("e5-types", D ? barresRang(D.types.filter(x => x.n > 0).slice(0, 3)) : "");
       T("e5-taux", R && fini(R.taux) ? n1(R.taux * 100) + " %" : "–");
       Hh("e5-sur", R && R.total > 0 && R.pese > 0 ? `soit <b>1 colis sur ${n0(R.pese / R.total)}</b><br>écarté par la balance` : "des colis écartés par la balance");
+      Hh("e5-utile", R && D && R.total > 0 && D.source.indexOf("estimation") < 0 ? `Rejets utiles : <b>${n0(Math.min(D.total, R.total))} sur ${n0(R.total)}</b> cachaient une vraie erreur (${n0(Math.min(1, D.total / R.total) * 100)} %). Les autres colis étaient justes.` : "");
       grMiniColonnes($("#g-rejh"), R ? R.parHeure : [], "rejets");
       const m = M.mois, pa = m ? ppm(+m.ea || 0, +m.lignes || 0) : null, na = nivSeuils(pa, cfg.ppmAveOrange, cfg.ppmAveRouge);
       T("e5-ave", m ? n0(m.ea) : "–"); Hh("e5-past-a", pastille(na, na === "ok" ? "Dans l'objectif" : na === "warn" ? "À surveiller" : na === "crit" ? "Hors objectif" : "Non branché")); Niv("e5-d", na === "na" ? null : na);
@@ -232,7 +238,7 @@ const ECRANS = [
   {
     id: "allees", nom: "Les allées", question: "Où faut-il redoubler d'attention ?", scene: "allees",
     html: `<div class="corps e6">
-      <div class="vue3d anim" style="--i:0"><canvas id="c-allees" aria-label="Plan des allées : hauteur selon le nombre d'erreurs décelées" role="img"></canvas>
+      <div class="vue3d avec-leg anim" style="--i:0"><canvas id="c-allees" aria-label="Plan des allées : hauteur selon le nombre d'erreurs décelées" role="img"></canvas>
         <div class="titre3d"><div class="titre3">${ic("plan")}<span id="e6-titre">Erreurs décelées par allée</span></div></div>
         <div class="leg3d"><span>Plus la travée est haute et claire, plus il y a eu d'erreurs.</span><span><svg viewBox="0 0 12 12" width="14" height="14" aria-hidden="true"><path d="M6 1.500 11 10.500H1z" fill="#FAB219"/></svg>les trois allées à surveiller</span><span class="note" id="e6-hors"></span></div>
       </div>
@@ -269,7 +275,7 @@ const ECRANS = [
         <div class="pile-mini anim" style="--i:2">
           <div class="mini" id="e7-m1"><b id="e7-ret">–</b><span class="l">Commandes en retard</span><span class="s">date d'expédition dépassée</span></div>
           <div class="mini"><b id="e7-rup">–</b><span class="l">Lignes en rupture</span><span class="s">aujourd'hui, au picking</span></div>
-          <div class="mini" id="e7-m3"><b id="e7-rea">–</b><span class="l">Emplacements à réapprovisionner</span><span class="s" id="e7-rea-s">sous le seuil d'alerte</span></div>
+          <div class="mini" id="e7-m3"><b id="e7-rea">–</b><span class="l">Emplacements à réapprovisionner</span><span class="s" id="e7-rea-s">sous le seuil d'alerte</span><ul class="crit" id="e7-crit"></ul></div>
         </div>
       </div>
     </div>`,
@@ -288,6 +294,7 @@ const ECRANS = [
       T("e7-ret", r ? n0(r.commandes) : "–"); Niv("e7-m1", r && +r.commandes > 0 ? "warn" : null);
       T("e7-rup", st && st.ruptures != null ? n0(st.ruptures) : "–");
       T("e7-rea", st && st.reappro != null ? n0(st.reappro) : "–"); T("e7-rea-s", st && +st.critique > 0 ? `dont ${n0(st.critique)} au niveau critique` : "sous le seuil d'alerte");
+      Hh("e7-crit", st && Array.isArray(st.critiques) ? st.critiques.slice(0, 3).map(c => `<li><b>${esc(c.emp)}</b><span>${esc(c.art || "")}</span><span>reste ${n0(c.reel)}</span></li>`).join("") : "");
       const partis = d.filter(parti).length;
       return pr ? `Prochain départ à <b>${min2hm(pr.m)}</b>, dans <b>${duree(pr.m - M.now)}</b>. ${partis} ${pluriel(partis, "départ")} sur ${d.length} ${pluriel(partis, "est déjà parti", "sont déjà partis")}.` : `Les ${d.length} départs du jour sont passés.`;
     }
