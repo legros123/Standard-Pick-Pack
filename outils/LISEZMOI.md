@@ -39,3 +39,31 @@ Réglages (seuils, poids, URL du site) en tête de `bilan_mensuel.py`.
 **Aucun classement n'est affiché** (ni sur les pages, ni sur les cartes, ni dans la synthèse) : chacun se compare à la moyenne de l'équipe via sa carte joueur et son hexagone. OVR = 45 + 2,5 × note /20 (10/20 = 70) · bronze < 65 · argent 65-77 · or 78-84 · icône ≥ 85.
 
 **Pages perso** : `NNN_nom.html` (une par opérateur, données intégrées) — le QR du recto pointe vers `https://legros123.github.io/Suivi-P-P-/<Mois>/NNN_nom.html`. Fonctionne sur tous les téléphones et lecteurs QR. Pour un nouveau mois : copier le dossier `bilan/<Mois>/` produit par le script à la racine de Suivi-P-P-. Seuil carte : 15 h de picking réel (heures − hors pick).
+
+---
+
+# Tableau de bord atelier — `pilotage.html`
+
+Écran mural du service (un seul fichier, fonctionne hors ligne). L'accueil « Live » revient toutes les 2 pages.
+
+| Écran | Contenu |
+|---|---|
+| **Live** (accueil) | Lignes lancées à préparer + tournées + restant estimé, heure théorique de fin, lignes en cours, rejets, décelées, vigilance qualité par matricule. Couleur de tout l'écran selon l'état : vert stable, orange tendu, rouge critique. |
+| La journée | Camion du jour (% réalisé), colis et chariots terminés, chariots en attente, cadence à tenir / vitesse réelle. |
+| Les vagues | Une palette par vague, toutes les préparations du site, reste et ruptures. |
+| La qualité | Convoyeur, balance, poste de contrôle ; dossards jaune / orange / rouge dès 3 décelées. |
+| Les allées | Plan 3D (allées 1, 2, 3, 14, 21 en 12 m, les autres en 4 m), couleur selon le rang d'erreurs, types d'erreur sur 7 jours. |
+| Les indicateurs | Productivité 30 j, PPM avérée 30 j, rejets 20 j, décelées du mois. |
+| Sécurité & équipe | Jours sans accident, message sécurité, fierté d'équipe, standard du jour. |
+| Le standard | Toutes les pages du standard du jour (dossier `slides/`). |
+
+## Données
+Deux fichiers écrits par Excel **dans le même dossier que la page**, relus toutes les 30 s ; un seul suffit, sans aucun la page passe en démonstration :
+- `data.js` — contrat de l'ancien écran PP Live (tournées, équipe, décelées par matricule, historique).
+- `pilotage_data.js` — contrat de l'ancien Pilotage (charge, colis, vagues, services, allées, sécurité).
+
+Réglages facultatifs dans `cfg` de `pilotage_data.js` : `allees: [1,2,…]` (liste des allées affichées) et `alleesHautes: [1,2,3,14,21]`.
+
+## Raccourcis
+`E` vue encadrement · `T` tableau des données · `R` réglages · `?` aide · `F` plein écran · flèches, espace.
+Essai des couleurs : `pilotage.html?demo=1&statut=critique` (ou `tendu`, `stable`).
