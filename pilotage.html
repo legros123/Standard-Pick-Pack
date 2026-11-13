@@ -533,10 +533,24 @@ body[data-ecran=accueil] .rz.dup{display:none}
 .verdict{font-size:1.35rem}
 
 /* ───── ACCUEIL ───── */
-.acc{display:grid;grid-template-columns:40rem minmax(0,1fr);grid-template-rows:minmax(0,1fr) 6.4rem;gap:1.15rem;min-height:0;min-width:0}
-.acc-g{display:grid;grid-template-rows:1.18fr 1fr;gap:1.15rem;min-height:0;min-width:0}
-.acc-d{display:grid;grid-template-rows:minmax(0,1fr) 14.2rem;gap:1.15rem;min-height:0;min-width:0}
+.acc{display:grid;grid-template-columns:minmax(0,1fr) 33rem;grid-template-rows:minmax(0,1fr) 6.4rem;gap:1.15rem;min-height:0;min-width:0}
+.acc-g{display:grid;grid-template-rows:minmax(0,1fr) 15.5rem;gap:1.15rem;min-height:0;min-width:0}
+.acc-d{display:grid;grid-template-rows:1.25fr 1fr 1fr;gap:1.15rem;min-height:0;min-width:0}
 .acc-bas{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1.15rem;min-height:0}
+.trio-c{padding:1.05rem 1.5rem 1rem}
+.n-trio{font:900 8.2rem/.84 var(--f-d);letter-spacing:.005em;margin-top:auto;white-space:nowrap}
+.carte.amb .n-trio{text-shadow:0 0 4rem rgba(var(--amb),.8)}
+.l-trio{font:400 1.35rem/1.2 var(--f-t);color:var(--ink);margin-top:.5rem;white-space:nowrap}
+.l-trio b{font:900 2.1rem/1 var(--f-d);margin-right:.2rem}
+.trio-c .l-reste{margin-top:.15rem;font-size:1rem}
+.carte.cours{border:.12rem solid rgba(61,219,245,.55);background:linear-gradient(180deg,rgba(61,219,245,.16),rgba(61,219,245,.02) 80%)}
+.carte.cours .n-trio{color:var(--cyan);text-shadow:0 0 3rem rgba(61,219,245,.45)}
+.carte.cours .c-lab .ic{color:var(--cyan)}
+.carte.fait{border:.12rem solid rgba(125,184,255,.55);background:linear-gradient(180deg,rgba(57,135,229,.2),rgba(57,135,229,.03) 80%)}
+.carte.fait .n-trio{color:var(--data-hi);text-shadow:0 0 3rem rgba(57,135,229,.5)}
+.carte.fait .c-lab .ic{color:var(--data-hi)}
+.acc-d .n-fin{font-size:9.6rem}
+.acc-d .l-fin{font-size:1.1rem;white-space:normal}
 .carte{position:relative;overflow:hidden;border-radius:1.6rem;border:1px solid var(--line);padding:1.25rem 1.6rem 1.2rem;display:flex;flex-direction:column;min-width:0;min-height:0;
   background:linear-gradient(180deg,rgba(255,255,255,.065),rgba(255,255,255,.015));box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 2rem 4rem -2.5rem #000;transition:border-color 1s,background 1s}
 .carte.amb{border:.14rem solid rgba(var(--amb),.75);background:linear-gradient(180deg,rgba(var(--amb),.22),rgba(var(--amb),.04) 75%);box-shadow:inset 0 1px 0 rgba(255,255,255,.1),0 0 3.2rem -1rem rgba(var(--amb),.75)}
@@ -588,7 +602,8 @@ body[data-ecran=accueil] .rz.dup{display:none}
 .cad>div{display:grid;gap:.2rem;justify-items:center;text-align:center}
 .cad .l{font:500 .95rem/1.2 var(--f-t);letter-spacing:.1em;text-transform:uppercase;color:var(--ink-2)}
 .cad b{font:900 6.4rem/.9 var(--f-d)}
-.cad .s{font:400 1rem/1.2 var(--f-t);color:var(--ink-3)}
+.cad .s{font:400 1rem/1.3 var(--f-t);color:var(--ink-3)}
+.cad .s b{color:var(--ink-2);font-weight:700}
 .cad .vs{font:900 2rem/1 var(--f-d);color:var(--ink-3)}
 .cad [data-niv] b{color:var(--st-ic)}
 .bloc.cadb{display:grid;grid-template-rows:auto minmax(0,1fr) auto}
@@ -599,7 +614,10 @@ body[data-ecran=accueil] .rz.dup{display:none}
 .e4 .col:last-child{grid-template-rows:minmax(0,1fr) auto auto;align-content:stretch}
 .e4 .col:last-child>.bloc{display:block}
 .e4 .col:last-child>.bloc.svc{display:grid;grid-template-rows:auto minmax(0,1fr);align-content:stretch}
-.svcs{display:grid;align-content:space-around;gap:.6rem;min-height:0;height:100%}
+.svcs{display:grid;align-content:space-around;gap:.6rem;min-height:0;height:100%;overflow:hidden}
+.svcs.dense{grid-template-columns:repeat(2,minmax(0,1fr));gap:.5rem 2rem;align-content:space-evenly}
+.svcs.dense .svc-l .n{font-size:1.3rem}.svcs.dense .svc-l .p{font-size:1.9rem}.svcs.dense .svc-l .jauge{height:.8rem}.svcs.dense .svc-l .v{font-size:.85rem}
+.e4 .col:last-child>.bloc{min-height:0;overflow:hidden}
 .svc-l{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:.2rem 1rem;align-items:end}
 .svc-l .n{font:700 1.7rem/1 var(--f-d);letter-spacing:.05em;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .svc-l .p{font:900 2.6rem/.9 var(--f-d)}
@@ -690,11 +708,11 @@ body[data-ecran=accueil] .rz.dup{display:none}
   .etat-pill{height:2.6rem;font-size:1.4rem}.rz{height:2.6rem;line-height:2.5rem}.rz b{font-size:1.5rem}
   .acc,.acc-g,.acc-d,.acc-bas,.ek,.e8,.e12,.stdj{grid-template-columns:minmax(0,1fr)!important;grid-template-rows:none!important}
   .e8>.bloc.secu{grid-row:auto}
-  .n-lances{font-size:8rem;margin-top:1rem}.n-fin{font-size:7rem;margin-top:1rem}.n-cours{font-size:5rem;margin-top:.6rem}
+  .n-trio{font-size:5.4rem;margin-top:.8rem}.n-fin,.acc-d .n-fin{font-size:7rem;margin-top:1rem}
+  .acc-g .vue3d{aspect-ratio:16/10}.l-trio{white-space:normal}
   .secu .jsa{font-size:10rem}
   .anneau{height:11rem;flex:none}
   .vigi{flex-direction:column;align-items:flex-start;padding:1rem}.chips{flex-wrap:wrap}
-  .acc-d .vue3d{aspect-ratio:16/10}
   .c-lab{white-space:normal}.l-tour,.l-reste,.l-fin,.l-cours{white-space:normal}
   .kc{grid-template-columns:minmax(0,1fr)}.kc .gr{height:11rem}
   .cad b{font-size:3.6rem}
@@ -1745,6 +1763,7 @@ function modeleAccueil(L, M, now, forceStatut) {
   if (L && L.jour) {
     const R = PP.calculer(preparerLive(L), now), S = L.seuils;
     A = { source: "live", S, statut: R.statut, lances: R.lances, nbLances: R.nbLances, restant: R.restant, aLancer: R.resteALancer, faites: R.faites,
+      nbFaites: (L.tours || []).filter(t => t.k === "F").length,
       enCours: R.enCoursLogys, nbEnCours: R.nbEnCours, fin: dMin(R.finPrevue), finPoste: dMin(R.fin), debut: dMin(R.debut), ecart: R.ecart, horsJour: R.statut === "CRITIQUE" && !R.finPrevue,
       rejets: { n: R.rejets.n, niv: nivPP(R.rejets.niv) }, dec: { n: R.decelees.n, niv: nivPP(R.decelees.niv) },
       vigilance: R.vigilance.map(v => ({ mat: String(v.mat), n: v.n, d: dossard(v.n, S) })), capa: R.capaNow, pauses: R.pauses.map(p => [dMin(p[0]), dMin(p[1])]) };
@@ -1753,7 +1772,7 @@ function modeleAccueil(L, M, now, forceStatut) {
     const c = M.cfg, S = Object.assign({}, SEUILS_DEFAUT, { rej_orange: c.rejetsMax, rej_rouge: Math.round(c.rejetsMax * 1.15), dec_orange: c.decOrange, dec_rouge: c.decRouge });
     const sf = M.statut.fin.niv, lib = fini(+M.tournees.libres) && M.tournees.libres != null ? +M.tournees.libres : null, ouv = fini(+M.tournees.ouvertes) && M.tournees.ouvertes != null ? +M.tournees.ouvertes : null;
     A = { source: "pilotage", S, statut: !M.aCharge ? "ATTENTE" : M.reste <= 0 && M.fait > 0 ? "FINI" : sf === "crit" ? "CRITIQUE" : sf === "warn" ? "TENDU" : sf === "ok" ? "STABLE" : "ATTENTE",
-      lances: M.aCharge ? M.restant : null, nbLances: lib, restant: M.reste, aLancer: M.aLancer, faites: M.fait, enCours: null, nbEnCours: lib != null && ouv != null ? Math.max(0, ouv - lib) : null,
+      nbFaites: fini(+M.tournees.faites) && M.tournees.faites != null ? +M.tournees.faites : null, lances: M.aCharge ? M.restant : null, nbLances: lib, restant: M.reste, aLancer: M.aLancer, faites: M.fait, enCours: null, nbEnCours: lib != null && ouv != null ? Math.max(0, ouv - lib) : null,
       fin: M.eta, finPoste: M.finVisee, debut: M.debut, ecart: fini(M.ecart) ? -M.ecart : null, horsJour: M.horsJour,
       rejets: { n: M.rejets ? M.rejets.total : null, niv: M.statut.rejets.niv }, dec: { n: M.dec ? M.dec.total : null, niv: M.statut.dec.niv }, vigilance: [], capa: M.debit, pauses: M.pauses };
   }
@@ -2091,8 +2110,10 @@ class SceneVagues extends Scene3D {
     this.v.forEach((v, i) => {
       const cx = (i - (n - 1) / 2) * 4.8, bas = this.p(cx, 0, 2.9), haut = this.p(cx, 0.16 + Math.ceil(v.K / 6) * 0.98 + 0.5, 0), y0 = Math.min(this.p(0, 0, 2.9)[1] + tH * 1.2, H - tS * 3.4);
       this.texte(Math.floor(v.p * 100 + 1e-6) + " %", haut[0], haut[1] - 4, { t: tP, gras: 900, f: F_D, c: v.fin ? "rgb(95,219,95)" : "rgb(243,246,251)" });
-      this.texte(v.heure, bas[0], y0, { t: tH, gras: 900, f: F_D });
-      this.texte(`${n0(v.prep)} / ${n0(v.prev)} lignes`, bas[0], y0 + tS * 1.5, { t: tS, c: `rgb(${ENCRE2})` });
+      this.texte(v.heure, bas[0], y0, { t: n > 1 ? Math.min(tH, Math.abs(this.p(4.8, 0, 2.9)[0] - this.p(0, 0, 2.9)[0]) * 0.36) : tH, gras: 900, f: F_D });
+      /* le détail tient dans la largeur d'une vague : on réduit le texte quand elles sont nombreuses */
+      const larg = n > 1 ? Math.abs(this.p(4.8, 0, 2.9)[0] - this.p(0, 0, 2.9)[0]) * 0.9 : this.w, det = `${n0(v.prep)} / ${n0(v.prev)}`, tD = Math.min(tS * 1.1, larg / (det.length * 0.6));
+      this.texte(det, bas[0], y0 + tS * 1.5, { t: tD, c: `rgb(${ENCRE2})` });
       this.texte(v.fin ? "TERMINÉE" : v.prep > 0 ? "EN COURS" : "LANCÉE", bas[0], y0 + tS * 2.9, { t: tS, gras: 700, esp: "0.14em", c: v.fin ? "rgb(95,219,95)" : v.prep > 0 ? "rgb(125,184,255)" : `rgb(${ENCRE2})` });
     });
   }
@@ -2346,34 +2367,45 @@ const ECRANS = [
     id: "accueil", nom: "Live", question: "Pick & Pack Live", scene: "accueil", plein: true,
     html: `<div class="acc">
       <div class="acc-g">
-        <section class="carte amb anim" style="--i:0" id="a-c1">
-          <div class="c-lab"><span>${ic("reste")}Lignes lancées à préparer</span></div>
-          <div class="n-lances" id="a-lances">–</div>
-          <div class="l-tour" id="a-tour"></div>
-          <div class="l-reste" id="a-reste"></div>
-        </section>
-        <section class="carte amb anim" style="--i:1" id="a-c2">
+        <div class="vue3d amb anim" style="--i:0"><canvas id="c-acc" role="img" aria-label="Animation : les colis à préparer dans le rayonnage, les préparateurs et leurs chariots, les colis faits sur palettes"></canvas></div>
+        <div class="acc-bas">
+          <section class="carte amb trio-c anim" style="--i:1" id="a-c1">
+            <div class="c-lab"><span>${ic("reste")}Lignes lancées à préparer</span></div>
+            <div class="n-trio" id="a-lances">–</div>
+            <div class="l-trio" id="a-tour"></div>
+            <div class="l-reste" id="a-reste"></div>
+          </section>
+          <section class="carte trio-c cours anim" style="--i:2">
+            <div class="c-lab"><span>${ic("chariot")}Lignes en cours</span></div>
+            <div class="n-trio" id="a-cours">–</div>
+            <div class="l-trio" id="a-coursl"></div>
+          </section>
+          <section class="carte trio-c fait anim" style="--i:3">
+            <div class="c-lab"><span>${ic("ok")}Lignes faites</span></div>
+            <div class="n-trio" id="a-faites">–</div>
+            <div class="l-trio" id="a-faitesl"></div>
+          </section>
+        </div>
+      </div>
+      <div class="acc-d">
+        <section class="carte amb anim" style="--i:4" id="a-c2">
           <div class="c-lab"><span>${ic("horloge")}Heure théorique de fin</span><span class="tag-st"><i></i><span id="a-st">–</span></span></div>
           <div class="n-fin" id="a-fin">–</div>
           <div class="l-fin" id="a-finl"></div>
           <div class="frise" aria-hidden="true"><i id="a-f1"></i><u id="a-f2"></u><s id="a-f3"></s></div>
         </section>
+        <section class="carte anim" style="--i:5" id="a-c4"><div class="c-lab"><span>${ic("balance")}Rejets du jour</span></div><div class="anneau" id="a-rej"></div></section>
+        <section class="carte anim" style="--i:6" id="a-c5"><div class="c-lab"><span>${ic("loupe")}Décelées du jour</span></div><div class="anneau" id="a-dec"></div></section>
       </div>
-      <div class="acc-d">
-        <div class="vue3d amb anim" style="--i:2"><canvas id="c-acc" role="img" aria-label="Animation : les colis à préparer dans le rayonnage, les préparateurs et leurs chariots, les colis faits sur palettes"></canvas></div>
-        <div class="acc-bas">
-          <section class="carte anim" style="--i:3"><div class="c-lab"><span>${ic("chariot")}Lignes en cours</span></div><div class="n-cours" id="a-cours">–</div><div class="l-cours" id="a-coursl"></div></section>
-          <section class="carte anim" style="--i:4" id="a-c4"><div class="c-lab"><span>${ic("balance")}Rejets du jour</span></div><div class="anneau" id="a-rej"></div></section>
-          <section class="carte anim" style="--i:5" id="a-c5"><div class="c-lab"><span>${ic("loupe")}Décelées du jour</span></div><div class="anneau" id="a-dec"></div></section>
-        </div>
-      </div>
-      <section class="carte vigi anim" style="--i:6" id="a-c6"><div class="c-lab"><span>${ic("oeil")}Vigilance qualité</span></div><div class="chips" id="a-chips"></div></section>
+      <section class="carte vigi anim" style="--i:7" id="a-c6"><div class="c-lab"><span>${ic("oeil")}Vigilance qualité</span></div><div class="chips" id="a-chips"></div></section>
     </div>`,
     dispo: () => true,
     maj(M, reg, A) {
       compter($("#a-lances"), A.lances);
-      Hh("a-tour", A.nbLances != null ? `<b>${n0(A.nbLances)}</b>${pluriel(A.nbLances, "tournée")} en attente` : "");
-      Hh("a-reste", fini(A.restant) ? `≈ <b>${n0(A.restant)}</b> lignes restantes estimées, prévision comprise` : "");
+      Hh("a-tour", A.nbLances != null ? `<b>${n0(A.nbLances)}</b> ${pluriel(A.nbLances, "tournée")} en attente` : "");
+      compter($("#a-faites"), A.faites);
+      Hh("a-faitesl", A.nbFaites != null ? `<b>${n0(A.nbFaites)}</b> ${pluriel(A.nbFaites, "tournée terminée", "tournées terminées")}` : "");
+      Hh("a-reste", fini(A.restant) ? `≈ <b>${n0(A.restant)}</b> lignes restantes estimées` : "");
       T("a-st", (STATUT_MOT[A.statut] || "").toUpperCase());
       const fp = hPetit(A.finPoste);
       if (A.statut === "FINI") { Hh("a-fin", "✓"); Hh("a-finl", `Poste terminé à <b>${fp}</b>`); }
@@ -2432,7 +2464,7 @@ const ECRANS = [
       let besoin = M.debitNecessaire;
       if (A.source === "live" && fini(A.finPoste)) { const hr = minutesProductives(A.now, A.finPoste, A.pauses) / 60; besoin = hr > 0.05 && A.restant > 0 ? A.restant / hr : null; }
       T("e1-need", n0(besoin)); T("e1-reel", n0(reel));
-      T("e1-need-s", fini(A.finPoste) ? `pour finir à ${hPetit(A.finPoste)}` : "pour finir à l'heure"); T("e1-reel-s", mesure ? "lignes validées par heure" : "capacité de l'équipe présente");
+      T("e1-need-s", fini(A.finPoste) ? `pour finir à ${hPetit(A.finPoste)}` : "pour finir à l'heure"); Hh("e1-reel-s", mesure ? "lignes réellement validées par heure (Logys)" + (fini(A.capa) && A.source === "live" ? `<br>capacité théorique de l'équipe : <b>${n0(A.capa)}</b>` : "") : "capacité théorique de l'équipe présente");
       const niv = !fini(besoin) || !fini(reel) ? "na" : reel >= besoin ? "ok" : reel >= besoin * 0.9 ? "warn" : "crit";
       Niv("e1-reel-b", niv === "na" ? null : niv);
       Hh("e1-past", pastille(niv, { ok: "On va assez vite", warn: "Un peu juste", crit: "Pas assez vite", na: M.reste <= 0 && M.fait > 0 ? "Charge terminée" : "En attente" }[niv], true));
@@ -2448,7 +2480,7 @@ const ECRANS = [
     id: "vagues", nom: "Les vagues", question: "Où en sont les vagues ?", scene: "vagues",
     html: `<div class="corps e4">
       <div class="vue3d anim" style="--i:0"><canvas id="c-vag" role="img" aria-label="Animation : une palette par vague lancée, remplie à mesure que la vague est préparée"></canvas>
-        <div class="titre3d"><div class="titre3">${ic("couches")}Vagues lancées aujourd'hui</div><span class="note" id="e4-unite"></span></div>
+        <div class="titre3d"><div class="titre3">${ic("couches")}Vagues lancées aujourd'hui · lignes préparées / prévues</div><span class="note" id="e4-unite"></span></div>
       </div>
       <div class="col">
         <div class="bloc svc anim" style="--i:1"><h3>${ic("cible")}Toutes les préparations du site</h3><div class="svcs" id="e4-services"></div></div>
@@ -2461,10 +2493,13 @@ const ECRANS = [
     </div>`,
     dispo: M => M.vagues.length > 0 || M.services.length > 0,
     maj(M) {
-      const v = M.vagues.slice(-6);
+      /* les 6 dernières vagues qui comptent : celles de quelques lignes (reliquats) ne sont pas dessinées */
+      const maxV = Math.max(0, ...M.vagues.map(x => x.ligPrev)), grandes = M.vagues.filter(x => x.ligPrev >= Math.max(20, maxV * 0.03));
+      const v = (grandes.length ? grandes : M.vagues).slice(-6);
       Scenes.vagues.donnees(v);
       T("e4-unite", v.length ? `1 colis dessiné ≈ ${n0(Scenes.vagues.unite)} lignes` : "Aucune vague lancée pour l'instant.");
       const tous = [{ lib: M.cfg.service, fait: M.fait, restant: M.restant, moi: true }].concat(M.services);
+      $("#e4-services").classList.toggle("dense", tous.length > 4);
       Hh("e4-services", tous.map(t => { const tot = t.fait + t.restant, p = tot ? t.fait / tot : 0; return `<div class="svc-l${t.moi ? " moi" : ""}"><span class="n">${esc(t.lib)}</span><span class="p">${Math.floor(p * 100 + 1e-6)} %</span><div class="jauge" style="--v:${(p * 100).toFixed(1)}%"><i></i></div><span class="v"><b>${n0(t.fait)}</b> faites sur ${n0(tot)} lignes · reste <b>${n0(t.restant)}</b></span></div>`; }).join(""));
       const finies = M.vagues.filter(x => x.ligPrev > 0 && x.ligPrep >= x.ligPrev).length, reste = M.vagues.reduce((s, x) => s + Math.max(0, x.ligPrev - x.ligPrep), 0), rupt = M.vagues.reduce((s, x) => s + x.ligRupt, 0);
       T("e4-reste", M.vagues.length ? n0(reste) : "–"); T("e4-reste-t", `lignes, dans ${M.vagues.length - finies} ${pluriel(M.vagues.length - finies, "vague")} en cours`);
