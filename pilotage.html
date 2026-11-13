@@ -2674,7 +2674,9 @@ const Appli = (() => {
       let l = null, p = null;
       if (params.get("demo") !== "1") {
         l = await charger(FICHIER_LIVE); if (l && !l.jour) l = null;
-        p = await charger(FICHIER); if (p && (p.jour || !(p.charge || p.vagues || p.rejets || p.decelees))) p = null;
+        /* un seul fichier suffit : data.js peut embarquer le bloc « pilotage » (classeur unique PickPackLive) */
+        if (l && l.pilotage && typeof l.pilotage === "object") p = l.pilotage;
+        else { p = await charger(FICHIER); if (p && (p.jour || !(p.charge || p.vagues || p.rejets || p.decelees))) p = null; }
       }
       if (l || p) { mode = "live"; if (l) brutL = l; if (p) brut = p; if (!p && l && (!brut || brut.synth)) brut = null; }
       else if (mode !== "live") { mode = "demo"; brut = Demo.instantane(); brutL = demoLive(brut); }
@@ -2959,7 +2961,7 @@ const Appli = (() => {
         <span><kbd>R</kbd>réglages</span><span><kbd>Échap</kbd>fermer la fenêtre</span>
       </div>
       <h4>Brancher les vraies données</h4>
-      <p>La page relit toutes les 30 secondes deux fichiers placés dans le même dossier qu'elle, tous deux écrits par Excel : <b>${FICHIER_LIVE}</b> (celui de l'ancien écran PP Live : tournées, équipe, décelées par matricule, historique) et <b>${FICHIER}</b> (celui de l'ancien Pilotage : charge, colis, vagues, services, allées, sécurité). Un seul des deux suffit : les écrans qui manquent de données se retirent d'eux-mêmes. Sans aucun fichier, la page affiche une journée simulée, signalée « Démo ».</p>
+      <p>La page relit toutes les 30 secondes le fichier <b>${FICHIER_LIVE}</b>, placé dans le même dossier qu'elle. Il est écrit chaque minute par le classeur unique <b>PickPackLive_Donnees</b> (module modPickPackLive, macro DemarrerLive) et contient tout : tournées, équipe, décelées par matricule, vagues, services, allées, historique, sécurité. Les anciens fichiers séparés (${FICHIER_LIVE} de PP Live et ${FICHIER} du Pilotage) restent acceptés. Sans fichier, la page affiche une journée simulée, signalée « Démo ».</p>
       <p>Essayer les couleurs : en démo, toucher la carte « Heure théorique de fin », ou ajouter <b>?demo=1&amp;statut=critique</b> à l'adresse.</p>`);
   }
 
