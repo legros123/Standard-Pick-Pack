@@ -59,7 +59,7 @@ def tournees():
     out, n = [], 4870000
     H = dt.datetime.now()
     def hm(m): return (H - dt.timedelta(minutes=m)).strftime("%H:%M")
-    for e in [x for x in EQUIPE if x[1] == "Picking" and x[2] == "OUI"][:12]:
+    for e in [x for x in EQUIPE if x[1] == "Picking"][:12]:
         out.append((f"TO0{n}", "C", "DETAIL", entre(45, 105), 0, 0, e[0], hm(entre(3, 50)), "", "")); n += 1
     s = 0
     while s < 1900:
