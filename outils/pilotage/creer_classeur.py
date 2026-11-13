@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Crée le classeur unique « PickPackLive_Donnees.xlsx » (feuilles + tableaux + lignes d'exemple)
 et, avec --test DOSSIER, écrit le data.js que le module VBA produirait pour ces exemples.
-Usage : python3 creer_classeur.py SORTIE.xlsx [--test DOSSIER]"""
+Usage : python3 creer_classeur.py SORTIE.xlsx [--vierge] [--test DOSSIER]"""
 import sys, json, datetime as dt
 from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill, Alignment
@@ -85,7 +85,9 @@ def historique():
         out.append((k, entre(545, 660), 0 if r < .35 else entre(90, 220) if r < .75 else entre(230, 480), entre(92, 150), entre(9, 23), lig, ops))
     return out                                  # (jours ouvrés avant aujourd'hui, prod, ppm, rejets, décelées, lignes, ops)
 
-def classeur(chemin):
+def classeur(chemin, vierge=False):
+    V = lambda lignes: [] if vierge else lignes          # --vierge : aucune ligne d'exemple
+    P2 = [(k, {"prevu": 0, "rejets_jour": 0, "dernier_accident": ""}.get(k, v) if vierge else v, e) for k, v, e in PARAM]
     wb = Workbook(); ws = wb.active; ws.title = "LIVE"
     gras, titre = Font(bold=True), Font(bold=True, size=16)
     ws["A1"] = "PICK & PACK LIVE — classeur unique"; ws["A1"].font = titre
@@ -124,19 +126,19 @@ def classeur(chemin):
         for c in texte:
             for r in range(2, fin + 1): w.cell(row=r, column=c).number_format = "@"
         return w
-    w = feuille("PARAMETRES", "tblParam", ["Cle", "Valeur", "Explication"], PARAM, [22, 34, 90])
+    w = feuille("PARAMETRES", "tblParam", ["Cle", "Valeur", "Explication"], P2, [22, 34, 90])
     for r in range(2, len(PARAM) + 2):
         c = w.cell(row=r, column=2); c.alignment = Alignment(horizontal="left")
         if w.cell(row=r, column=1).value == "dernier_accident": c.number_format = "dd/mm/yyyy"
         elif isinstance(c.value, str) and not c.value.startswith("="): c.number_format = "@"
         if w.cell(row=r, column=1).value in ("prevu",): c.fill = PatternFill("solid", fgColor="FFF2A8")
-    feuille("EQUIPE", "tblEquipe", ["Matricule", "Role", "Present", "Sorti", "Revenu", "Coef", "Cadence"], EQUIPE, [12, 12, 10, 10, 10, 8, 10], texte=(1, 4, 5))
-    feuille("TOURNEES", "tblTournees", ["Numero", "Etat", "Type", "Lignes", "Traitees", "Annulees", "Operateur", "Debut", "Fin", "Colis"], tournees(), [14, 7, 10, 9, 9, 9, 11, 10, 10, 8], texte=(1, 7, 8, 9))
-    w = feuille("DECELEES", "tblDecelees", ["Date", "Matricule", "Type", "Allee"], [(f"=TODAY()-{j}" if j else "=TODAY()", m, t, a) for j, m, t, a in decelees()], [13, 12, 16, 8], texte=(2,))
+    feuille("EQUIPE", "tblEquipe", ["Matricule", "Role", "Present", "Sorti", "Revenu", "Coef", "Cadence"], V(EQUIPE), [12, 12, 10, 10, 10, 8, 10], texte=(1, 4, 5))
+    feuille("TOURNEES", "tblTournees", ["Numero", "Etat", "Type", "Lignes", "Traitees", "Annulees", "Operateur", "Debut", "Fin", "Colis"], V(tournees()), [14, 7, 10, 9, 9, 9, 11, 10, 10, 8], texte=(1, 7, 8, 9))
+    w = feuille("DECELEES", "tblDecelees", ["Date", "Matricule", "Type", "Allee"], V([(f"=TODAY()-{j}" if j else "=TODAY()", m, t, a) for j, m, t, a in decelees()]), [13, 12, 16, 8], texte=(2,))
     for r in range(2, w.max_row + 1): w.cell(row=r, column=1).number_format = "dd/mm/yyyy"
-    feuille("VAGUES", "tblVagues", ["Heure", "Numero", "Lignes_prevues", "Lignes_preparees", "Ruptures"], VAGUES, [9, 12, 16, 18, 10], texte=(1, 2))
-    feuille("SERVICES", "tblServices", ["Service", "Fait", "Restant"], SERVICES, [20, 10, 10])
-    w = feuille("HISTORIQUE", "tblHisto", ["Date", "Prod", "PPM", "Rejets", "Decelees", "Lignes", "Ops"], [(f"=WORKDAY(TODAY(),-{k})",) + tuple(x) for k, *x in historique()], [13, 8, 8, 9, 10, 9, 7])
+    feuille("VAGUES", "tblVagues", ["Heure", "Numero", "Lignes_prevues", "Lignes_preparees", "Ruptures"], V(VAGUES), [9, 12, 16, 18, 10], texte=(1, 2))
+    feuille("SERVICES", "tblServices", ["Service", "Fait", "Restant"], V(SERVICES), [20, 10, 10])
+    w = feuille("HISTORIQUE", "tblHisto", ["Date", "Prod", "PPM", "Rejets", "Decelees", "Lignes", "Ops"], V([(f"=WORKDAY(TODAY(),-{k})",) + tuple(x) for k, *x in historique()]), [13, 8, 8, 9, 10, 9, 7])
     for r in range(2, w.max_row + 1): w.cell(row=r, column=1).number_format = "dd/mm/yyyy"
     wb.save(chemin)
 
@@ -180,7 +182,7 @@ def donnees_test():
         "securite": {"joursSansAccident": 187, "message": P["message_securite"]}}}
 
 if __name__ == "__main__":
-    classeur(sys.argv[1])
+    classeur(sys.argv[1], vierge="--vierge" in sys.argv)
     if "--test" in sys.argv:
         d = sys.argv[sys.argv.index("--test") + 1]
         open(d + "/data.js", "w", encoding="utf-8").write("window.PP_DATA = " + json.dumps(donnees_test(), ensure_ascii=False) + ";\n")
