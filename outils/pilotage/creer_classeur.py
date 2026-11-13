@@ -25,6 +25,9 @@ PARAM = [
  ("dossier_sortie", "", "Dossier où écrire data.js = dossier de pilotage.html. Vide = dossier de ce classeur."),
  ("intervalle_s", 60, "Secondes entre deux exports (15 au minimum)."),
  ("rafraichir_requetes", "NON", "OUI = actualise toutes les requêtes du classeur avant chaque export."),
+ ("logys", "OUI", "OUI = le module lit Logys à chaque export et remplit TOURNEES, SERVICES, rejets et colis. NON = feuilles remplies à la main."),
+ ("dsn_logys", "LOGP.DR-NORD.REXEL.FR", "Nom de la source ODBC Logys (la même que dans Power Query)."),
+ ("vue_tournees", "REXEL.F_GESTOURPREP_TOUR", "Vue Logys des tournées de préparation."),
  ("site", "CLR Champigneulles", "Nom affiché en haut à gauche."),
  ("debut", "13:06", "Prise de poste."),
  ("fin", "21:00", "Fin de poste."),
@@ -35,7 +38,7 @@ PARAM = [
  ("cadence_defaut", 50, "Lignes / heure pour un opérateur sans cadence connue."),
  ("prevu", 9800, "PRÉVISION DU JOUR en lignes : à saisir chaque jour."),
  ("fin_prevision", "18:20", "Après cette heure, seule la charge réellement lancée compte."),
- ("rejets_jour", 71, "Nombre de rejets du jour (colis écartés par la balance)."),
+ ("rejets_jour", 71, "Rejets du jour. Lu dans Logys quand logys = OUI ; sinon à saisir ici."),
  ("avance_stable", 10, "Minutes d'avance pour être STABLE (vert)."),
  ("retard_critique", 0, "Minutes de retard tolérées avant CRITIQUE (rouge)."),
  ("rej_orange", 120, "Rejets : seuil orange."), ("rej_rouge", 140, "Rejets : seuil rouge."),
@@ -49,7 +52,7 @@ PARAM = [
  ("message_securite", "Je regarde derrière moi avant de reculer avec mon chariot.", "Message sécurité du jour."),
 ]
 EQUIPE = [("017", "Pilote", "OUI", "", "", 0.5, 83.8), ("142", "Rejet", "OUI", "", "", 0, 83.8), ("015", "Carton", "OUI", "", "", 1, 77.1)] + \
-         [(m, "Picking", "OUI" if i < 14 else "NON", "17:00" if m == "739" else "", "18:15" if i >= 14 else "", 1, c) for i, (m, c) in enumerate(
+         [(m, "Picking", "AUTO", "", "", 1, c) for i, (m, c) in enumerate(
           [("112", 82.7), ("129", 86.2), ("132", 92.6), ("149", 77.3), ("154", 84.0), ("159", 66.3), ("172", 93.7), ("194", 75.6), ("617", 92.1),
            ("628", 75.6), ("670", 84.3), ("708", 80.0), ("717", 75.9), ("739", 108.6), ("789", 59.6), ("036", 94.9)])]
 def tournees():
@@ -96,13 +99,13 @@ def classeur(chemin):
       "4. Mettre le .xlsm dans le dossier de pilotage.html (ou remplir dossier_sortie dans PARAMETRES)",
       "", "TOUS LES JOURS",
       "Alt+F8  >  DemarrerLive : export immédiat puis toutes les minutes.   ArreterLive : arrêt.   ExporterMaintenant : un seul export.",
-      "Saisir la prévision du jour (prevu) et les rejets (rejets_jour) dans PARAMETRES.",
+      "Saisir la prévision du jour (prevu) dans PARAMETRES. Les rejets et les colis viennent de Logys.",
       "", "LES FEUILLES (les lignes d'exemple sont à remplacer par vos extractions Logys)",
       "PARAMETRES : horaires, pauses, seuils, prévision, rejets, sécurité.",
-      "EQUIPE : un opérateur par ligne, présent OUI/NON, cadence en lignes par heure.",
-      "TOURNEES : une tournée par ligne. Etat L = lancée, C = en cours, F = faite aujourd'hui.",
+      "EQUIPE : un opérateur par ligne avec sa cadence. Present = AUTO (présent s'il prépare dans Logys), OUI ou NON pour forcer.",
+      "TOURNEES et SERVICES : REMPLIES TOUTES SEULES depuis Logys quand logys = OUI dans PARAMETRES.",
       "DECELEES : une erreur décelée par ligne (aujourd'hui + les 7 derniers jours pour le plan des allées).",
-      "VAGUES, SERVICES : avancement des vagues et des autres préparations du site.",
+      "VAGUES : avancement des vagues, à saisir (pas de requête Logys fournie pour l'instant).",
       "HISTORIQUE : un jour travaillé par ligne, du plus ancien au plus récent (30 jours au moins).",
       "", "Garder les noms des feuilles, des tableaux et des colonnes : le module les cherche par leur nom."]
     for i, t in enumerate(lignes): ws.cell(row=6 + i, column=1, value=t).font = gras if t.isupper() or t.startswith(("MISE", "TOUS", "LES F")) else Font()
@@ -126,7 +129,7 @@ def classeur(chemin):
         c = w.cell(row=r, column=2); c.alignment = Alignment(horizontal="left")
         if w.cell(row=r, column=1).value == "dernier_accident": c.number_format = "dd/mm/yyyy"
         elif isinstance(c.value, str) and not c.value.startswith("="): c.number_format = "@"
-        if w.cell(row=r, column=1).value in ("prevu", "rejets_jour"): c.fill = PatternFill("solid", fgColor="FFF2A8")
+        if w.cell(row=r, column=1).value in ("prevu",): c.fill = PatternFill("solid", fgColor="FFF2A8")
     feuille("EQUIPE", "tblEquipe", ["Matricule", "Role", "Present", "Sorti", "Revenu", "Coef", "Cadence"], EQUIPE, [12, 12, 10, 10, 10, 8, 10], texte=(1, 4, 5))
     feuille("TOURNEES", "tblTournees", ["Numero", "Etat", "Type", "Lignes", "Traitees", "Annulees", "Operateur", "Debut", "Fin", "Colis"], tournees(), [14, 7, 10, 9, 9, 9, 11, 10, 10, 8], texte=(1, 7, 8, 9))
     w = feuille("DECELEES", "tblDecelees", ["Date", "Matricule", "Type", "Allee"], [(f"=TODAY()-{j}" if j else "=TODAY()", m, t, a) for j, m, t, a in decelees()], [13, 12, 16, 8], texte=(2,))
@@ -151,6 +154,7 @@ def donnees_test():
             if fin: heures[dh(fin).hour] = heures.get(dh(fin).hour, 0) + lf
         else: restant += max(0, l - a - t)
         tours.append({"n": n, "k": k, "st": st, "l": l, "t": t, "a": a, "op": op, "deb": iso(dh(deb)) if deb else None})
+    actifs = {op for n, k, st, l, t, a, op, deb, fin, colis in T if op and (k == "C" or (k == "F" and fin and 0 <= (now - dh(fin)).total_seconds() <= 3600))}
     cnt = lambda rows, i: {str(k): sum(1 for r in rows if r[i] == k) for k in dict.fromkeys(r[i] for r in rows)}
     Dj = [r for r in D if r[0] == 0]; Dh = [r for r in D if r[0] < 7]
     al = lambda rows: {f"{int(k):02d}": v for k, v in cnt(rows, 3).items()}
@@ -161,7 +165,7 @@ def donnees_test():
     nm = max(1, len(mois)); avant = now.strftime("%H:%M") < P["fin_prevision"]
     return {"genere": iso(now), "jour": {"date": AUJ.isoformat(), "debut": P["debut"], "fin": P["fin"], "pauses": pauses},
       "params": {"heures_pointees": P["heures_pointees"], "cadence_defaut": P["cadence_defaut"], "fin_prevision": P["fin_prevision"]}, "seuils": seuils, "saisie": {"prevu": P["prevu"]},
-      "equipe": [{"mat": m, "role": r, "present": p == "OUI", "sorti": s or None, "revenu": rv or None, "coef": c, "cadence": cad} for m, r, p, s, rv, c, cad in EQUIPE],
+      "equipe": [{"mat": m, "role": r, "present": p == "OUI" or (p == "AUTO" and m in actifs), "sorti": s or None, "revenu": rv or None, "coef": c, "cadence": cad} for m, r, p, s, rv, c, cad in EQUIPE],
       "tours": tours, "rejets": P["rejets_jour"], "decelees": [{"mat": k, "n": v} for k, v in cnt(Dj, 1).items()], "hist": hist,
       "mois": {"nom": ["Janvier", "Février", "Mars", "Avril", "Mai", "Juin", "Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre"][AUJ.month - 1], "prod": round(sum(m[1] for m in mois) / nm), "ppm": round(sum(m[2] for m in mois) / nm)},
       "dec_mois": [{"d": m[0].isoformat(), "n": m[3]} for m in mois],

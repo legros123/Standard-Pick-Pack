@@ -4,8 +4,10 @@ Option Explicit
 '  PICK & PACK LIVE - un seul classeur, un seul module, un seul fichier de sortie.
 '  Lit les tableaux du classeur (PARAMETRES, EQUIPE, TOURNEES, DECELEES, VAGUES,
 '  SERVICES, HISTORIQUE) et ecrit "data.js" dans le dossier de pilotage.html.
+'  Avec logys = OUI dans PARAMETRES, il remplit d'abord TOURNEES, SERVICES, les rejets
+'  et les colis depuis Logys (ODBC, SELECT uniquement).
 '  Macros a lancer (Alt+F8) : DemarrerLive, ArreterLive, ExporterMaintenant.
-'  Aucune ecriture dans Logys : le module ne fait que lire le classeur.
+'  Aucune ecriture dans Logys : lecture seule.
 ' =====================================================================================
 
 Private Const F_LIVE As String = "LIVE"
@@ -20,6 +22,14 @@ Private Const NB_JOURS_HIST As Long = 30
 Private mProchain As Date
 Private mActif As Boolean
 Private mP As Object                               ' parametres : cle -> valeur
+Private mCn As Object                              ' connexion Logys, gardee ouverte entre deux exports
+Private mActifs As Object                          ' matricules vus au picking (tournee en cours ou finie depuis peu)
+Private mRejetsLogys As Double                     ' -1 = non lu dans Logys
+Private mContLogys As Double                       ' -1 = non lu dans Logys
+Private mLogysMsg As String
+Private Const ACTIF_MIN As Double = 60             ' minutes : un operateur est "present" s'il a fini une tournee depuis moins que cela
+Private Const DSN_DEFAUT As String = "LOGP.DR-NORD.REXEL.FR"
+Private Const VUE_DEFAUT As String = "REXEL.F_GESTOURPREP_TOUR"
 
 ' ------------------------------- commandes -------------------------------------------
 Public Sub DemarrerLive()
@@ -33,6 +43,7 @@ Public Sub ArreterLive()
     On Error GoTo 0
     mActif = False
     mProchain = 0
+    FermerLogys
     Etat "Arrete"
 End Sub
 
@@ -58,12 +69,18 @@ Public Sub ExporterMaintenant()
         DoEvents
         On Error GoTo Erreur
     End If
+    mRejetsLogys = -1: mContLogys = -1: mLogysMsg = ""
+    If Oui(Param("logys")) Then
+        ImporterLogys
+        On Error GoTo Erreur
+        If Len(mLogysMsg) = 0 Then mLogysMsg = "Logys OK"
+    End If
     js = "window.PP_DATA = " & ConstruireDonnees() & ";" & vbLf
     dossier = ParamTxt("dossier_sortie", "")
     If Len(dossier) = 0 Then dossier = ThisWorkbook.Path
     If Right$(dossier, 1) <> "\" Then dossier = dossier & "\"
     EcrireUtf8 dossier & NOM_FICHIER, js
-    Etat "OK - " & dossier & NOM_FICHIER
+    Etat "OK - " & dossier & NOM_FICHIER & IIf(Len(mLogysMsg) > 0, "  |  " & mLogysMsg, "")
     ThisWorkbook.Worksheets(F_LIVE).Range(CELL_DERNIER).Value = Now
     Exit Sub
 Erreur:
@@ -83,11 +100,13 @@ Private Function ConstruireDonnees() As String
 
     aujourdhui = Date
     Set heures = NouveauDico()
+    Set mActifs = NouveauDico()
     Set decMat = NouveauDico(): Set typesJ = NouveauDico(): Set alleesJ = NouveauDico()
     Set typesH = NouveauDico(): Set alleesH = NouveauDico()
 
+    sTours = JsonTours(aujourdhui, fait, restant, contFaits, nbF, nbL, nbC, heures)   ' avant l'equipe : repere qui est actif
+    If mContLogys >= 0 Then contFaits = mContLogys
     sEquipe = JsonEquipe()
-    sTours = JsonTours(aujourdhui, fait, restant, contFaits, nbF, nbL, nbC, heures)
     LireDecelees aujourdhui, decMat, typesJ, alleesJ, typesH, alleesH, totJ, totH
 
     b.Add """genere"":" & JStr(IsoDT(Now))
@@ -99,7 +118,7 @@ Private Function ConstruireDonnees() As String
     b.Add """saisie"":{""prevu"":" & JNum(ParamNum("prevu", 0)) & "}"
     b.Add """equipe"":" & sEquipe
     b.Add """tours"":" & sTours
-    b.Add """rejets"":" & JNum(ParamNum("rejets_jour", 0))
+    b.Add """rejets"":" & JNum(RejetsJour())
     b.Add """decelees"":" & JsonDicoListe(decMat, "mat", "n")
     b.Add JsonHistorique(aujourdhui)
     b.Add """pilotage"":" & JsonPilotage(aujourdhui, fait, restant, contFaits, nbF, nbL, nbC, heures, typesJ, alleesJ, typesH, alleesH, totJ, totH)
@@ -129,20 +148,34 @@ End Function
 Private Function JsonEquipe() As String
     Dim v As Variant, lo As ListObject, b As New Collection, i As Long
     Dim cMat As Long, cRole As Long, cPres As Long, cSorti As Long, cRev As Long, cCoef As Long, cCad As Long
+    Dim vus As Object, mat As String, pres As Boolean, k As Variant, sp As String
+    Set vus = NouveauDico()
     Set lo = Tableau("EQUIPE", "tblEquipe")
     v = Corps(lo)
     If IsArray(v) Then
         cMat = Col(lo, "Matricule"): cRole = Col(lo, "Role"): cPres = Col(lo, "Present")
         cSorti = Col(lo, "Sorti"): cRev = Col(lo, "Revenu"): cCoef = Col(lo, "Coef"): cCad = Col(lo, "Cadence")
         For i = 1 To UBound(v, 1)
-            If Len(Matricule(v(i, cMat))) > 0 Then
-                b.Add "{""mat"":" & JStr(Matricule(v(i, cMat))) & ",""role"":" & JStr(Txt(v(i, cRole))) & _
-                      ",""present"":" & IIf(Oui(v(i, cPres)), "true", "false") & _
+            mat = Matricule(v(i, cMat))
+            If Len(mat) > 0 Then
+                vus(mat) = 1
+                ' Present = OUI / NON force la valeur ; AUTO ou vide = present s'il prepare en ce moment dans Logys
+                sp = ""
+                If Not Vide(v(i, cPres)) Then sp = UCase$(Trim$(CStr(v(i, cPres))))
+                If sp = "" Or sp = "AUTO" Then pres = mActifs.Exists(mat) Else pres = Oui(v(i, cPres))
+                b.Add "{""mat"":" & JStr(mat) & ",""role"":" & JStr(Txt(v(i, cRole))) & _
+                      ",""present"":" & IIf(pres, "true", "false") & _
                       ",""sorti"":" & JHeureOuNull(v(i, cSorti)) & ",""revenu"":" & JHeureOuNull(v(i, cRev)) & _
                       ",""coef"":" & JNum(NumDef(v(i, cCoef), 1)) & ",""cadence"":" & JNum(NumDef(v(i, cCad), ParamNum("cadence_defaut", 50))) & "}"
             End If
         Next i
     End If
+    ' un operateur actif dans Logys mais absent de la feuille EQUIPE compte quand meme, a la cadence par defaut
+    For Each k In mActifs.Keys
+        If Not vus.Exists(CStr(k)) Then
+            b.Add "{""mat"":" & JStr(CStr(k)) & ",""role"":""Picking"",""present"":true,""sorti"":null,""revenu"":null,""coef"":1,""cadence"":" & JNum(ParamNum("cadence_defaut", 50)) & "}"
+        End If
+    Next k
     JsonEquipe = "[" & Joindre(b, "," & vbLf) & "]"
 End Function
 
@@ -151,7 +184,7 @@ Private Function JsonTours(ByVal aujourdhui As Date, ByRef fait As Double, ByRef
                            ByRef nbF As Long, ByRef nbL As Long, ByRef nbC As Long, ByVal heures As Object) As String
     Dim v As Variant, lo As ListObject, b As New Collection, i As Long
     Dim cNum As Long, cEtat As Long, cType As Long, cLig As Long, cTr As Long, cAn As Long, cOp As Long, cDeb As Long, cFin As Long, cColis As Long
-    Dim k As String, l As Double, t As Double, a As Double, dFin As Variant, lignesFaites As Double
+    Dim k As String, l As Double, t As Double, a As Double, dFin As Variant, lignesFaites As Double, op As String
     Set lo = Tableau("TOURNEES", "tblTournees")
     v = Corps(lo)
     If IsArray(v) Then
@@ -162,6 +195,8 @@ Private Function JsonTours(ByVal aujourdhui As Date, ByRef fait As Double, ByRef
             k = CodeEtat(v(i, cEtat))
             If Len(k) > 0 Then
                 l = Num(v(i, cLig)): t = Num(v(i, cTr)): a = Num(v(i, cAn))
+                op = Matricule(v(i, cOp))
+                If UCase$(op) = "AQ" Then op = ""              ' AQ = tournee pas encore prise
                 Select Case k
                     Case "F"
                         If t > 0 Then lignesFaites = t Else lignesFaites = Max0(l - a)
@@ -171,14 +206,16 @@ Private Function JsonTours(ByVal aujourdhui As Date, ByRef fait As Double, ByRef
                         dFin = DateHeure(v(i, cFin), aujourdhui)
                         If Not IsEmpty(dFin) Then
                             If Int(CDbl(dFin)) = CLng(aujourdhui) Then Ajouter heures, CStr(Hour(dFin)), lignesFaites
+                            If Len(op) > 0 And (CDbl(Now) - CDbl(dFin)) * 1440# <= ACTIF_MIN Then mActifs(op) = 1
                         End If
                     Case "L"
                         restant = restant + Max0(l - a - t): nbL = nbL + 1
                     Case "C"
                         restant = restant + Max0(l - a - t): nbC = nbC + 1
+                        If Len(op) > 0 Then mActifs(op) = 1
                 End Select
                 b.Add "{""n"":" & JStr(Txt(v(i, cNum))) & ",""k"":" & JStr(k) & ",""st"":" & JStr(Txt(v(i, cType))) & _
-                      ",""l"":" & JNum(l) & ",""t"":" & JNum(t) & ",""a"":" & JNum(a) & ",""op"":" & JStr(Matricule(v(i, cOp))) & _
+                      ",""l"":" & JNum(l) & ",""t"":" & JNum(t) & ",""a"":" & JNum(a) & ",""op"":" & JStr(op) & _
                       ",""deb"":" & JDateHeureOuNull(v(i, cDeb), aujourdhui) & "}"
             End If
         Next i
@@ -267,7 +304,7 @@ Private Function JsonPilotage(ByVal aujourdhui As Date, ByVal fait As Double, By
     b.Add """heures"":[" & Joindre(bH, ",") & "]"
     b.Add """vagues"":" & JsonVagues()
     b.Add """services"":" & JsonServices()
-    b.Add """rejets"":{""total"":" & JNum(ParamNum("rejets_jour", 0)) & "}"
+    b.Add """rejets"":{""total"":" & JNum(RejetsJour()) & "}"
     b.Add """decelees"":{""total"":" & totJ & ",""types"":" & JsonDicoObjet(typesJ) & ",""allees"":" & JsonDicoObjet(alleesJ) & _
           ",""hist"":{""jours"":" & JOURS_HISTO_ALLEES & ",""total"":" & totH & ",""allees"":" & JsonDicoObjet(alleesH) & ",""types"":" & JsonDicoObjet(typesH) & "}}"
     b.Add """historique"":" & JsonHistoPilotage(aujourdhui)
@@ -328,6 +365,140 @@ Private Function JsonHistoPilotage(ByVal aujourdhui As Date) As String
         Next i
     End If
     JsonHistoPilotage = "[" & Joindre(b, ",") & "]"
+End Function
+
+' ------------------------------- Logys (lecture seule) --------------------------------
+' Remplit TOURNEES et SERVICES, lit les rejets et les colis du convoyeur.
+' Une panne Logys ne bloque pas l'export : on garde le contenu des feuilles et on le signale.
+Private Sub ImporterLogys()
+    Dim vue As String, ouvert As String, d As Variant
+    On Error GoTo Erreur
+    vue = ParamTxt("vue_tournees", VUE_DEFAUT)
+    ouvert = "(t.L_ETAT_TOUR IN ('LANCEE','ENCOURS','PRELEVE') OR t.DAT_MAJ >= TRUNC(SYSDATE))"
+    OuvrirLogys
+    Application.ScreenUpdating = False
+
+    d = LireLogys("SELECT t.NUM_TOUR, t.L_ETAT_TOUR, t.L_STYP_TOUR, NVL(t.NB_LIG_PREV,0), NVL(t.NB_LIG_TERM,0), NVL(t.NB_LIG_ANNU,0), " & _
+                  "t.OPE_MAJ, TO_CHAR(t.DAT_MAJ,'YYYY-MM-DD HH24:MI:SS'), NVL(t.NB_CONT_TERM,0) " & _
+                  "FROM " & vue & " t WHERE t.L_TYP_TOUR = 'PREPAR' AND UPPER(TRIM(t.L_STYP_TOUR)) IN ('DETAIL','CARTON') " & _
+                  "AND " & ouvert & " ORDER BY t.NUM_TOUR")
+    EcrireTournees d
+
+    d = LireLogys("SELECT CASE WHEN UPPER(TRIM(t.L_STYP_TOUR)) = 'CABLE' THEN 'CABLE' ELSE 'HG' END, " & _
+                  "SUM(CASE WHEN t.DAT_MAJ >= TRUNC(SYSDATE) THEN NVL(t.NB_LIG_TERM,0) ELSE 0 END), " & _
+                  "SUM(CASE WHEN t.L_ETAT_TOUR IN ('LANCEE','ENCOURS') THEN GREATEST(0, NVL(t.NB_LIG_PREV,0) - NVL(t.NB_LIG_TERM,0) - NVL(t.NB_LIG_ANNU,0)) ELSE 0 END) " & _
+                  "FROM " & vue & " t WHERE t.L_TYP_TOUR = 'PREPAR' AND UPPER(TRIM(t.L_STYP_TOUR)) NOT IN ('DETAIL','CARTON') " & _
+                  "AND " & ouvert & " GROUP BY CASE WHEN UPPER(TRIM(t.L_STYP_TOUR)) = 'CABLE' THEN 'CABLE' ELSE 'HG' END ORDER BY 1")
+    EcrireServices d
+
+    d = LireLogys("SELECT (SELECT NVL(SUM(t.NB_CONT_TERM),0) FROM " & vue & " t WHERE t.L_TYP_TOUR = 'PREPAR' " & _
+                  "AND t.L_STYP_TOUR IN ('DETAIL','CARTON') AND TRUNC(t.DAT_MAJ) = TRUNC(SYSDATE)), " & _
+                  "(SELECT COUNT(DISTINCT cr.NUM_CONT) FROM CR_STOCK cr WHERE cr.COD_TABLE = 'CONTENANT' AND cr.TYP_CR_STOCK = 'REJE' " & _
+                  "AND cr.COD_MOTIF = 'PDS' AND TRUNC(cr.DAT_CREA) = TRUNC(SYSDATE)) FROM DUAL")
+    If IsArray(d) Then
+        mContLogys = NumDef(d(0, 0), -1)
+        mRejetsLogys = NumDef(d(1, 0), -1)
+    End If
+Sortie:
+    Application.ScreenUpdating = True
+    Exit Sub
+Erreur:
+    mLogysMsg = "LOGYS INDISPONIBLE (" & Err.Description & ") : feuilles non actualisees"
+    FermerLogys
+    Resume Sortie
+End Sub
+
+Private Sub OuvrirLogys()
+    If Not mCn Is Nothing Then
+        If mCn.State = 1 Then Exit Sub
+    End If
+    Set mCn = CreateObject("ADODB.Connection")
+    mCn.ConnectionTimeout = 15
+    mCn.CommandTimeout = 60
+    mCn.Properties("Prompt") = 2                   ' le pilote ODBC ne demande l'identifiant que s'il manque
+    mCn.Open "DSN=" & ParamTxt("dsn_logys", DSN_DEFAUT)
+End Sub
+
+Private Sub FermerLogys()
+    On Error Resume Next
+    If Not mCn Is Nothing Then
+        If mCn.State = 1 Then mCn.Close
+    End If
+    Set mCn = Nothing
+    On Error GoTo 0
+End Sub
+
+' Resultat d'un SELECT : tableau (colonne, ligne) a partir de 0, ou Empty s'il n'y a aucune ligne
+Private Function LireLogys(ByVal sql As String) As Variant
+    Dim rs As Object
+    Set rs = mCn.Execute(sql)
+    If rs.EOF Then LireLogys = Empty Else LireLogys = rs.GetRows
+    rs.Close
+End Function
+
+Private Sub EcrireTournees(ByVal d As Variant)
+    Dim lo As ListObject, a() As Variant, n As Long, i As Long, k As String, op As String
+    Dim cNum As Long, cEtat As Long, cType As Long, cLig As Long, cTr As Long, cAn As Long, cOp As Long, cDeb As Long, cFin As Long, cColis As Long
+    Set lo = Tableau("TOURNEES", "tblTournees")
+    If Not IsArray(d) Then
+        EcrireTable lo, Empty, 0
+        Exit Sub
+    End If
+    cNum = Col(lo, "Numero"): cEtat = Col(lo, "Etat"): cType = Col(lo, "Type"): cLig = Col(lo, "Lignes")
+    cTr = Col(lo, "Traitees"): cAn = Col(lo, "Annulees"): cOp = Col(lo, "Operateur"): cDeb = Col(lo, "Debut")
+    cFin = Col(lo, "Fin"): cColis = Col(lo, "Colis")
+    n = UBound(d, 2) + 1
+    ReDim a(1 To n, 1 To lo.ListColumns.Count)
+    For i = 1 To n
+        k = CodeEtat(d(1, i - 1))
+        op = ""
+        If Not Vide(d(6, i - 1)) Then op = Trim$(CStr(d(6, i - 1)))
+        If UCase$(op) = "AQ" Then op = ""
+        a(i, cNum) = Txt(d(0, i - 1))
+        a(i, cEtat) = k
+        a(i, cType) = Txt(d(2, i - 1))
+        a(i, cLig) = Num(d(3, i - 1))
+        a(i, cTr) = Num(d(4, i - 1))
+        a(i, cAn) = Num(d(5, i - 1))
+        a(i, cOp) = op
+        ' Logys ne donne que la derniere mise a jour : elle sert de debut pour une tournee en cours, de fin pour une tournee faite
+        If k = "C" Then a(i, cDeb) = Txt(d(7, i - 1))
+        If k = "F" Then a(i, cFin) = Txt(d(7, i - 1))
+        a(i, cColis) = Num(d(8, i - 1))
+    Next i
+    EcrireTable lo, a, n
+End Sub
+
+Private Sub EcrireServices(ByVal d As Variant)
+    Dim lo As ListObject, a() As Variant, n As Long, i As Long
+    Set lo = Tableau("SERVICES", "tblServices")
+    If Not IsArray(d) Then
+        EcrireTable lo, Empty, 0
+        Exit Sub
+    End If
+    n = UBound(d, 2) + 1
+    ReDim a(1 To n, 1 To lo.ListColumns.Count)
+    For i = 1 To n
+        If Txt(d(0, i - 1)) = "CABLE" Then a(i, Col(lo, "Service")) = "C" & ChrW$(226) & "ble" Else a(i, Col(lo, "Service")) = "Hors gabarit"
+        a(i, Col(lo, "Fait")) = Num(d(1, i - 1))
+        a(i, Col(lo, "Restant")) = Num(d(2, i - 1))
+    Next i
+    EcrireTable lo, a, n
+End Sub
+
+' Remplace tout le contenu d'un tableau structure par n lignes (lecture en bloc, ecriture en bloc)
+Private Sub EcrireTable(ByVal lo As ListObject, ByVal a As Variant, ByVal n As Long)
+    If Not lo.DataBodyRange Is Nothing Then lo.DataBodyRange.ClearContents
+    If n <= 0 Then
+        lo.Resize lo.HeaderRowRange.Resize(2)
+        Exit Sub
+    End If
+    lo.Resize lo.HeaderRowRange.Resize(n + 1)
+    lo.DataBodyRange.Value2 = a
+End Sub
+
+Private Function RejetsJour() As Double
+    If mRejetsLogys >= 0 Then RejetsJour = mRejetsLogys Else RejetsJour = ParamNum("rejets_jour", 0)
 End Function
 
 ' ------------------------------- parametres ------------------------------------------
@@ -400,6 +571,8 @@ End Sub
 Private Function Vide(ByVal v As Variant) As Boolean
     If IsError(v) Then
         Vide = True
+    ElseIf IsNull(v) Then
+        Vide = True
     ElseIf IsEmpty(v) Then
         Vide = True
     Else
@@ -449,7 +622,7 @@ Private Function Oui(ByVal v As Variant) As Boolean
     Oui = (s = "OUI" Or s = "O" Or s = "1" Or s = "VRAI" Or s = "TRUE" Or s = "X")
 End Function
 
-' L = lancee, C = en cours, F = faite. Accepte la lettre ou le mot.
+' L = lancee, C = en cours, F = faite. Accepte la lettre, le mot, ou l'etat Logys (LANCEE, ENCOURS, PRELEVE, TERMINEE).
 Private Function CodeEtat(ByVal v As Variant) As String
     Dim s As String
     If Vide(v) Then Exit Function
@@ -457,7 +630,7 @@ Private Function CodeEtat(ByVal v As Variant) As String
     Select Case s
         Case "L": CodeEtat = "L"
         Case "C", "E": CodeEtat = "C"
-        Case "F", "T": CodeEtat = "F"
+        Case "F", "T", "P": CodeEtat = "F"            ' TERMINEE, PRELEVE : le preparateur a fini
     End Select
 End Function
 

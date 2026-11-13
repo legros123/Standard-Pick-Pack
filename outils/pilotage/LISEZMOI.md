@@ -22,4 +22,11 @@ Un seul classeur Excel, un seul module, un seul fichier de sortie (`data.js`) lu
 | SERVICES | tblServices | Service, Fait, Restant |
 | HISTORIQUE | tblHisto | Date, Prod, PPM, Rejets, Decelees, Lignes, Ops |
 
-Le module ne lit que le classeur : il n'interroge pas Logys lui-même. Les tableaux sont à alimenter par les extractions existantes (requêtes, copier-coller) ; avec `rafraichir_requetes = OUI`, il actualise les requêtes du classeur avant chaque export.
+## Logys
+Avec `logys = OUI` (PARAMETRES), le module interroge Logys en lecture seule par ODBC (`dsn_logys`, `vue_tournees`) à chaque export :
+- TOURNEES : tournées `PREPAR` de sous-type DETAIL / CARTON, états LANCEE, ENCOURS, PRELEVE, ou mises à jour aujourd'hui. LANCEE → L, ENCOURS → C, PRELEVE et TERMINEE → F. `OPE_MAJ = 'AQ'` = tournée non prise. `DAT_MAJ` sert de début (en cours) ou de fin (faite).
+- SERVICES : les autres sous-types, CABLE d'un côté, hors gabarit de l'autre.
+- Rejets du jour (`CR_STOCK`, `REJE` / `PDS`) et contenants terminés (colis pesés).
+- EQUIPE, colonne `Present = AUTO` : présent si une tournée est en cours ou finie depuis moins de 60 min.
+
+Restent manuels : DECELEES, HISTORIQUE, VAGUES, la prévision du jour. Si Logys ne répond pas, l'export continue avec le contenu des feuilles et l'état l'indique.
