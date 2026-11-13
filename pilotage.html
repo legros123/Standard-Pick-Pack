@@ -1992,7 +1992,7 @@ class SceneAccueil extends ScenePile {
       if (petit) this.texte(petit, x0, y0 + tV * 0.95 + tS * 2.75, { t: tS * 0.78, c: `rgb(${ENCRE2})` });
     };
     const tour = (n, mot) => (n == null ? "" : `${n0(n)} ${n >= 2 ? "tournées" : "tournée"} ${mot}`);
-    bloc(-6.6, "LIGNES À PRÉPARER", A.lances, tour(A.nbLances, "en attente"), rvb(st.map(v => v * 1.15)), "rgb(243,246,251)", fini(A.restant) ? `≈ ${n0(A.restant)} lignes restantes estimées` : "");
+    bloc(-6.6, "LIGNES À PRÉPARER", A.lances, tour(A.nbLances, "en attente"), rvb(st.map(v => v * 1.15)), "rgb(243,246,251)", fini(A.restant) ? `≈ ${n0(A.restant)} en tout avec le reste des tournées en cours${A.aLancer > 0 ? " et la prévision" : ""}` : "");
     bloc(0.2, "LIGNES EN COURS", A.enCours, tour(A.nbEnCours, "en préparation"), "rgb(61,219,245)", "rgb(61,219,245)");
     bloc(6.9, "LIGNES FAITES", A.faites, tour(A.nbFaites, A.nbFaites >= 2 ? "terminées" : "terminée"), "rgb(125,184,255)", "rgb(125,184,255)");
   }
