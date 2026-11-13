@@ -663,14 +663,42 @@ End Function
 
 Private Function SectionVagues() As String
     Dim t As Variant, n As Long, i As Long, s As String
+    Dim u As Variant, m As Long, dPrev As Object, dTerm As Object, k As String
     On Error GoTo Erreur
     If mCn Is Nothing Then Exit Function
     n = Lire(SqlVagues(), t)
+    ' avancement du pick (detail et carton) dans chaque vague : une panne ici ne bloque pas les vagues
+    Set dPrev = CreateObject("Scripting.Dictionary")
+    Set dTerm = CreateObject("Scripting.Dictionary")
+    On Error Resume Next
+    m = Lire(SqlVaguesPick(), u)
+    If Err.Number <> 0 Then
+        Noter "vagues (avancement du pick)", Err.Description
+        m = 0
+    End If
+    Err.Clear
+    On Error GoTo Erreur
+    For i = 0 To m - 1
+        k = Trim$(TexteCellule(u(0, i)))
+        If Len(k) > 0 Then
+            dPrev(k) = nz(u(1, i))
+            dTerm(k) = nz(u(2, i))
+        End If
+    Next i
     For i = 0 To n - 1
         If i > 0 Then s = s & ","
         s = s & "{""num"":" & JS(t(0, i)) & ",""heure"":" & JS(t(1, i)) & ",""etat"":" & JS(t(2, i)) & _
             ",""ligPrev"":" & JN(t(3, i)) & ",""ligPrep"":" & JN(t(4, i)) & ",""ligRupt"":" & JN(t(5, i)) & _
-            ",""contPrev"":" & JN(t(6, i)) & ",""contSortie"":" & JN(t(7, i)) & ",""cdePrev"":" & JN(t(8, i)) & ",""cdePrep"":" & JN(t(9, i)) & "}"
+            ",""contPrev"":" & JN(t(6, i)) & ",""contSortie"":" & JN(t(7, i)) & ",""cdePrev"":" & JN(t(8, i)) & ",""cdePrep"":" & JN(t(9, i))
+        k = Trim$(TexteCellule(t(0, i)))
+        If m > 0 Then
+            If dPrev.Exists(k) Then
+                s = s & ",""pickPrev"":" & JN(dPrev(k)) & ",""pickPrep"":" & JN(dTerm(k))
+            Else
+                s = s & ",""pickPrev"":0,""pickPrep"":0"
+            End If
+        End If
+        s = s & "}"
     Next i
     SectionVagues = """vagues"":[" & s & "]"
     Exit Function
@@ -1390,6 +1418,20 @@ Private Function SqlVagues() As String
     s = s & "WHERE v.DAT_CREA >= TRUNC(SYSDATE)" & vbLf
     s = s & "ORDER BY v.DAT_CREA" & vbLf
     SqlVagues = s
+End Function
+
+' Lignes de pick (tournees DETAIL et CARTON) prevues et terminees, par vague du jour.
+' La tournee porte le numero de sa vague dans NUM_ORDRE_PREP.
+Private Function SqlVaguesPick() As String
+    Dim s As String
+    s = s & "SELECT t.NUM_ORDRE_PREP," & vbLf
+    s = s & "       SUM(GREATEST(NVL(t.NB_LIG_PREV, 0) - NVL(t.NB_LIG_ANNU, 0), 0)) AS PREVU," & vbLf
+    s = s & "       SUM(NVL(t.NB_LIG_TERM, 0)) AS FAIT" & vbLf
+    s = s & "FROM REXEL.F_GESTOURPREP_TOUR t" & vbLf
+    s = s & "WHERE t.L_STYP_TOUR IN ('DETAIL','CARTON')" & vbLf
+    s = s & "  AND t.NUM_ORDRE_PREP IN (SELECT v.NUM_ORDRE FROM REXEL.F_GESVAG_VAG v WHERE v.DAT_CREA >= TRUNC(SYSDATE))" & vbLf
+    s = s & "GROUP BY t.NUM_ORDRE_PREP" & vbLf
+    SqlVaguesPick = s
 End Function
 
 Private Function SqlDeparts() As String

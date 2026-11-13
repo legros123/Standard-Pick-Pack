@@ -534,7 +534,7 @@ body[data-ecran=accueil] .rz.dup{display:none}
 
 /* ───── ACCUEIL ───── */
 .acc{display:grid;grid-template-columns:minmax(0,1fr) 33rem;grid-template-rows:minmax(0,1fr) 6.4rem;gap:1.15rem;min-height:0;min-width:0}
-.acc-g{display:grid;grid-template-rows:minmax(0,1fr) 15.5rem;gap:1.15rem;min-height:0;min-width:0}
+.acc-g{display:grid;grid-template-rows:minmax(0,1fr);min-height:0;min-width:0}
 .acc-d{display:grid;grid-template-rows:1.25fr 1fr 1fr;gap:1.15rem;min-height:0;min-width:0}
 .acc-bas{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1.15rem;min-height:0}
 .trio-c{padding:1.05rem 1.5rem 1rem}
@@ -598,14 +598,14 @@ body[data-ecran=accueil] .rz.dup{display:none}
 .e1{grid-template-columns:1.62fr 1fr}
 .e1 .col{grid-template-rows:auto auto minmax(0,1fr)}
 .e1 .col>.bloc:first-child{display:block}
-.cad{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:1rem;height:100%}
+.cad{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));align-items:center;gap:.6rem;height:100%}
 .cad>div{display:grid;gap:.2rem;justify-items:center;text-align:center}
 .cad .l{font:500 .95rem/1.2 var(--f-t);letter-spacing:.1em;text-transform:uppercase;color:var(--ink-2)}
-.cad b{font:900 6.4rem/.9 var(--f-d)}
+.cad b{font:900 5.4rem/.9 var(--f-d)}
 .cad .s{font:400 1rem/1.3 var(--f-t);color:var(--ink-3)}
 .cad .s b{color:var(--ink-2);font-weight:700}
 .cad .vs{font:900 2rem/1 var(--f-d);color:var(--ink-3)}
-.cad [data-niv] b{color:var(--st-ic)}
+.cad [data-niv]>b{color:var(--st-ic)}
 .bloc.cadb{display:grid;grid-template-rows:auto minmax(0,1fr) auto}
 
 /* ───── VAGUES ───── */
@@ -1091,7 +1091,7 @@ function calculer(d, forcer) {
   if (M.dec) M.dec.ppm = M.fait > 0 ? M.dec.total / M.fait * 1e6 : null;
 
   /* le reste, tel que fourni */
-  M.vagues = (d.vagues || []).map(v => ({ num: v.num, heure: v.heure, etat: v.etat || "", ligPrev: +v.ligPrev || 0, ligPrep: +v.ligPrep || 0, ligRupt: +v.ligRupt || 0, contPrev: v.contPrev, contSortie: v.contSortie, cdePrev: +v.cdePrev || 0, cdePrep: +v.cdePrep || 0 }));
+  M.vagues = (d.vagues || []).map(v => ({ num: v.num, heure: v.heure, etat: v.etat || "", ligPrev: +v.ligPrev || 0, ligPrep: +v.ligPrep || 0, ligRupt: +v.ligRupt || 0, contPrev: v.contPrev, contSortie: v.contSortie, cdePrev: +v.cdePrev || 0, cdePrep: +v.cdePrep || 0, pickPrev: v.pickPrev != null ? +v.pickPrev || 0 : null, pickPrep: v.pickPrep != null ? +v.pickPrep || 0 : null }));
   /* reste à préparer par zone d'allées : affiché seulement s'il recoupe le reste à faire des tournées (écart de 15 % au plus) */
   M.zones = (d.zones || []).map(z => ({ lib: z.lib, fait: +z.fait || 0, restant: +z.restant || 0 }));
   const resteZones = M.zones.reduce((s, z) => s + z.restant, 0);
@@ -1921,45 +1921,45 @@ const longChemin = pts => pts.slice(1).reduce((s, b, i) => s + Math.abs(b[0] - p
 class SceneAccueil extends ScenePile {
   constructor(cv) {
     super(cv);
-    this.yaw0 = this.cam.yaw = -0.3; this.cam.pitch = 0.33; this.balancement = 0.06;
-    this.marges = [0.015, 0.04, 0.015, 0.15]; this.nOps = 0; this.niv = "na";
+    this.yaw0 = this.cam.yaw = -0.3; this.cam.pitch = 0.33; this.balancement = 0.05;
+    this.marges = [0.02, 0.04, 0.02, 0.31]; this.nOps = 0; this.niv = "na"; this.A = {};
   }
   slot(pile, i) {
     if (pile === "venir") { pile = "reste"; i += this.piles.reste.length; }
     const P = 1.04, col = 5, par = col * 5, c = Math.floor(i / par), r = i % par;
-    const cx = pile === "fait" ? 5.9 : -5.6;
+    const cx = pile === "fait" ? 6.9 : -6.6;
     return [cx + (r % col - (col - 1) / 2) * P - 0.46, pile === "fait" ? 0.16 + c * 0.96 : 0.12 + c * 1.12, (Math.floor(r / col) - 2) * P - 0.46];
   }
   niveaux() { return Math.max(3, Math.ceil((this.piles.reste.length + this.piles.venir.length) / 25)); }
   bornes() {
     const h = Math.max(this.niveaux() * 1.12 + 0.5, Math.ceil(this.piles.fait.length / 25) * 0.96 + 0.6);
-    return [-8.7, 0, -3.3, 8.9, h, 3.6];
+    return [-9.7, 0, -3.3, 9.9, h, 3.6];
   }
   maj(A) {
-    this.niv = A.niv;
+    this.niv = A.niv; this.A = A;
     const reste = Math.max(0, (A.restant || 0) - (A.aLancer || 0));
     this.nOps = reste <= 0 ? 0 : clamp(A.nbEnCours == null ? 3 : A.nbEnCours, 0, 5);
-    this.donnees(A.faites || 0, reste, A.aLancer > 0 ? A.aLancer : null);
+    this.donnees(A.faites || 0, reste, null);
   }
   dessiner(dt) {
     const x = this.ctx, H = this.h, st = RVB[this.niv] || RVB.na, t = this.fige ? 0 : this.t, venir = this.aVenir && this.piles.venir.length > 0;
     this.sol(17, 6, 1.3);
-    this.dalle(-8.6, -3.3, -2.6, 3.3, rvb(st, 0.14), rvb(st, 0.95), 2.5);
-    this.dalle(3, -3.3, 8.8, 3.3, "rgba(57,135,229,.13)", "rgba(125,184,255,.9)", 2.5);
+    this.dalle(-9.6, -3.3, -3.6, 3.3, rvb(st, 0.14), rvb(st, 0.95), 2.5);
+    this.dalle(4, -3.3, 9.8, 3.3, "rgba(57,135,229,.13)", "rgba(125,184,255,.9)", 2.5);
     /* allée de circulation : marquage jaune et chevrons de sens */
-    for (const z of [-2.5, 2.6]) this.trait([-2.4, 0, z], [2.8, 0, z], "rgba(255,214,10,.6)", 2.5);
-    this.trait([-2.4, 0, 0.05], [2.8, 0, 0.05], "rgba(255,214,10,.45)", 1.5, [9, 9]);
+    for (const z of [-2.5, 2.6]) this.trait([-3.3, 0, z], [3.7, 0, z], "rgba(255,214,10,.6)", 2.5);
+    this.trait([-3.3, 0, 0.05], [3.7, 0, 0.05], "rgba(255,214,10,.45)", 1.5, [9, 9]);
     for (let j = 0; j < 4; j++) {
       const ph = ((t * 0.5 + j / 4) % 1 + 1) % 1, al = this.fige ? 0.5 : Math.sin(ph * Math.PI) * 0.8;
-      this.chevron(-1.9 + ph * 4.2, -1.25, 1, al); this.chevron(2.3 - ph * 4.2, 1.35, -1, al * 0.6, "150,180,240");
+      this.chevron(-2.8 + ph * 6, -1.25, 1, al); this.chevron(3.2 - ph * 6, 1.35, -1, al * 0.6, "150,180,240");
     }
     /* palettes sous les colis faits */
-    for (const px of [4.6, 7.2]) for (const pz of [-1.3, 1.3]) this.boite({ x: px - 1.27, y: 0, z: pz - 1.27, w: 2.54, h: 0.15, d: 2.54, c: C_BOIS });
+    for (const px of [5.6, 8.2]) for (const pz of [-1.3, 1.3]) this.boite({ x: px - 1.27, y: 0, z: pz - 1.27, w: 2.54, h: 0.15, d: 2.54, c: C_BOIS });
     const L = [], nv = this.niveaux(), hr = nv * 1.12 + 0.1;
     /* rayonnage : montants bleus, lisses orange, comme dans l'entrepôt */
-    for (const ux of [-8.3, -2.9]) for (const uz of [-2.72, 2.72]) L.push({ x: ux - 0.07, y: 0, z: uz - 0.07, w: 0.14, h: hr, d: 0.14, c: C_BLEU, sansTrait: true });
+    for (const ux of [-9.3, -3.9]) for (const uz of [-2.72, 2.72]) L.push({ x: ux - 0.07, y: 0, z: uz - 0.07, w: 0.14, h: hr, d: 0.14, c: C_BLEU, sansTrait: true });
     for (let n = 0; n < nv; n++) for (let k = 0; k < 5; k++) for (const uz of [-2.72, 2.66])
-      L.push({ x: -8.2 + k * 1.04, y: 0.02 + n * 1.12, z: uz, w: 1.04, h: 0.09, d: 0.06, c: [240, 150, 30], sansTrait: true });
+      L.push({ x: -9.2 + k * 1.04, y: 0.02 + n * 1.12, z: uz, w: 1.04, h: 0.09, d: 0.06, c: [240, 150, 30], sansTrait: true });
     const flash = this.niv === "crit" && !this.fige ? 0.1 + 0.1 * Math.sin(t * 6) : 0;
     for (const q of ["venir", "reste", "fait"]) for (const c of this.piles[q]) {
       let vol = 0;
@@ -1974,18 +1974,27 @@ class SceneAccueil extends ScenePile {
     }
     this.piles.venir.forEach((c, j) => { const p = this.slot("venir", j); L.push({ x: p[0] + 0.02, y: p[1], z: p[2] + 0.02, w: 0.88, h: 0.88, d: 0.88, fil: true }); });
     /* les préparateurs en tournée : chargés à l'aller, à vide au retour */
-    const ch = [[-1.9, 1.35], [-1.9, -1.25], [2.3, -1.25], [2.3, 1.35], [-1.9, 1.35]], LC = longChemin(ch);
+    const ch = [[-2.8, 1.35], [-2.8, -1.25], [3.2, -1.25], [3.2, 1.35], [-2.8, 1.35]], LC = longChemin(ch);
     for (let k = 0; k < this.nOps; k++) {
       const s = ((t * 1.75 + k * LC / this.nOps) % LC + LC) % LC, q = surChemin(ch, s);
-      const charge = s < 2.6 ? s / 2.6 : s < 6.8 ? 1 : s < 9.4 ? 1 - (s - 6.8) / 2.6 : 0;
+      const charge = s < 2.6 ? s / 2.6 : s < 8.6 ? 1 : s < 11.2 ? 1 - (s - 8.6) / 2.6 : 0;
       perso(L, { x: q.x, z: q.z, fx: q.fx, fz: q.fz, marche: !this.fige, ph: t * 7.5 + k * 2.1, porte: true, gilet: C_JAUNE });
       chariot(L, { x: q.x + q.fx * 1.08, z: q.z + q.fz * 1.08, fx: q.fx, fz: q.fz, charge, colis: st.map(v => v * 0.9) });
     }
     this.peindre(L);
-    const tN = clamp(H * 0.052, 11, 44), lab = (s, cx, c) => { const a = this.p(cx, 0, 4.1); this.texte(s, clamp(a[0], tN * 3, this.w - tN * 2), Math.min(a[1] + tN * 1.25, H - tN * 0.35), { t: tN, gras: 900, f: F_D, esp: "0.1em", c }); };
-    lab("À PRÉPARER", -5.6, rvb(st.map(v => v * 1.15))); lab("FAIT", 5.9, "rgb(125,184,255)");
-    if (this.nOps) lab("EN COURS", 0.2, "rgb(61,219,245)");
-    if (venir) { const a = this.p(-5.6, hr + 0.5, 0); this.texte("EN FIL DE FER : À LANCER", a[0], Math.max(a[1], tN * 0.8), { t: tN * 0.5, esp: "0.14em", c: `rgb(${ENCRE2})` }); }
+    /* les trois compteurs, sous leur zone : lignes à préparer, en cours, faites, avec leurs tournées */
+    const A = this.A || {}, tN = clamp(H * 0.036, 10, 34), tV = clamp(H * 0.125, 24, 150), tS = clamp(H * 0.034, 10, 30);
+    const bloc = (cx, titre, val, sous, cT, cV, petit) => {
+      const a = this.p(cx, 0, 4.0), x0 = clamp(a[0], tV * 1.5, this.w - tV * 1.5), y0 = Math.min(a[1] + tN * 1.6, H - tV * 0.95 - tS * (petit ? 3 : 1.75) - 6);
+      this.texte(titre, x0, y0, { t: tN, gras: 700, esp: "0.14em", c: cT });
+      this.texte(fini(val) ? n0(val) : "–", x0, y0 + tV * 0.95, { t: tV, gras: 900, f: F_D, c: cV });
+      if (sous) this.texte(sous, x0, y0 + tV * 0.95 + tS * 1.45, { t: tS, c: `rgb(${ENCRE})` });
+      if (petit) this.texte(petit, x0, y0 + tV * 0.95 + tS * 2.75, { t: tS * 0.78, c: `rgb(${ENCRE2})` });
+    };
+    const tour = (n, mot) => (n == null ? "" : `${n0(n)} ${n >= 2 ? "tournées" : "tournée"} ${mot}`);
+    bloc(-6.6, "LIGNES À PRÉPARER", A.lances, tour(A.nbLances, "en attente"), rvb(st.map(v => v * 1.15)), "rgb(243,246,251)", fini(A.restant) ? `≈ ${n0(A.restant)} lignes restantes estimées` : "");
+    bloc(0.2, "LIGNES EN COURS", A.enCours, tour(A.nbEnCours, "en préparation"), "rgb(61,219,245)", "rgb(61,219,245)");
+    bloc(6.9, "LIGNES FAITES", A.faites, tour(A.nbFaites, A.nbFaites >= 2 ? "terminées" : "terminée"), "rgb(125,184,255)", "rgb(125,184,255)");
   }
 }
 
@@ -2075,14 +2084,14 @@ class SceneVagues extends Scene3D {
   constructor(cv) {
     super(cv);
     this.yaw0 = this.cam.yaw = -0.16; this.cam.pitch = 0.3; this.balancement = 0.07;
-    this.marges = [0.03, 0.22, 0.03, 0.25]; this.v = []; this.app = 9; this.unite = 50;
+    this.marges = [0.03, 0.2, 0.03, 0.32]; this.v = []; this.app = 9; this.unite = 50;
   }
   bornes() { const n = Math.max(1, this.v.length); return [-n * 2.4, 0, -1.2, n * 2.4, 4.6, 2.9]; }
   donnees(vagues) {
     const max = Math.max(1, ...vagues.map(v => v.ligPrev)), u = max / 24;
     if (vagues.length !== this.v.length) this.cadre = null;
     this.unite = u;
-    this.v = vagues.map(v => { const K = Math.max(1, Math.round(v.ligPrev / u)), fin = v.ligPrev > 0 && v.ligPrep >= v.ligPrev; return { K, F: fin ? K : Math.min(K - 1, Math.floor(v.ligPrep / u)), fin, p: v.ligPrev ? clamp(v.ligPrep / v.ligPrev, 0, 1) : 0, heure: v.heure || "", prep: v.ligPrep, prev: v.ligPrev }; });
+    this.v = vagues.map(v => { const K = Math.max(1, Math.round(v.ligPrev / u)), fin = v.ligPrev > 0 && v.ligPrep >= v.ligPrev; return { K, F: fin ? K : Math.min(K - 1, Math.floor(v.ligPrep / u)), fin, p: v.ligPrev ? clamp(v.ligPrep / v.ligPrev, 0, 1) : 0, heure: v.heure || "", prep: v.ligPrep, prev: v.ligPrev, pick: v.pickPrev == null ? null : v.pickPrev > 0 ? clamp(v.pickPrep / v.pickPrev, 0, 1) : -1 }; });
     this.rafraichir();
   }
   entree() { this.app = this.fige ? 9 : 0; }
@@ -2108,13 +2117,18 @@ class SceneVagues extends Scene3D {
     this.peindre(L);
     const tH = clamp(H * 0.075, 14, 60), tS = clamp(H * 0.032, 10, 26), tP = clamp(H * 0.085, 16, 70);
     this.v.forEach((v, i) => {
-      const cx = (i - (n - 1) / 2) * 4.8, bas = this.p(cx, 0, 2.9), haut = this.p(cx, 0.16 + Math.ceil(v.K / 6) * 0.98 + 0.5, 0), y0 = Math.min(this.p(0, 0, 2.9)[1] + tH * 1.2, H - tS * 3.4);
+      const cx = (i - (n - 1) / 2) * 4.8, bas = this.p(cx, 0, 2.9), haut = this.p(cx, 0.16 + Math.ceil(v.K / 6) * 0.98 + 0.5, 0), y0 = Math.min(this.p(0, 0, 2.9)[1] + tH * 1.2, H - tS * 6.4);
       this.texte(Math.floor(v.p * 100 + 1e-6) + " %", haut[0], haut[1] - 4, { t: tP, gras: 900, f: F_D, c: v.fin ? "rgb(95,219,95)" : "rgb(243,246,251)" });
       this.texte(v.heure, bas[0], y0, { t: n > 1 ? Math.min(tH, Math.abs(this.p(4.8, 0, 2.9)[0] - this.p(0, 0, 2.9)[0]) * 0.36) : tH, gras: 900, f: F_D });
       /* le détail tient dans la largeur d'une vague : on réduit le texte quand elles sont nombreuses */
       const larg = n > 1 ? Math.abs(this.p(4.8, 0, 2.9)[0] - this.p(0, 0, 2.9)[0]) * 0.9 : this.w, det = `${n0(v.prep)} / ${n0(v.prev)}`, tD = Math.min(tS * 1.1, larg / (det.length * 0.6));
       this.texte(det, bas[0], y0 + tS * 1.5, { t: tD, c: `rgb(${ENCRE2})` });
-      this.texte(v.fin ? "TERMINÉE" : v.prep > 0 ? "EN COURS" : "LANCÉE", bas[0], y0 + tS * 2.9, { t: tS, gras: 700, esp: "0.14em", c: v.fin ? "rgb(95,219,95)" : v.prep > 0 ? "rgb(125,184,255)" : `rgb(${ENCRE2})` });
+      this.texte(v.fin ? "TERMINÉE" : v.prep > 0 ? "EN COURS" : "LANCÉE", bas[0], y0 + tS * 2.9, { t: n > 1 ? Math.min(tS, larg / 8) : tS, gras: 700, esp: "0.06em", c: v.fin ? "rgb(95,219,95)" : v.prep > 0 ? "rgb(125,184,255)" : `rgb(${ENCRE2})` });
+      /* avancement du pick (détail et carton) dans la vague */
+      if (v.pick != null) {
+        const tP2 = n > 1 ? Math.min(tS * 2, larg / 5.6) : tS * 2, ok = v.pick >= 1;
+        this.texte(v.pick < 0 ? "PICK : aucune ligne" : `PICK ${Math.floor(v.pick * 100 + 1e-6)} %`, bas[0], y0 + tS * 2.9 + tP2 * 1.3, { t: v.pick < 0 ? tP2 * 0.5 : tP2, gras: 900, f: v.pick < 0 ? undefined : F_D, c: v.pick < 0 ? `rgb(${ENCRE2})` : ok ? "rgb(95,219,95)" : "rgb(61,219,245)" });
+      }
     });
   }
 }
@@ -2351,7 +2365,7 @@ const Std = (() => {
   return {
     sonder, preparer, courant: () => cur,
     n: reg => { const s = choisi(reg); return (listes[s[0]] || []).length || 8; },
-    entre(reg) { clearInterval(timer); preparer(reg); montrer(0); timer = setInterval(() => montrer(i + 1), clamp(+reg.dureeSlide || 9, 3, 120) * 1000); },
+    entre(reg) { clearInterval(timer); preparer(reg); montrer(0); timer = setInterval(() => montrer(i + 1), clamp(+reg.dureeSlide || 5, 3, 120) * 1000); },
     sorti(reg) { clearInterval(timer); timer = 0; if (reg.stdMode === "tous") { passes++; preparer(reg); } }
   };
 })();
@@ -2368,24 +2382,6 @@ const ECRANS = [
     html: `<div class="acc">
       <div class="acc-g">
         <div class="vue3d amb anim" style="--i:0"><canvas id="c-acc" role="img" aria-label="Animation : les colis à préparer dans le rayonnage, les préparateurs et leurs chariots, les colis faits sur palettes"></canvas></div>
-        <div class="acc-bas">
-          <section class="carte amb trio-c anim" style="--i:1" id="a-c1">
-            <div class="c-lab"><span>${ic("reste")}Lignes lancées à préparer</span></div>
-            <div class="n-trio" id="a-lances">–</div>
-            <div class="l-trio" id="a-tour"></div>
-            <div class="l-reste" id="a-reste"></div>
-          </section>
-          <section class="carte trio-c cours anim" style="--i:2">
-            <div class="c-lab"><span>${ic("chariot")}Lignes en cours</span></div>
-            <div class="n-trio" id="a-cours">–</div>
-            <div class="l-trio" id="a-coursl"></div>
-          </section>
-          <section class="carte trio-c fait anim" style="--i:3">
-            <div class="c-lab"><span>${ic("ok")}Lignes faites</span></div>
-            <div class="n-trio" id="a-faites">–</div>
-            <div class="l-trio" id="a-faitesl"></div>
-          </section>
-        </div>
       </div>
       <div class="acc-d">
         <section class="carte amb anim" style="--i:4" id="a-c2">
@@ -2450,7 +2446,9 @@ const ECRANS = [
           <div class="mini" id="e1-mtl"><span class="l">Chariots en attente</span><b id="e1-tl">–</b><span class="s">sans préparateur</span></div>
         </div>
         <div class="bloc cadb anim" style="--i:3"><h3>${ic("vitesse")}La cadence, en lignes par heure</h3>
-          <div class="cad"><div><span class="l">À tenir</span><b id="e1-need">–</b><span class="s" id="e1-need-s">pour finir à l'heure</span></div><span class="vs">/</span><div id="e1-reel-b"><span class="l">Notre vitesse</span><b id="e1-reel">–</b><span class="s" id="e1-reel-s">lignes validées par heure</span></div></div>
+          <div class="cad"><div><span class="l">Nécessaire</span><b id="e1-need">–</b><span class="s" id="e1-need-s">pour finir à l'heure</span></div>
+            <div><span class="l">Théorique</span><b id="e1-theo">–</b><span class="s">cadences de l'équipe présente</span></div>
+            <div id="e1-reel-b"><span class="l">Réelle</span><b id="e1-reel">–</b><span class="s" id="e1-reel-s">sur la dernière heure</span></div></div>
           <div class="ligne" style="justify-content:center"><span id="e1-past"></span></div>
         </div>
       </div>
@@ -2460,11 +2458,11 @@ const ECRANS = [
       T("e1-pct", M.aCharge ? Math.floor(M.pct * 100 + 1e-6) : "–");
       $("#e1-b1").style.flexGrow = M.fait || 0.0001; $("#e1-b2").style.flexGrow = M.restant || 0.0001; $("#e1-b3").style.flexGrow = M.aLancer || 0; $("#e1-b3").style.display = M.aLancer ? "" : "none";
       T("e1-cont", n0(M.contFaits)); T("e1-tf", n0(M.tournees.faites)); T("e1-tl", n0(M.tournees.libres));
-      const reel = fini(M.debit) ? M.debit : A.capa, mesure = fini(M.debit);
+      const reel = fini(M.debitRecent) ? M.debitRecent : M.debit, theo = A.source === "live" ? A.capa : null;
       let besoin = M.debitNecessaire;
       if (A.source === "live" && fini(A.finPoste)) { const hr = minutesProductives(A.now, A.finPoste, A.pauses) / 60; besoin = hr > 0.05 && A.restant > 0 ? A.restant / hr : null; }
-      T("e1-need", n0(besoin)); T("e1-reel", n0(reel));
-      T("e1-need-s", fini(A.finPoste) ? `pour finir à ${hPetit(A.finPoste)}` : "pour finir à l'heure"); Hh("e1-reel-s", mesure ? "lignes réellement validées par heure (Logys)" + (fini(A.capa) && A.source === "live" ? `<br>capacité théorique de l'équipe : <b>${n0(A.capa)}</b>` : "") : "capacité théorique de l'équipe présente");
+      T("e1-need", n0(besoin)); T("e1-reel", n0(reel)); T("e1-theo", n0(theo));
+      T("e1-need-s", fini(A.finPoste) ? `pour finir à ${hPetit(A.finPoste)}` : "pour finir à l'heure"); T("e1-reel-s", fini(M.debitRecent) ? "lignes validées sur la dernière heure" : "lignes validées par heure depuis le début");
       const niv = !fini(besoin) || !fini(reel) ? "na" : reel >= besoin ? "ok" : reel >= besoin * 0.9 ? "warn" : "crit";
       Niv("e1-reel-b", niv === "na" ? null : niv);
       Hh("e1-past", pastille(niv, { ok: "On va assez vite", warn: "Un peu juste", crit: "Pas assez vite", na: M.reste <= 0 && M.fait > 0 ? "Charge terminée" : "En attente" }[niv], true));
@@ -2487,7 +2485,7 @@ const ECRANS = [
         <div class="bloc anim" style="--i:2" id="e4-bloc-z"><h3>${ic("plan")}Reste à préparer, par zone d'allées</h3><div class="liste-jauges serre" id="e4-zones"></div></div>
         <div class="deux anim" style="--i:3">
           <div class="bloc"><h3>${ic("reste")}Reste dans les vagues</h3><div class="gros" id="e4-reste">–</div><p class="note" id="e4-reste-t"></p></div>
-          <div class="bloc" id="e4-bloc-r"><h3>${ic("warn")}Ruptures</h3><div class="gros" id="e4-rupt">–</div><p class="note">lignes non servies par le stock</p></div>
+          <div class="bloc" id="e4-bloc-r"><h3>${ic("warn")}<span id="e4-rupt-t">Ruptures</span></h3><div class="gros" id="e4-rupt">–</div><p class="note" id="e4-rupt-n">lignes non servies par le stock</p></div>
         </div>
       </div>
     </div>`,
@@ -2498,7 +2496,9 @@ const ECRANS = [
       const v = (grandes.length ? grandes : M.vagues).slice(-6);
       Scenes.vagues.donnees(v);
       T("e4-unite", v.length ? `1 colis dessiné ≈ ${n0(Scenes.vagues.unite)} lignes` : "Aucune vague lancée pour l'instant.");
-      const tous = [{ lib: M.cfg.service, fait: M.fait, restant: M.restant, moi: true }].concat(M.services);
+      /* le carton (utile au service) remplace le vrac dans la liste */
+      const carton = M.types.find(t => /cart/i.test(t.lib));
+      const tous = [{ lib: M.cfg.service, fait: M.fait, restant: M.restant, moi: true }].concat(carton ? [{ lib: "Carton", fait: carton.fait, restant: carton.restant, moi: true }] : [], M.services.filter(x => !/vrac/i.test(x.lib)));
       $("#e4-services").classList.toggle("dense", tous.length > 4);
       Hh("e4-services", tous.map(t => { const tot = t.fait + t.restant, p = tot ? t.fait / tot : 0; return `<div class="svc-l${t.moi ? " moi" : ""}"><span class="n">${esc(t.lib)}</span><span class="p">${Math.floor(p * 100 + 1e-6)} %</span><div class="jauge" style="--v:${(p * 100).toFixed(1)}%"><i></i></div><span class="v"><b>${n0(t.fait)}</b> faites sur ${n0(tot)} lignes · reste <b>${n0(t.restant)}</b></span></div>`; }).join(""));
       const finies = M.vagues.filter(x => x.ligPrev > 0 && x.ligPrep >= x.ligPrev).length, reste = M.vagues.reduce((s, x) => s + Math.max(0, x.ligPrev - x.ligPrep), 0), rupt = M.vagues.reduce((s, x) => s + x.ligRupt, 0);
@@ -2506,7 +2506,11 @@ const ECRANS = [
       const zmax = Math.max(1, ...M.zones.map(z => z.restant));
       $("#e4-bloc-z").hidden = !M.zones.length;
       Hh("e4-zones", M.zones.map(z => `<div class="lj"><span class="lj-n">${esc(z.lib)}</span><div class="jauge etat" data-niv="na" style="--v:${(z.restant / zmax * 100).toFixed(1)}%"><i${z.restant ? "" : ' style="display:none"'}></i></div><span class="lj-v">reste <b>${n0(z.restant)}</b></span></div>`).join(""));
-      T("e4-rupt", M.vagues.length ? n0(rupt) : "–"); Niv("e4-bloc-r", rupt > 0 ? "warn" : null);
+      /* ruptures du Pick & Pack (lignes détail et carton du jour) quand le module les fournit, sinon celles de toutes les vagues */
+      const rpp = M.stock && M.stock.ruptures != null && fini(+M.stock.ruptures) ? +M.stock.ruptures : null, ru = rpp != null ? rpp : rupt;
+      T("e4-rupt-t", rpp != null ? "Ruptures Pick & Pack" : "Ruptures, tous services");
+      T("e4-rupt-n", rpp != null ? "lignes détail et carton en rupture aujourd'hui" : "lignes non servies par le stock, toutes vagues");
+      T("e4-rupt", rpp != null || M.vagues.length ? n0(ru) : "–"); Niv("e4-bloc-r", ru > 0 ? "warn" : null);
       return M.vagues.length ? `<b>${M.vagues.length} ${pluriel(M.vagues.length, "vague")}</b> ${pluriel(M.vagues.length, "lancée")} aujourd'hui, dont <b>${finies} ${pluriel(finies, "terminée")}</b>. Il reste ${n0(reste)} lignes dans les vagues en cours.` : "Aucune vague lancée pour l'instant.";
     }
   },
@@ -2636,7 +2640,7 @@ const ECRANS = [
 
   /* ───────── Le standard complet ───────── */
   {
-    id: "standard", nom: "Le standard", question: "On révise le standard", duree: reg => Std.n(reg) * clamp(+reg.dureeSlide || 9, 3, 120),
+    id: "standard", nom: "Le standard", question: "On révise le standard", duree: reg => Std.n(reg) * clamp(+reg.dureeSlide || 5, 3, 120),
     html: `<div class="corps e12">
       <div class="std-img anim" style="--i:0"><img id="e12-img" alt="" decoding="async"></div>
       <div class="col anim" style="--i:1">
@@ -2662,13 +2666,14 @@ const ECRANS = [
    fenêtres (encadrement, données, réglages, aide), clavier.
    ════════════════════════════════════════════════════════════════════════════ */
 const Appli = (() => {
-  const CLE = "pilotage-pick-pack-v2";
-  const REG_DEFAUT = { duree: 20, dureeAccueil: 20, frequence: 2, dureeSlide: 9, stdMode: "jour", rotation: true, exclus: [], finVisee: "", dernierAccident: "", message: "", fierte: "" };
+  const CLE = "pilotage-pick-pack-v3";
+  const REG_DEFAUT = { duree: 20, dureeAccueil: 20, frequence: 2, dureeSlide: 5, stdMinutes: 15, stdMode: "jour", rotation: true, exclus: [], finVisee: "", dernierAccident: "", message: "", fierte: "" };
   const params = new URLSearchParams(location.search);
   const FICHIER = "pilotage_data.js", FICHIER_LIVE = "data.js";
   const CYCLE_DEMO = [null, "STABLE", "TENDU", "CRITIQUE"];
   let reg = Object.assign({}, REG_DEFAUT);
   let M = null, A = null, brut = null, brutL = null, mode = "attente", pret = false, forceStatut = null;
+  let dernierStd = 0;
   let iActif = -1, debutEcran = 0, gelDepuis = 0, pause = false, deroule = false, fenetre = null, depuisAccueil = 0, dernierAutre = 0, pile = [];
   let secs = [], puces = [], dispo = [], infos = [], iInfo = 0, observateur = null, veille = null;
 
@@ -2678,7 +2683,7 @@ const Appli = (() => {
     if (!Array.isArray(reg.exclus)) reg.exclus = [];
     const d = parseFloat(params.get("duree")); if (d >= 5 && d <= 600) reg.duree = reg.dureeAccueil = d;
     if (params.get("fixe") === "1") reg.rotation = false;
-    reg.duree = clamp(+reg.duree || 20, 5, 600); reg.dureeAccueil = clamp(+reg.dureeAccueil || 20, 5, 600); reg.frequence = clamp(Math.round(+reg.frequence) || 2, 1, 9); reg.dureeSlide = clamp(+reg.dureeSlide || 9, 3, 120);
+    reg.duree = clamp(+reg.duree || 20, 5, 600); reg.dureeAccueil = clamp(+reg.dureeAccueil || 20, 5, 600); reg.frequence = clamp(Math.round(+reg.frequence) || 2, 1, 9); reg.dureeSlide = clamp(+reg.dureeSlide || 5, 3, 120); reg.stdMinutes = clamp(+reg.stdMinutes || 0, 0, 240);
     const st = (params.get("statut") || "").toUpperCase(); if (STATUT_NIV[st]) forceStatut = st;
   }
   function ecrireReglages() { try { localStorage.setItem(CLE, JSON.stringify(reg)); } catch (e) { /* tant pis : valable pour cette session */ } }
@@ -2822,6 +2827,7 @@ const Appli = (() => {
     }
     iActif = i;
     if (i === 0) depuisAccueil = 0; else { depuisAccueil++; dernierAutre = i; }
+    if (ECRANS[i].id === "standard") dernierStd = Date.now();
     document.body.dataset.ecran = ECRANS[i].id;
     const s = secs[i];
     s.style.transition = "none"; s.classList.toggle("sorti", sens === -1); void s.offsetWidth; s.style.transition = "";
@@ -2835,7 +2841,9 @@ const Appli = (() => {
   }
   function autreSuivant() {
     const n = ECRANS.length;
-    for (let k = 1; k < n; k++) { const j = 1 + ((dernierAutre - 1 + k) % (n - 1) + (n - 1)) % (n - 1); if (dispo[j]) return j; }
+    /* le standard ne revient que toutes les « stdMinutes » minutes */
+    const attendre = j => ECRANS[j].id === "standard" && dernierStd && Date.now() - dernierStd < reg.stdMinutes * 60000;
+    for (let k = 1; k < n; k++) { const j = 1 + ((dernierAutre - 1 + k) % (n - 1) + (n - 1)) % (n - 1); if (dispo[j] && !attendre(j)) return j; }
     return -1;
   }
   function suivant() {
@@ -2970,6 +2978,7 @@ const Appli = (() => {
         <label class="champ" for="r-duree">Durée des autres écrans, en secondes<input type="number" id="r-duree" min="5" max="600" step="1" value="${reg.duree}"></label>
         <label class="champ" for="r-freq">L'accueil revient toutes les … pages<input type="number" id="r-freq" min="1" max="9" step="1" value="${reg.frequence}"></label>
         <label class="champ" for="r-ds">Standard : secondes par page<input type="number" id="r-ds" min="3" max="120" step="1" value="${reg.dureeSlide}"></label>
+        <label class="champ" for="r-sm">Standard : revient toutes les … minutes (0 = à chaque tour)<input type="number" id="r-sm" min="0" max="240" step="1" value="${reg.stdMinutes}"></label>
         <label class="coche" for="r-rotation"><input type="checkbox" id="r-rotation" ${reg.rotation ? "checked" : ""}>Faire tourner les écrans automatiquement</label>
         <label class="coche" for="r-std"><input type="checkbox" id="r-std" ${reg.stdMode === "tous" ? "checked" : ""}>Standards : passer au standard suivant à chaque passage (sinon, celui du jour)</label>
       </div>
@@ -2984,7 +2993,7 @@ const Appli = (() => {
       <div class="ligne" style="margin-top:1.5rem"><button class="bouton" type="button" id="r-ok">Enregistrer</button><button class="bouton discret" type="button" id="r-raz">Revenir aux réglages d'origine</button></div>`);
     $("#r-ok").addEventListener("click", () => {
       reg.duree = clamp(parseFloat($("#r-duree").value) || 20, 5, 600); reg.dureeAccueil = clamp(parseFloat($("#r-da").value) || 20, 5, 600);
-      reg.frequence = clamp(Math.round(parseFloat($("#r-freq").value)) || 2, 1, 9); reg.dureeSlide = clamp(parseFloat($("#r-ds").value) || 9, 3, 120);
+      reg.frequence = clamp(Math.round(parseFloat($("#r-freq").value)) || 2, 1, 9); reg.dureeSlide = clamp(parseFloat($("#r-ds").value) || 5, 3, 120); reg.stdMinutes = clamp(parseFloat($("#r-sm").value) || 0, 0, 240);
       reg.rotation = $("#r-rotation").checked; reg.stdMode = $("#r-std").checked ? "tous" : "jour";
       reg.finVisee = $("#r-fin").value || ""; reg.dernierAccident = $("#r-acc").value || ""; reg.message = $("#r-msg").value.trim(); reg.fierte = $("#r-fier").value.trim();
       reg.exclus = ECRANS.filter(e => !$("#r-e-" + e.id).checked).map(e => e.id);
