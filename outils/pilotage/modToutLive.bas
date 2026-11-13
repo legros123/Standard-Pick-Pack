@@ -8,7 +8,7 @@ Option Explicit
 '  arrete les deux boucles ensemble. Les deux fichiers sont ecrits dans le
 '  meme dossier que pilotage.html.
 '
-'    TOUT_REGLER_DOSSIER  une fois : fait ecrire les deux fichiers dans le dossier de ce classeur
+'  Les deux fichiers sont ecrits d'office dans le dossier de ce classeur.
 '    TOUT_TESTER          un passage de chaque module, avec compte rendu
 '    TOUT_DEMARRER        lance les deux boucles
 '    TOUT_ARRETER         arrete les deux boucles
@@ -28,6 +28,7 @@ Private Const CLE_DOSSIER_PILOTAGE As String = "DOSSIER_SORTIE"
 Private Const TITRE As String = "Pick & Pack Live"
 
 Public Sub TOUT_DEMARRER()
+    ReglerDossier
     If Not DossiersOk() Then Exit Sub
     Lancer "DEMARRER_LIVE"
     Lancer "Pilotage_Demarrer"
@@ -42,7 +43,14 @@ Public Sub TOUT_ARRETER()
 End Sub
 
 Public Sub TOUT_TESTER()
+    Dim c As Range
+    ReglerDossier
     If Not DossiersOk() Then Exit Sub
+    Set c = CelluleDossierPilotage()
+    If Len(Dir$(AvecBarre(CStr(c.Value)) & "pilotage.html")) = 0 Then
+        MsgBox "Attention : pilotage.html n'est pas dans le dossier ou les donnees sont ecrites :" & vbCrLf & vbCrLf & _
+               AvecBarre(CStr(c.Value)) & vbCrLf & vbCrLf & "Mets pilotage.html et ce classeur dans le meme dossier.", vbExclamation, TITRE
+    End If
     Lancer "TEST_EXPORT"
     Lancer "Pilotage_Tester"
 End Sub
@@ -72,6 +80,28 @@ Erreur:
     MsgBox "Reglage impossible : " & Err.Description, vbExclamation, TITRE
 End Sub
 
+' Sans rien demander : les deux fichiers vont dans le dossier de ce classeur.
+' Si le classeur est ouvert depuis OneDrive (chemin en https), on garde le dossier deja inscrit dans PILOTAGE.
+Private Sub ReglerDossier()
+    Dim d As String, c As Range
+    Set c = CelluleDossierPilotage()
+    If c Is Nothing Then Exit Sub
+    d = ThisWorkbook.Path
+    If Not (Mid$(d, 2, 2) = ":\" Or Left$(d, 2) = "\\") Then d = Trim$(CStr(c.Value))
+    If Len(d) = 0 Then Exit Sub
+    d = AvecBarre(d)
+    On Error Resume Next
+    c.Value = d
+    ThisWorkbook.Names(NOM_DOSSIER_LIVE).RefersToRange.Value = d
+    On Error GoTo 0
+End Sub
+
+Private Function AvecBarre(ByVal d As String) As String
+    d = Trim$(d)
+    If Len(d) > 0 And Right$(d, 1) <> "\" Then d = d & "\"
+    AvecBarre = d
+End Function
+
 Private Sub Lancer(ByVal macro As String)
     On Error GoTo Erreur
     Application.Run "'" & ThisWorkbook.Name & "'!" & macro
@@ -96,7 +126,7 @@ Private Function DossiersOk() As Boolean
     If SansBarre(a) <> SansBarre(b) Or Len(SansBarre(a)) = 0 Then
         MsgBox "Les deux fichiers ne sont pas ecrits dans le meme dossier :" & vbCrLf & vbCrLf & _
                "data.js : " & a & vbCrLf & "pilotage_data.js : " & b & vbCrLf & vbCrLf & _
-               "Lance TOUT_REGLER_DOSSIER (Alt+F8) pour les mettre dans le dossier de ce classeur.", vbExclamation, TITRE
+               "Enregistre ce classeur sur le disque du PC, dans le dossier de pilotage.html, puis relance.", vbExclamation, TITRE
         Exit Function
     End If
     DossiersOk = True
