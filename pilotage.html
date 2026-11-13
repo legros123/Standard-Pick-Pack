@@ -1067,7 +1067,7 @@ function calculer(d, forcer) {
   M.dec = e ? {
     total: +e.total || 0,
     types: versListe(e.types).sort((a, b) => b.n - a.n),
-    allees: e.allees || {}, derniere: e.derniere || null, source: e.source || "",
+    allees: e.allees || {}, derniere: e.derniere || null, source: e.source || "", parMat: e.parMat || null, parJour: e.parJour || null,
     hist: e.hist ? { jours: +e.hist.jours || 7, total: +e.hist.total || 0, allees: e.hist.allees || {}, types: versListe(e.hist.types).sort((a, b) => b.n - a.n) } : null
   } : null;
   if (M.dec) M.dec.ppm = M.fait > 0 ? M.dec.total / M.fait * 1e6 : null;
@@ -1728,6 +1728,15 @@ function preparerLive(L) {
   L.seuils = Object.assign({}, SEUILS_DEFAUT, L.seuils || {});
   L.params = Object.assign({ heures_pointees: 7.4, cadence_defaut: 50 }, L.params || {});
   L.jour.pauses = L.jour.pauses || [];
+  /* un opérateur qui a une tournée en cours dans Logys est présent, même si la feuille EQUIPE ne le dit pas */
+  const eq = L.equipe = Array.isArray(L.equipe) ? L.equipe : [], parMat = {};
+  eq.forEach(e => (parMat[String(e.mat)] = e));
+  (L.tours || []).forEach(t => {
+    if (t.k !== "C" || !t.op) return;
+    const e = parMat[String(t.op)];
+    if (e) { if (e.present !== true) { e.present = true; e.sorti = null; } }
+    else { const n = { mat: String(t.op), role: "Picking", present: true, sorti: null, revenu: null, coef: 1, cadence: L.params.cadence_defaut }; eq.push(n); parMat[n.mat] = n; }
+  });
   return L;
 }
 /* l'accueil : les six chiffres, quel que soit le fichier disponible */
@@ -1747,6 +1756,14 @@ function modeleAccueil(L, M, now, forceStatut) {
       lances: M.aCharge ? M.restant : null, nbLances: lib, restant: M.reste, aLancer: M.aLancer, faites: M.fait, enCours: null, nbEnCours: lib != null && ouv != null ? Math.max(0, ouv - lib) : null,
       fin: M.eta, finPoste: M.finVisee, debut: M.debut, ecart: fini(M.ecart) ? -M.ecart : null, horsJour: M.horsJour,
       rejets: { n: M.rejets ? M.rejets.total : null, niv: M.statut.rejets.niv }, dec: { n: M.dec ? M.dec.total : null, niv: M.statut.dec.niv }, vigilance: [], capa: M.debit, pauses: M.pauses };
+  }
+  /* le Contrôle des rejets (poste de rejet) fait foi pour les décelées : total du jour et dossards par matricule */
+  const D = M && M.dec;
+  if (D && /contr/i.test(D.source || "")) {
+    const S = A.S, n = D.total;
+    A.dec = { n, niv: n >= S.dec_rouge ? "crit" : n >= S.dec_orange ? "warn" : "ok" };
+    if (D.parMat) A.vigilance = Object.keys(D.parMat).map(k => ({ mat: String(k), n: +D.parMat[k] || 0 })).filter(x => x.n >= S.vig_orange).sort((p, q) => q.n - p.n || p.mat.localeCompare(q.mat)).map(x => ({ mat: x.mat, n: x.n, d: dossard(x.n, S) }));
+    A.decSource = "controle";
   }
   if (forceStatut) A.statut = forceStatut;
   A.niv = STATUT_NIV[A.statut] || "na";
@@ -1786,12 +1803,13 @@ function demoLive(d) {
 }
 /* indicateurs historiques : data.js en priorité, sinon l'historique du fichier Pilotage */
 function sourceKpi(L, M) {
-  if (L && Array.isArray(L.hist) && L.hist.length) return { S: L.seuils, hist: L.hist, mois: L.mois || {}, decMois: L.dec_mois || [] };
+  const pj = M.dec && M.dec.parJour && Object.keys(M.dec.parJour).length ? Object.keys(M.dec.parJour).sort().map(d => ({ d, n: +M.dec.parJour[d] || 0 })) : null;
+  if (L && Array.isArray(L.hist) && L.hist.length) return { S: L.seuils, hist: L.hist, mois: L.mois || {}, decMois: pj || L.dec_mois || [] };
   const h = M.historique || []; if (!h.length) return null;
   const c = M.cfg, S = Object.assign({}, SEUILS_DEFAUT, { rej_orange: c.rejetsMax, rej_rouge: Math.round(c.rejetsMax * 1.15), dec_orange: c.decOrange, dec_rouge: c.decRouge, obj_lignes_op: c.quotaJour, obj_ppm_averee: c.ppmAveRouge });
   const mois = h.length ? h[h.length - 1].d.slice(0, 7) : "", dm = h.filter(x => x.d.slice(0, 7) === mois), m = M.mois || {};
   return { S, hist: h.map(x => ({ d: x.d, prod: x.ops > 0 ? Math.round(x.lignes / x.ops) : null, ppm: x.lignes > 0 ? Math.round(x.ea / x.lignes * 1e6) : null, rej: x.rejets })).filter(x => fini(x.prod)),
-    mois: { nom: "Mois", prod: null, ppm: +m.lignes > 0 ? Math.round((+m.ea || 0) / m.lignes * 1e6) : null }, decMois: dm.map(x => ({ d: x.d, n: x.ed })) };
+    mois: { nom: "Mois", prod: null, ppm: +m.lignes > 0 ? Math.round((+m.ea || 0) / m.lignes * 1e6) : null }, decMois: pj || dm.map(x => ({ d: x.d, n: x.ed })) };
 }
 
 /* ════════════════════════════════════════════════════════════════════════════
@@ -2378,7 +2396,7 @@ const ECRANS = [
       const v = A.vigilance;
       Niv("a-c6", !v.length ? null : v.some(x => x.d === "rouge") ? "crit" : "warn");
       Hh("a-chips", v.length ? v.slice(0, 8).map(x => `<div class="chip ${x.d}"><em>${n0(x.n)}</em><b>${esc(x.mat)}</b><span>${pluriel(x.n, "décelée")}</span></div>`).join("") + (v.length > 8 ? `<span class="calme">+ ${v.length - 8} autres</span>` : "")
-        : `<span class="calme">${A.source === "live" ? "Aucun opérateur en vigilance aujourd'hui ✓" : "Décelées par matricule : fichier data.js non branché"}</span>`);
+        : `<span class="calme">${A.source === "live" || A.decSource ? "Aucun opérateur en vigilance aujourd'hui ✓" : "Décelées par matricule : Contrôle des rejets non branché"}</span>`);
       Scenes.accueil.maj(A);
       return null;
     }
@@ -2488,7 +2506,7 @@ const ECRANS = [
       T("e5-dec", n0(dec)); Hh("e5-past-d", pastille(A.dec.niv, { ok: "Sous le seuil d'alerte", warn: dec >= S.dec_orange ? "Seuil d'alerte atteint" : "Alerte probable en fin de poste", crit: dec >= S.dec_rouge ? "Seuil rouge atteint" : "Rouge probable en fin de poste", na: "Non branché" }[A.dec.niv])); Niv("e5-c", A.dec.niv === "na" ? null : A.dec.niv);
       T("e5-seuils", `Alerte à ${S.dec_orange} par jour, rouge à ${S.dec_rouge}.`);
       const v = A.vigilance;
-      Hh("e5-doss", v.length ? v.slice(0, 7).map(x => `<div class="doss-l ${x.d}"><em>${esc(x.mat)}</em><span>récupère ${pluriel(x.n, "son colis", "ses colis")} au contrôle</span><b>${n0(x.n)}</b></div>`).join("") : vide(A.source === "live" ? "Personne à 3 décelées ou plus : bravo." : "Décelées par matricule non branchées (data.js)."));
+      Hh("e5-doss", v.length ? v.slice(0, 7).map(x => `<div class="doss-l ${x.d}"><em>${esc(x.mat)}</em><span>récupère ${pluriel(x.n, "son colis", "ses colis")} au contrôle</span><b>${n0(x.n)}</b></div>`).join("") : vide(A.source === "live" || A.decSource ? "Personne à 3 décelées ou plus : bravo." : "Décelées par matricule : Contrôle des rejets non branché."));
       T("e5-doss-n", `Dossard à partir de ${S.vig_orange} décelées : jaune à ${S.vig_orange}, orange au-delà, rouge dès ${S.vig_rouge}.`);
       return `<b>${n0(rej)} ${pluriel(rej || 0, "colis rejeté", "colis rejetés")}</b> par la balance${fini(pese) ? ` sur ${n0(pese)} pesés` : ""}. Au contrôle, <b>${n0(dec)} ${pluriel(dec || 0, "erreur décelée", "erreurs décelées")}</b> avant le départ chez le client.`;
     }
@@ -2961,7 +2979,7 @@ const Appli = (() => {
         <span><kbd>R</kbd>réglages</span><span><kbd>Échap</kbd>fermer la fenêtre</span>
       </div>
       <h4>Brancher les vraies données</h4>
-      <p>La page relit toutes les 30 secondes le fichier <b>${FICHIER_LIVE}</b>, placé dans le même dossier qu'elle. Il est écrit chaque minute par le classeur unique <b>PickPackLive_Donnees</b> (module modPickPackLive, macro DemarrerLive) et contient tout : tournées, équipe, décelées par matricule, vagues, services, allées, historique, sécurité. Les anciens fichiers séparés (${FICHIER_LIVE} de PP Live et ${FICHIER} du Pilotage) restent acceptés. Sans fichier, la page affiche une journée simulée, signalée « Démo ».</p>
+      <p>La page relit toutes les 30 secondes deux fichiers placés dans le même dossier qu'elle : <b>${FICHIER_LIVE}</b> et <b>${FICHIER}</b>. Ils sont écrits par le classeur unique PP_LIVE (macro TOUT_DEMARRER), qui lit Logys, le Suivi Op et le Contrôle des rejets. Si un fichier manque, les écrans concernés se retirent d'eux-mêmes. Sans aucun fichier, la page affiche une journée simulée, signalée « Démo ».</p>
       <p>Essayer les couleurs : en démo, toucher la carte « Heure théorique de fin », ou ajouter <b>?demo=1&amp;statut=critique</b> à l'adresse.</p>`);
   }
 
