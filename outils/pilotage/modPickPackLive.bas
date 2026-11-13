@@ -226,13 +226,13 @@ End Function
 Private Sub LireDecelees(ByVal aujourdhui As Date, ByVal decMat As Object, ByVal typesJ As Object, ByVal alleesJ As Object, _
                          ByVal typesH As Object, ByVal alleesH As Object, ByRef totJ As Long, ByRef totH As Long)
     Dim v As Variant, lo As ListObject, i As Long, d As Variant
-    Dim cDate As Long, cMat As Long, cType As Long, cAllee As Long, jour As Long, al As String, ty As String
+    Dim cJour As Long, cMat As Long, cType As Long, cAllee As Long, jour As Long, al As String, ty As String
     Set lo = Tableau("DECELEES", "tblDecelees")
     v = Corps(lo)
     If Not IsArray(v) Then Exit Sub
-    cDate = Col(lo, "Date"): cMat = Col(lo, "Matricule"): cType = Col(lo, "Type"): cAllee = Col(lo, "Allee")
+    cJour = Col(lo, "Date"): cMat = Col(lo, "Matricule"): cType = Col(lo, "Type"): cAllee = Col(lo, "Allee")
     For i = 1 To UBound(v, 1)
-        d = DateHeure(v(i, cDate), aujourdhui)
+        d = DateHeure(v(i, cJour), aujourdhui)
         If Not IsEmpty(d) Then
             jour = Int(CDbl(d))
             al = Allee(v(i, cAllee)): ty = Txt(v(i, cType))
@@ -254,22 +254,22 @@ End Sub
 ' hist (30 derniers jours), mois et dec_mois pour la page "Les indicateurs"
 Private Function JsonHistorique(ByVal aujourdhui As Date) As String
     Dim v As Variant, lo As ListObject, bH As New Collection, bD As New Collection, i As Long, debut As Long
-    Dim cDate As Long, cProd As Long, cPpm As Long, cRej As Long, cDec As Long
+    Dim cJour As Long, cProd As Long, cPpm As Long, cRej As Long, cDecel As Long
     Dim d As Variant, sProd As Double, sPpm As Double, nMois As Long, iso As String
     Set lo = Tableau("HISTORIQUE", "tblHisto")
     v = Corps(lo)
     If IsArray(v) Then
-        cDate = Col(lo, "Date"): cProd = Col(lo, "Prod"): cPpm = Col(lo, "PPM"): cRej = Col(lo, "Rejets"): cDec = Col(lo, "Decelees")
+        cJour = Col(lo, "Date"): cProd = Col(lo, "Prod"): cPpm = Col(lo, "PPM"): cRej = Col(lo, "Rejets"): cDecel = Col(lo, "Decelees")
         debut = UBound(v, 1) - NB_JOURS_HIST + 1
         If debut < 1 Then debut = 1
         For i = 1 To UBound(v, 1)
-            d = DateHeure(v(i, cDate), aujourdhui)
+            d = DateHeure(v(i, cJour), aujourdhui)
             If Not IsEmpty(d) Then
                 If Int(CDbl(d)) < CLng(aujourdhui) Then
                     iso = Format$(CDate(d), "yyyy-mm-dd")
                     If i >= debut Then bH.Add "{""d"":" & JStr(iso) & ",""prod"":" & JNum(Num(v(i, cProd))) & ",""ppm"":" & JNum(Num(v(i, cPpm))) & ",""rej"":" & JNumOuNull(v(i, cRej)) & "}"
                     If Year(d) = Year(aujourdhui) And Month(d) = Month(aujourdhui) Then
-                        bD.Add "{""d"":" & JStr(iso) & ",""n"":" & JNum(Num(v(i, cDec))) & "}"
+                        bD.Add "{""d"":" & JStr(iso) & ",""n"":" & JNum(Num(v(i, cDecel))) & "}"
                         sProd = sProd + Num(v(i, cProd)): sPpm = sPpm + Num(v(i, cPpm)): nMois = nMois + 1
                     End If
                 End If
@@ -348,18 +348,18 @@ End Function
 ' Historique pour "Fierte d'equipe" : lignes du jour et nombre de preparateurs
 Private Function JsonHistoPilotage(ByVal aujourdhui As Date) As String
     Dim v As Variant, lo As ListObject, b As New Collection, i As Long, d As Variant
-    Dim cDate As Long, cLig As Long, cOps As Long, cDec As Long, cRej As Long, cPpm As Long, lig As Double
+    Dim cJour As Long, cLig As Long, cOps As Long, cDecel As Long, cRej As Long, cPpm As Long, lig As Double
     Set lo = Tableau("HISTORIQUE", "tblHisto")
     v = Corps(lo)
     If IsArray(v) Then
-        cDate = Col(lo, "Date"): cLig = Col(lo, "Lignes"): cOps = Col(lo, "Ops"): cDec = Col(lo, "Decelees"): cRej = Col(lo, "Rejets"): cPpm = Col(lo, "PPM")
+        cJour = Col(lo, "Date"): cLig = Col(lo, "Lignes"): cOps = Col(lo, "Ops"): cDecel = Col(lo, "Decelees"): cRej = Col(lo, "Rejets"): cPpm = Col(lo, "PPM")
         For i = 1 To UBound(v, 1)
-            d = DateHeure(v(i, cDate), aujourdhui)
+            d = DateHeure(v(i, cJour), aujourdhui)
             lig = Num(v(i, cLig))
             If Not IsEmpty(d) And lig > 0 Then
                 If Int(CDbl(d)) < CLng(aujourdhui) Then
                     b.Add "{""d"":" & JStr(Format$(CDate(d), "yyyy-mm-dd")) & ",""lignes"":" & JNum(lig) & ",""ops"":" & JNum(Num(v(i, cOps))) & _
-                          ",""ed"":" & JNum(Num(v(i, cDec))) & ",""ea"":" & JNum(Round(Num(v(i, cPpm)) * lig / 1000000#, 0)) & ",""rejets"":" & JNumOuNull(v(i, cRej)) & "}"
+                          ",""ed"":" & JNum(Num(v(i, cDecel))) & ",""ea"":" & JNum(Round(Num(v(i, cPpm)) * lig / 1000000#, 0)) & ",""rejets"":" & JNumOuNull(v(i, cRej)) & "}"
                 End If
             End If
         Next i
