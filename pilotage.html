@@ -2751,7 +2751,10 @@ const Appli = (() => {
 
   /* ───────── bandeau d'information ───────── */
   function construireInfos() {
-    const L = M.alertes.filter(a => !/quota/i.test(a.titre)).map(a => ({ niv: a.niv, t: a.titre }));
+    /* l'heure de fin affichée est celle de l'accueil : les alertes de fin calculées autrement ne sont pas reprises */
+    const finAilleurs = A.source === "live";
+    const L = M.alertes.filter(a => !/quota/i.test(a.titre) && !(finAilleurs && /^(Fin estimée|Au rythme actuel)/.test(a.titre))).map(a => ({ niv: a.niv, t: a.titre }));
+    if (finAilleurs && (A.statut === "TENDU" || A.statut === "CRITIQUE") && fini(A.fin)) L.unshift({ niv: A.niv, t: `Fin théorique à ${hPetit(A.fin)}` + (A.ecart > 0 ? ` : ${duree(A.ecart)} après la fin de poste` : " : juste avant la fin de poste") });
     for (const m of M.messages) L.push({ niv: "na", t: String(m) });
     const s = M.securite || {}, msg = reg.message || s.message;
     if (msg) L.push({ niv: "na", t: "Sécurité : " + msg });
