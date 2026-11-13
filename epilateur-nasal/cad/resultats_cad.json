@@ -1,0 +1,146 @@
+{
+ "corps": {
+  "volume_mm3": 14950.5,
+  "masse_g": 18.99,
+  "encombrement_impression": [
+   20.0,
+   20.0,
+   82.5
+  ]
+ },
+ "nez": {
+  "volume_mm3": 2642.3,
+  "masse_g": 3.36,
+  "encombrement_impression": [
+   20.0,
+   20.0,
+   22.5
+  ]
+ },
+ "chariot": {
+  "volume_mm3": 3881.0,
+  "masse_g": 4.93,
+  "encombrement_impression": [
+   83.0,
+   13.7,
+   6.0
+  ]
+ },
+ "baton": {
+  "volume_mm3": 1653.6,
+  "masse_g": 2.1,
+  "encombrement_impression": [
+   14.0,
+   14.0,
+   59.7
+  ]
+ },
+ "cire": {
+  "volume_mm3": 654.3,
+  "surface_mm2": 234.2
+ },
+ "plateau": {
+  "nb": 301,
+  "pas": 14.8,
+  "masse_g": 632.0,
+  "hauteur": 59.7
+ },
+ "controle": [
+  {
+   "s": 0,
+   "chariot_corps": 0.0,
+   "nez_corps": 0.0,
+   "chariot_nez": 0.0,
+   "baton_nez": 0.0,
+   "baton_chariot": 0.0,
+   "baton_corps": 0.0,
+   "cire_appareil": 0.0,
+   "zone_garde_appareil": 0.0,
+   "garde": 25.0
+  },
+  {
+   "s": 1,
+   "chariot_corps": 0.0,
+   "nez_corps": 0.0,
+   "chariot_nez": 0.0,
+   "baton_nez": 0.0,
+   "baton_chariot": 0.0,
+   "baton_corps": 0.0,
+   "cire_appareil": 0.0,
+   "zone_garde_appareil": 0.0,
+   "garde": 24.0
+  },
+  {
+   "s": 2.5,
+   "chariot_corps": 0.0,
+   "nez_corps": 0.0,
+   "chariot_nez": 0.0,
+   "baton_nez": 0.0,
+   "baton_chariot": 0.0,
+   "baton_corps": 0.0,
+   "cire_appareil": 0.0,
+   "zone_garde_appareil": 0.0,
+   "garde": 22.5
+  },
+  {
+   "s": 5,
+   "chariot_corps": 0.0,
+   "nez_corps": 0.0,
+   "chariot_nez": 0.0,
+   "baton_nez": 0.0,
+   "baton_chariot": 0.0,
+   "baton_corps": 0.0,
+   "cire_appareil": 0.0,
+   "zone_garde_appareil": 0.0,
+   "garde": 20.0
+  },
+  {
+   "s": 7.5,
+   "chariot_corps": 0.0,
+   "nez_corps": 0.0,
+   "chariot_nez": 0.0,
+   "baton_nez": 0.0,
+   "baton_chariot": 0.0,
+   "baton_corps": 0.0,
+   "cire_appareil": 0.0,
+   "zone_garde_appareil": 0.0,
+   "garde": 17.5
+  },
+  {
+   "s": 10,
+   "chariot_corps": 0.0,
+   "nez_corps": 0.0,
+   "chariot_nez": 0.0,
+   "baton_nez": 0.0,
+   "baton_chariot": 0.0,
+   "baton_corps": 0.0,
+   "cire_appareil": 0.0,
+   "zone_garde_appareil": 0.0,
+   "garde": 15.0
+  },
+  {
+   "s": 12.5,
+   "chariot_corps": 0.0,
+   "nez_corps": 0.0,
+   "chariot_nez": 0.0,
+   "baton_nez": 0.0,
+   "baton_chariot": 0.0,
+   "baton_corps": 0.0,
+   "cire_appareil": 0.0,
+   "zone_garde_appareil": 0.0,
+   "garde": 12.5
+  },
+  {
+   "s": 15,
+   "chariot_corps": 0.0,
+   "nez_corps": 0.0,
+   "chariot_nez": 0.0,
+   "baton_nez": 0.0,
+   "baton_chariot": 0.0,
+   "baton_corps": 0.0,
+   "cire_appareil": 0.0,
+   "zone_garde_appareil": 0.0,
+   "garde": 10.0
+  }
+ ]
+}
