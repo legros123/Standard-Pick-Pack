@@ -609,9 +609,9 @@ body[data-ecran=accueil] .rz.dup{display:none}
 .bloc.cadb{display:grid;grid-template-rows:auto minmax(0,1fr) auto}
 
 /* ───── VAGUES ───── */
-.e4{grid-template-columns:1.55fr 1fr}
+.e4{grid-template-columns:3fr 1fr}
 .e4 .col:first-child,.e4 .col:last-child{grid-template-rows:none}
-.e4 .col:last-child{grid-template-rows:minmax(0,1fr) auto auto;align-content:stretch}
+.e4 .col:last-child{grid-template-rows:none;grid-auto-rows:min-content;align-content:start}
 .e4 .col:last-child>.bloc{display:block}
 .e4 .col:last-child>.bloc.svc{display:grid;grid-template-rows:auto minmax(0,1fr);align-content:stretch}
 .svcs{display:grid;align-content:space-around;gap:.6rem;min-height:0;height:100%;overflow:hidden}
@@ -1917,51 +1917,70 @@ function surChemin(pts, s) {
 }
 const longChemin = pts => pts.slice(1).reduce((s, b, i) => s + Math.abs(b[0] - pts[i][0]) + Math.abs(b[1] - pts[i][1]), 0);
 
-/* ───────── Scène d'accueil : le rayonnage à préparer, les préparateurs et leurs chariots, les palettes faites ───────── */
+/* engin de préparation : châssis jaune, console noire à l'avant, opérateur debout, chariot porté sur les fourches */
+const C_ENGIN = [250, 200, 20], C_NOIR = [26, 30, 40];
+function engin(L, o) {
+  const B = repere(o), s = o.ech || 1, fx = o.fx || 0, fz = o.fz || 0;
+  B(L, 0.15, 0, 0.12, 1.0, 0.84, 0.3, C_ENGIN);
+  B(L, 0.74, 0, 0.12, 0.22, 0.8, 1.45, C_NOIR);
+  B(L, 0.74, 0, 1.57, 0.26, 0.5, 0.1, C_ENGIN);
+  for (const l of [-0.3, 0.3]) B(L, -1.3, l, 0.06, 1.8, 0.14, 0.08, C_ENGIN);
+  for (const f of [0.55, -0.2]) B(L, f, 0, 0, 0.22, 0.62, 0.13, C_NOIR);
+  perso(L, { x: o.x + 0.12 * fx * s, z: o.z + 0.12 * fz * s, y: 0.42 * s, fx, fz, ech: 0.8 * s, porte: true, gilet: C_ORANGE });
+  chariot(L, { x: o.x - 1.35 * fx * s, z: o.z - 1.35 * fz * s, y: 0.1 * s, fx, fz, ech: s, charge: o.charge, colis: o.colis });
+}
+
+/* ───────── Scène d'accueil : les rayonnages de picking, les engins qui parcourent les allées, les palettes faites ───────── */
+const RAYONS = [-9.6, -7.2, -4.8, -2.4], ALLEES = [-8.4, -6, -3.6];
 class SceneAccueil extends ScenePile {
   constructor(cv) {
     super(cv);
-    this.yaw0 = this.cam.yaw = -0.3; this.cam.pitch = 0.33; this.balancement = 0.05;
-    this.marges = [0.02, 0.04, 0.02, 0.31]; this.nOps = 0; this.niv = "na"; this.A = {};
+    this.yaw0 = this.cam.yaw = -0.26; this.cam.pitch = 0.5; this.balancement = 0.035;
+    this.marges = [0.01, 0.02, 0.01, 0.28]; this.nOps = 0; this.niv = "na"; this.A = {}; this.kx = 1;
   }
   slot(pile, i) {
-    if (pile === "venir") { pile = "reste"; i += this.piles.reste.length; }
-    const P = 1.04, col = 5, par = col * 5, c = Math.floor(i / par), r = i % par;
-    const cx = pile === "fait" ? 6.9 : -6.6;
-    return [cx + (r % col - (col - 1) / 2) * P - 0.46, pile === "fait" ? 0.16 + c * 0.96 : 0.12 + c * 1.12, (Math.floor(r / col) - 2) * P - 0.46];
+    if (pile !== "fait") { const q = Math.floor(i / 4), lv = Math.floor(q / 6); return [RAYONS[i % 4] * this.kx - 0.42, 0.12 + lv, -3.15 + (q % 6) * 1.05]; }
+    const P = 1.04, c = Math.floor(i / 25), r = i % 25;
+    return [7.3 * this.kx + (r % 5 - 2) * P - 0.46, 0.16 + c * 0.96, (Math.floor(r / 5) - 2) * P - 0.46];
   }
-  niveaux() { return Math.max(3, Math.ceil((this.piles.reste.length + this.piles.venir.length) / 25)); }
+  niveaux() { return Math.max(2, Math.ceil(this.piles.reste.length / 24)); }
   bornes() {
-    const h = Math.max(this.niveaux() * 1.12 + 0.5, Math.ceil(this.piles.fait.length / 25) * 0.96 + 0.6);
-    return [-9.7, 0, -3.3, 9.9, h, 3.6];
+    const h = Math.max(this.niveaux() + 0.5, Math.ceil(this.piles.fait.length / 25) * 0.96 + 0.6);
+    return [-10.1 * this.kx - 0.6, 0, -4.9, 7.3 * this.kx + 2.9, h, 5.9];
   }
   maj(A) {
     this.niv = A.niv; this.A = A;
     const reste = Math.max(0, (A.restant || 0) - (A.aLancer || 0));
-    this.nOps = reste <= 0 ? 0 : clamp(A.nbEnCours == null ? 3 : A.nbEnCours, 0, 5);
+    this.nOps = reste <= 0 ? 0 : clamp(A.nbEnCours == null ? 3 : A.nbEnCours, 0, 6);
     this.donnees(A.faites || 0, reste, null);
   }
   dessiner(dt) {
-    const x = this.ctx, H = this.h, st = RVB[this.niv] || RVB.na, t = this.fige ? 0 : this.t, venir = this.aVenir && this.piles.venir.length > 0;
-    this.sol(17, 6, 1.3);
-    this.dalle(-9.6, -3.3, -3.6, 3.3, rvb(st, 0.14), rvb(st, 0.95), 2.5);
-    this.dalle(4, -3.3, 9.8, 3.3, "rgba(57,135,229,.13)", "rgba(125,184,255,.9)", 2.5);
-    /* allée de circulation : marquage jaune et chevrons de sens */
-    for (const z of [-2.5, 2.6]) this.trait([-3.3, 0, z], [3.7, 0, z], "rgba(255,214,10,.6)", 2.5);
-    this.trait([-3.3, 0, 0.05], [3.7, 0, 0.05], "rgba(255,214,10,.45)", 1.5, [9, 9]);
-    for (let j = 0; j < 4; j++) {
-      const ph = ((t * 0.5 + j / 4) % 1 + 1) % 1, al = this.fige ? 0.5 : Math.sin(ph * Math.PI) * 0.8;
-      this.chevron(-2.8 + ph * 6, -1.25, 1, al); this.chevron(3.2 - ph * 6, 1.35, -1, al * 0.6, "150,180,240");
+    /* sur un écran large, la scène s'étale : rayonnages et palettes s'écartent pour occuper la largeur */
+    const kx = clamp(this.w / Math.max(1, this.h) / 1.5, 1, 2.6);
+    if (Math.abs(kx - this.kx) > 0.02) {
+      this.kx = kx;
+      for (const q of ["reste", "fait"]) this.piles[q].forEach((c, i) => { const p = this.slot(q, i); c.x = p[0]; c.y = p[1]; c.z = p[2]; c.a = null; });
+      this.cadre = null; this.cadrer(this.bornes());
     }
-    /* palettes sous les colis faits */
-    for (const px of [5.6, 8.2]) for (const pz of [-1.3, 1.3]) this.boite({ x: px - 1.27, y: 0, z: pz - 1.27, w: 2.54, h: 0.15, d: 2.54, c: C_BOIS });
-    const L = [], nv = this.niveaux(), hr = nv * 1.12 + 0.1;
-    /* rayonnage : montants bleus, lisses orange, comme dans l'entrepôt */
-    for (const ux of [-9.3, -3.9]) for (const uz of [-2.72, 2.72]) L.push({ x: ux - 0.07, y: 0, z: uz - 0.07, w: 0.14, h: hr, d: 0.14, c: C_BLEU, sansTrait: true });
-    for (let n = 0; n < nv; n++) for (let k = 0; k < 5; k++) for (const uz of [-2.72, 2.66])
-      L.push({ x: -9.2 + k * 1.04, y: 0.02 + n * 1.12, z: uz, w: 1.04, h: 0.09, d: 0.06, c: [240, 150, 30], sansTrait: true });
+    const K = this.kx, H = this.h, st = RVB[this.niv] || RVB.na, t = this.fige ? 0 : this.t, ZF = 4.2, ZB = -4.2, ZR = 5.35, XD = 1.4 * K, AL = ALLEES.map(v => v * K);
+    this.sol(16, 8, 1.3);
+    this.dalle(-9.6 * K - 0.9, -3.6, -2.4 * K + 0.9, 3.6, rvb(st, 0.1), rvb(st, 0.95), 2.5);
+    this.dalle(7.3 * K - 2.9, -3.3, 7.3 * K + 2.8, 3.3, "rgba(57,135,229,.13)", "rgba(125,184,255,.9)", 2.5);
+    /* circulation : marquage jaune des allées et du retour */
+    for (const ax of AL) this.trait([ax, 0, ZB], [ax, 0, ZF], "rgba(255,214,10,.4)", 1.5, [8, 9]);
+    this.trait([AL[0], 0, ZR], [XD, 0, ZR], "rgba(255,214,10,.5)", 2);
+    this.trait([XD, 0, ZB], [XD, 0, ZR], "rgba(255,214,10,.5)", 2);
+    for (let j = 0; j < 3; j++) { const ph = ((t * 0.45 + j / 3) % 1 + 1) % 1, al = this.fige ? 0.5 : Math.sin(ph * Math.PI) * 0.8; this.chevron(XD - 0.2 - ph * (XD - AL[0] - 0.4), ZR, -1, al * 0.7, "150,180,240"); this.chevron(XD, ZB + ph * (ZR - ZB), 1, al, "255,214,10", true); }
+    for (const px of [7.3 * K - 1.3, 7.3 * K + 1.3]) for (const pz of [-1.3, 1.3]) this.boite({ x: px - 1.27, y: 0, z: pz - 1.27, w: 2.54, h: 0.15, d: 2.54, c: C_BOIS });
+    const L = [], nv = this.niveaux(), hr = nv + 0.15;
+    /* rayonnages : montants bleus, lisses orange */
+    for (const rx of RAYONS.map(v => v * K)) {
+      for (const ux of [rx - 0.5, rx + 0.42]) for (const uz of [-3.25, 3.1]) L.push({ x: ux, y: 0, z: uz, w: 0.1, h: hr, d: 0.1, c: C_BLEU, sansTrait: true });
+      for (let n = 0; n < nv; n++) for (let k = 0; k < 6; k++) for (const ux of [rx - 0.5, rx + 0.44])
+        L.push({ x: ux, y: 0.02 + n, z: -3.2 + k * 1.05, w: 0.06, h: 0.08, d: 1.05, c: [240, 150, 30], sansTrait: true });
+    }
     const flash = this.niv === "crit" && !this.fige ? 0.1 + 0.1 * Math.sin(t * 6) : 0;
-    for (const q of ["venir", "reste", "fait"]) for (const c of this.piles[q]) {
+    for (const q of ["reste", "fait"]) for (const c of this.piles[q]) {
       let vol = 0;
       if (c.a) {
         c.a.t += dt;
@@ -1969,166 +1988,121 @@ class SceneAccueil extends ScenePile {
         else if (c.a.masque) continue;
         if (c.a.t >= c.a.d) { c.x = c.a.x1; c.y = c.a.y1; c.z = c.a.z1; c.a = null; }
       }
-      if (q === "venir") continue;
-      else L.push({ x: c.x, y: c.y, z: c.z, w: 0.92, h: 0.92, d: 0.92, c: q === "fait" ? C_FAIT : st.map(v => v * 0.9), e: q === "fait" ? vol * 0.35 : flash + vol * 0.3 });
+      if (q === "fait") L.push({ x: c.x, y: c.y, z: c.z, w: 0.92, h: 0.92, d: 0.92, c: C_FAIT, e: vol * 0.35 });
+      else L.push({ x: c.x, y: c.y, z: c.z, w: 0.84, h: 0.84, d: 0.84, c: st.map(v => v * 0.9), e: flash + vol * 0.3 });
     }
-    this.piles.venir.forEach((c, j) => { const p = this.slot("venir", j); L.push({ x: p[0] + 0.02, y: p[1], z: p[2] + 0.02, w: 0.88, h: 0.88, d: 0.88, fil: true }); });
-    /* les préparateurs en tournée : chargés à l'aller, à vide au retour */
-    const ch = [[-2.8, 1.35], [-2.8, -1.25], [3.2, -1.25], [3.2, 1.35], [-2.8, 1.35]], LC = longChemin(ch);
+    /* les engins : ils montent une allée, redescendent la suivante, déposent, puis reviennent par le devant */
+    const ch = [[AL[0], ZF], [AL[0], ZB], [AL[1], ZB], [AL[1], ZF], [AL[2], ZF], [AL[2], ZB], [XD, ZB], [XD, ZR], [AL[0], ZR], [AL[0], ZF]], LC = longChemin(ch);
+    const plein = 3 * (ZF - ZB) + 2 * 2.4 * K, depose = plein + (XD - AL[2]);
     for (let k = 0; k < this.nOps; k++) {
-      const s = ((t * 1.75 + k * LC / this.nOps) % LC + LC) % LC, q = surChemin(ch, s);
-      const charge = s < 2.6 ? s / 2.6 : s < 8.6 ? 1 : s < 11.2 ? 1 - (s - 8.6) / 2.6 : 0;
-      perso(L, { x: q.x, z: q.z, fx: q.fx, fz: q.fz, marche: !this.fige, ph: t * 7.5 + k * 2.1, porte: true, gilet: C_JAUNE });
-      chariot(L, { x: q.x + q.fx * 1.08, z: q.z + q.fz * 1.08, fx: q.fx, fz: q.fz, charge, colis: st.map(v => v * 0.9) });
+      const s = ((t * 2.7 * (0.6 + 0.4 * K) + k * LC / this.nOps) % LC + LC) % LC, q = surChemin(ch, s);
+      const charge = s < plein ? s / plein : s < depose ? 1 : s < depose + (ZR - ZB) ? 1 - (s - depose) / (ZR - ZB) : 0;
+      engin(L, { x: q.x, z: q.z, fx: q.fx, fz: q.fz, charge, colis: st.map(v => v * 0.9), ech: 1.02 });
     }
     this.peindre(L);
-    /* les trois compteurs, sous leur zone : lignes à préparer, en cours, faites, avec leurs tournées */
+    /* les trois compteurs, sous leur zone */
     const A = this.A || {}, tN = clamp(H * 0.036, 10, 34), tV = clamp(H * 0.125, 24, 150), tS = clamp(H * 0.034, 10, 30);
     const bloc = (cx, titre, val, sous, cT, cV, petit) => {
-      const a = this.p(cx, 0, 4.0), x0 = clamp(a[0], tV * 1.5, this.w - tV * 1.5), y0 = Math.min(a[1] + tN * 1.6, H - tV * 0.95 - tS * (petit ? 3 : 1.75) - 6);
+      const x0 = this.w * cx, y0 = H - tV * 0.95 - tS * 3 - 4;
       this.texte(titre, x0, y0, { t: tN, gras: 700, esp: "0.14em", c: cT });
       this.texte(fini(val) ? n0(val) : "–", x0, y0 + tV * 0.95, { t: tV, gras: 900, f: F_D, c: cV });
       if (sous) this.texte(sous, x0, y0 + tV * 0.95 + tS * 1.45, { t: tS, c: `rgb(${ENCRE})` });
-      if (petit) this.texte(petit, x0, y0 + tV * 0.95 + tS * 2.75, { t: tS * 0.78, c: `rgb(${ENCRE2})` });
+      if (petit) this.texte(petit, Math.max(x0, tS * 0.7 * petit.length * 0.3 + 8), y0 + tV * 0.95 + tS * 2.7, { t: tS * 0.7, c: `rgb(${ENCRE2})` });
     };
     const tour = (n, mot) => (n == null ? "" : `${n0(n)} ${n >= 2 ? "tournées" : "tournée"} ${mot}`);
-    bloc(-6.6, "LIGNES À PRÉPARER", A.lances, tour(A.nbLances, "en attente"), rvb(st.map(v => v * 1.15)), "rgb(243,246,251)", fini(A.restant) ? `≈ ${n0(A.restant)} en tout avec le reste des tournées en cours${A.aLancer > 0 ? " et la prévision" : ""}` : "");
-    bloc(0.2, "LIGNES EN COURS", A.enCours, tour(A.nbEnCours, "en préparation"), "rgb(61,219,245)", "rgb(61,219,245)");
-    bloc(6.9, "LIGNES FAITES", A.faites, tour(A.nbFaites, A.nbFaites >= 2 ? "terminées" : "terminée"), "rgb(125,184,255)", "rgb(125,184,255)");
+    bloc(0.19, "LIGNES À PRÉPARER", A.lances, tour(A.nbLances, "en attente"), rvb(st.map(v => v * 1.15)), "rgb(243,246,251)", fini(A.restant) ? `≈ ${n0(A.restant)} au total avec les tournées en cours${A.aLancer > 0 ? " et la prévision" : ""}` : "");
+    bloc(0.5, "LIGNES EN COURS", A.enCours, tour(A.nbEnCours, "en préparation"), "rgb(61,219,245)", "rgb(61,219,245)");
+    bloc(0.81, "LIGNES FAITES", A.faites, tour(A.nbFaites, A.nbFaites >= 2 ? "terminées" : "terminée"), "rgb(125,184,255)", "rgb(125,184,255)");
   }
 }
 
-/* ───────── Scène « la journée » : le camion du jour se remplit, les chariots vides attendent ───────── */
+/* ───────── Scène « la journée » : l'équipe pose sur le convoyeur ce qu'il reste à faire ───────── */
 class SceneQuai extends Scene3D {
   constructor(cv) {
     super(cv);
-    this.yaw0 = this.cam.yaw = -0.82; this.cam.pitch = 0.47; this.balancement = 0.06;
-    this.marges = [0.02, 0.19, 0.02, 0.1]; this.N = 48; this.nF = 0; this.vus = 0; this.anims = []; this.pct = null; this.attente = null;
+    this.yaw0 = this.cam.yaw = -0.5; this.cam.pitch = 0.46; this.balancement = 0.05;
+    this.marges = [0.02, 0.19, 0.02, 0.1]; this.N = 48; this.nF = 0; this.pct = null; this.attente = null;
   }
-  bornes() { return [-12.6, 0, -1.6, 15.6, 4.6, 6.1]; }
-  slotCamion(i) { const col = Math.floor(i / 4), r = i % 4; return [10.9 - col * 1.06, 1.24 + (r >> 1) * 1.0, r & 1 ? 0.06 : -1.02]; }
-  slotQuai(j) { const lv = Math.floor(j / 12), r = j % 12; return [-11.8 + (r % 4) * 1.22, 0.14 + lv * 1.0, -1.2 + Math.floor(r / 4) * 1.22]; }
+  bornes() { return [-12.4, 0, -2, 12.6, 4.4, 6.2]; }
+  slotReste(j) { const lv = Math.floor(j / 12), r = j % 12; return [-11.8 + (r % 4) * 1.22, 0.14 + lv, -1.3 + Math.floor(r / 4) * 1.22]; }
+  slotFait(j) { const lv = Math.floor(j / 12), r = j % 12; return [7.4 + (r % 4) * 1.22, 0.14 + lv, -1.3 + Math.floor(r / 4) * 1.22]; }
   donnees(pct, attente) {
     this.pct = fini(pct) ? clamp(pct, 0, 1) : null; this.attente = fini(attente) ? attente : null;
     let n = this.pct == null ? 0 : Math.round(this.pct * this.N);
     if (this.pct > 0 && this.pct < 1) n = clamp(n, 1, this.N - 1);
-    this.nF = n;
-    if (!this.actif || this.fige) { this.vus = n; this.anims = []; } else this.planifier();
-    this.rafraichir();
+    this.nF = n; this.rafraichir();
   }
-  planifier() {
-    if (this.vus > this.nF) { this.vus = this.nF; this.anims = this.anims.filter(a => a.i < this.nF); }
-    let k = this.anims.filter(a => a.t < 0).length;
-    while (this.vus < this.nF) { this.anims.push({ i: this.vus++, t: -0.3 - k * 1.25 - (this.anims.length ? 0.2 : 0), d: 2.5 }); k++; }
-  }
-  entree() { if (this.fige) return; this.anims = []; this.vus = Math.max(0, this.nF - 6); this.planifier(); }
-  pos(a) {                     /* trajet d'une palette : quai -> sol -> rampe -> sa place dans la remorque */
-    const A = this.slotQuai(this.N - 1 - a.i), S = this.slotCamion(a.i), W = [A, [-5.6, 0.14, -0.48], [-3.9, 0.14, -0.48], [-1.9, 1.24, -0.48], S], T = [0, 0.26, 0.46, 0.64, 1];
-    const u = clamp(a.t / a.d, 0, 1);
-    for (let k = 0; k < 4; k++) if (u <= T[k + 1]) { const v = adoucir((u - T[k]) / (T[k + 1] - T[k])) * 0.5 + (u - T[k]) / (T[k + 1] - T[k]) * 0.5; return [lerp(W[k][0], W[k + 1][0], v), lerp(W[k][1], W[k + 1][1], v) + (k === 0 ? Math.sin(Math.PI * v) * 1.1 : 0), lerp(W[k][2], W[k + 1][2], v), u]; }
-    return [S[0], S[1], S[2], 1];
-  }
-  dessiner(dt) {
-    const x = this.ctx, H = this.h, t = this.fige ? 0 : this.t, N = this.N;
-    this.sol(16, 8, 1.3);
-    this.dalle(-12.3, -1.75, -6.9, 2.4, "rgba(255,255,255,.035)", `rgba(${ENCRE2},.45)`, 1.5);
-    this.dalle(-12.3, 3.9, 12.3, 5.9, "rgba(255,214,10,.05)", "rgba(255,214,10,.55)", 1.5);
-    for (let j = 0; j < 3; j++) { const ph = ((t * 0.7 + j / 3) % 1 + 1) % 1; this.chevron(-6.3 + ph * 2.2, -0.0, 1, this.fige ? 0.5 : Math.sin(ph * Math.PI) * 0.8, "125,184,255"); }
-    /* le camion : roues, châssis, paroi du fond */
+  dessiner() {
+    const x = this.ctx, H = this.h, t = this.fige ? 0 : this.t, N = this.N, reste = N - this.nF, actif = reste > 0 && this.pct != null;
+    this.sol(15, 8, 1.3);
+    this.dalle(-12.2, -1.7, -6.8, 2.5, "rgba(255,255,255,.035)", `rgba(${ENCRE2},.45)`, 1.5);
+    this.dalle(7, -1.7, 12.4, 2.5, "rgba(57,135,229,.12)", "rgba(125,184,255,.85)", 2);
+    this.dalle(-12.2, 3.9, 12.4, 5.9, "rgba(255,214,10,.05)", "rgba(255,214,10,.55)", 1.5);
+    /* convoyeur */
     const fixe = [];
-    for (const wx of [0.2, 1.5, 9.2, 13.4]) fixe.push({ x: wx, y: 0, z: -1.3, w: 1, h: 1, d: 0.4, c: [18, 22, 34] });
+    for (const px of [-3.4, -0.6, 2.2, 5]) fixe.push({ x: px, y: 0, z: -0.6, w: 0.25, h: 0.7, d: 1.2, c: [30, 42, 66] });
     this.peindre(fixe);
-    this.boite({ x: -1.6, y: 1.0, z: -1.27, w: 13.9, h: 0.22, d: 2.54, c: C_ACIER });
-    this.poly([this.p(-1.6, 1.22, -1.27), this.p(12.3, 1.22, -1.27), this.p(12.3, 3.5, -1.27), this.p(-1.6, 3.5, -1.27)], "rgba(125,184,255,.07)", "rgba(125,184,255,.35)", 1.5);
-    this.poly([this.p(12.3, 1.22, -1.27), this.p(12.3, 1.22, 1.27), this.p(12.3, 3.5, 1.27), this.p(12.3, 3.5, -1.27)], "rgba(125,184,255,.10)", "rgba(125,184,255,.35)", 1.5);
-    /* rampe */
-    this.poly([this.p(-4, 0, -1.2), this.p(-1.6, 1.2, -1.2), this.p(-1.6, 1.2, 1.2), this.p(-4, 0, 1.2)], "rgba(96,116,152,.45)", "rgba(188,200,221,.5)", 1.2);
+    this.boite({ x: -4, y: 0.7, z: -0.75, w: 10.6, h: 0.22, d: 1.5, c: C_ACIER });
+    x.lineWidth = 1;
+    const dec = (t * 2.4) % 1;
+    for (let rx = -4 + dec; rx < 6.6; rx += 1) { const a = this.p(rx, 0.92, -0.75), b = this.p(rx, 0.92, 0.75); x.strokeStyle = "rgba(255,255,255,.12)"; x.beginPath(); x.moveTo(a[0], a[1]); x.lineTo(b[0], b[1]); x.stroke(); }
     const L = [];
-    for (const wx of [0.2, 1.5, 9.2, 13.4]) L.push({ x: wx, y: 0, z: 0.9, w: 1, h: 1, d: 0.4, c: [18, 22, 34], sansTrait: true });
-    /* cabine */
-    L.push({ x: 12.55, y: 0.55, z: -1.27, w: 2.5, h: 2.75, d: 2.54, c: C_FAIT });
-    L.push({ x: 15.05, y: 1.95, z: -1.1, w: 0.06, h: 1.15, d: 2.2, c: [170, 215, 255], e: 0.2, sansTrait: true });
-    const feu = !this.fige && this.anims.length && Math.sin(t * 7) > 0;
-    L.push({ x: -1.66, y: 1.02, z: 0.95, w: 0.07, h: 0.18, d: 0.26, c: feu ? [255, 170, 20] : [120, 60, 20], e: feu ? 0.5 : 0, sansTrait: true });
-    /* palettes : en vol, dans la remorque, sur le quai */
-    const enVol = {}; let porteur = null;
-    for (const a of this.anims) { a.t += dt; enVol[a.i] = a; }
-    this.anims = this.anims.filter(a => a.t < a.d);
-    const cube = (p, c, e) => { L.push({ x: p[0], y: p[1], z: p[2], w: 0.96, h: 0.94, d: 0.96, c, e: e || 0 }); };
-    for (let i = 0; i < N; i++) {
-      const a = enVol[i];
-      if (a && a.t < a.d) { const p = a.t < 0 ? this.slotQuai(N - 1 - i).concat(0) : this.pos(a); cube(p, p[3] > 0.64 ? C_FAIT : C_RESTE, p[3] > 0 && p[3] < 1 ? 0.25 : 0); if (a.t >= 0 && p[3] > 0.2 && p[3] < 0.66 && !porteur) porteur = p; }
-      else if (i < this.vus) cube(this.slotCamion(i), C_FAIT);
-      else cube(this.slotQuai(N - 1 - i), C_RESTE);
-    }
-    /* le cariste : il pousse la palette jusqu'au pied de la rampe, puis revient */
-    if (porteur) perso(L, { x: Math.min(porteur[0] - 0.75, -3.5), z: porteur[2] + 0.48, fx: 1, fz: 0, marche: 1, ph: t * 8, porte: true, gilet: C_JAUNE });
-    else perso(L, { x: -6.1, z: 1.7, fx: 1, fz: 0, marche: 0, gilet: C_JAUNE });
-    /* chariots vides en attente d'un préparateur */
+    for (let j = 0; j < reste; j++) { const p = this.slotReste(j); L.push({ x: p[0], y: p[1], z: p[2], w: 0.96, h: 0.94, d: 0.96, c: C_RESTE }); }
+    for (let j = 0; j < this.nF; j++) { const p = this.slotFait(j); L.push({ x: p[0], y: p[1], z: p[2], w: 0.96, h: 0.94, d: 0.96, c: C_FAIT }); }
+    if (actif) {
+      /* les colis avancent sur le tapis */
+      for (let j = 0; j < 6; j++) { const bx = -3.7 + ((t * 2.4 + j * 1.7) % 10.2 + 10.2) % 10.2; L.push({ x: bx, y: 0.92, z: -0.42, w: 0.8, h: 0.7, d: 0.84, c: C_COLIS }); }
+      /* trois personnes font la navette entre la pile et la tête du convoyeur */
+      for (let k = 0; k < 3; k++) {
+        const s = ((t * 1.9 + k * 1.7) % 5 + 5) % 5, al = s < 2.5, px = -6.4 + (al ? s : 5 - s) * 0.84, pz = 1.2 + k * 0.85;
+        perso(L, { x: px, z: pz, fx: al ? 1 : -1, fz: 0, marche: !this.fige, ph: t * 8 + k * 2, porte: al, gilet: C_JAUNE });
+        if (al) repere({ x: px, z: pz, fx: 1, fz: 0 })(L, 0.52, 0, 1.2, 0.5, 0.55, 0.42, C_COLIS, { sansTrait: false });
+      }
+    } else perso(L, { x: -5.6, z: 1.6, fx: 1, fz: 0, marche: 0, gilet: C_JAUNE });
     const nA = Math.min(this.attente || 0, 13);
     for (let k = 0; k < nA; k++) chariot(L, { x: -11.2 + k * 1.78, z: 4.9, fx: 1, fz: 0, charge: 0 });
     this.peindre(L);
-    /* arêtes proches de la remorque */
-    for (const e of [[[-1.6, 3.5, 1.27], [12.3, 3.5, 1.27]], [[-1.6, 3.5, -1.27], [-1.6, 3.5, 1.27]], [[-1.6, 1.22, 1.27], [-1.6, 3.5, 1.27]], [[12.3, 1.22, 1.27], [12.3, 3.5, 1.27]]]) this.trait(e[0], e[1], "rgba(125,184,255,.55)", 1.5);
     const tN = clamp(H * 0.03, 11, 28), tV = clamp(H * 0.1, 26, 100);
-    const a = [this.w * 0.5, tV + tN * 2.4];
-    this.texte(this.pct == null ? "–" : Math.floor(this.pct * 100 + 1e-6) + " %", a[0], a[1] - tN * 1.6, { t: tV, gras: 900, f: F_D });
-    this.texte("DE LA JOURNÉE EST DANS LE CAMION", a[0], a[1] - tN * 0.2, { t: tN, esp: "0.14em", c: "rgb(125,184,255)" });
-    const b = this.p(-10, 0.14 + Math.max(1, Math.ceil((N - this.vus) / 12)) + 0.9, 0); this.texte("RESTE À FAIRE", Math.max(b[0], tN * 6.5), b[1], { t: tN, esp: "0.14em", c: `rgb(${ENCRE2})` });
-    const c = [this.w * 0.5, H]; this.texte(this.attente == null ? "CHARIOTS EN ATTENTE" : `${n0(this.attente)} ${this.attente >= 2 ? "CHARIOTS" : "CHARIOT"} EN ATTENTE D'UN PRÉPARATEUR`, c[0], c[1] - tN * 0.9, { t: tN, esp: "0.14em", c: "rgb(255,214,10)" });
+    this.texte(this.pct == null ? "–" : Math.floor(this.pct * 100 + 1e-6) + " %", this.w * 0.5, tV + tN * 0.9, { t: tV, gras: 900, f: F_D });
+    this.texte("DE LA JOURNÉE EST PASSÉ SUR LE CONVOYEUR", this.w * 0.5, tV + tN * 2.4, { t: tN, esp: "0.14em", c: "rgb(125,184,255)" });
+    const a = this.p(-9.9, 0.14 + Math.max(1, Math.ceil(reste / 12)) + 0.9, 0); this.texte("RESTE À FAIRE", Math.max(a[0], tN * 6.5), a[1], { t: tN, esp: "0.14em", c: `rgb(${ENCRE2})` });
+    const b = this.p(9.3, 0.14 + Math.max(1, Math.ceil(this.nF / 12)) + 0.9, 0); this.texte("FAIT", Math.min(b[0], this.w - tN * 3), b[1], { t: tN, esp: "0.14em", c: "rgb(125,184,255)" });
+    this.texte(this.attente == null ? "CHARIOTS EN ATTENTE" : `${n0(this.attente)} ${this.attente >= 2 ? "CHARIOTS" : "CHARIOT"} EN ATTENTE D'UN PRÉPARATEUR`, this.w * 0.5, H - tN * 0.9, { t: tN, esp: "0.14em", c: "rgb(255,214,10)" });
   }
 }
 
-/* ───────── Scène « les vagues » : une palette par vague, pleine quand la vague est terminée ───────── */
+/* ───────── Scène « les services » : une piste par service, l'engin avance jusqu'à son pourcentage ───────── */
 class SceneVagues extends Scene3D {
   constructor(cv) {
     super(cv);
-    this.yaw0 = this.cam.yaw = -0.16; this.cam.pitch = 0.3; this.balancement = 0.07;
-    this.marges = [0.03, 0.2, 0.03, 0.32]; this.v = []; this.app = 9; this.unite = 50;
+    this.yaw0 = this.cam.yaw = 0; this.cam.pitch = 0.78; this.balancement = 0.025; this.cam.focale = 3.4;
+    this.marges = [0.15, 0.1, 0.14, 0.04]; this.s = []; this.app = 9;
   }
-  bornes() { const n = Math.max(1, this.v.length); return [-n * 2.4, 0, -1.2, n * 2.4, 4.6, 2.9]; }
-  donnees(vagues) {
-    const max = Math.max(1, ...vagues.map(v => v.ligPrev)), u = max / 24;
-    if (vagues.length !== this.v.length) this.cadre = null;
-    this.unite = u;
-    this.v = vagues.map(v => { const K = Math.max(1, Math.round(v.ligPrev / u)), fin = v.ligPrev > 0 && v.ligPrep >= v.ligPrev; return { K, F: fin ? K : Math.min(K - 1, Math.floor(v.ligPrep / u)), fin, p: v.ligPrev ? clamp(v.ligPrep / v.ligPrev, 0, 1) : 0, heure: v.heure || "", prep: v.ligPrep, prev: v.ligPrev, pick: v.pickPrev == null ? null : v.pickPrev > 0 ? clamp(v.pickPrep / v.pickPrev, 0, 1) : -1 }; });
-    this.rafraichir();
+  bornes() { const n = Math.max(1, this.s.length); return [-8, 0, -n * 0.95, 8, 1.8, n * 0.95]; }
+  donnees(liste) {
+    if (liste.length !== this.s.length) this.cadre = null;
+    this.s = liste; this.rafraichir();
   }
   entree() { this.app = this.fige ? 9 : 0; }
   dessiner(dt) {
-    const H = this.h, n = this.v.length, t = this.fige ? 0 : this.t; this.app += dt;
-    this.sol(Math.ceil(n * 2.4 / 1.2) + 2, 4, 1.2);
-    const L = [];
-    this.v.forEach((v, i) => {
-      const cx = (i - (n - 1) / 2) * 4.8;
-      this.dalle(cx - 2.05, -1.25, cx + 2.05, 1.45, v.fin ? "rgba(40,190,60,.10)" : "rgba(57,135,229,.08)", v.fin ? "rgba(60,210,90,.8)" : "rgba(125,184,255,.6)", 2);
-      this.boite({ x: cx - 1.68, y: 0, z: -1.0, w: 3.36, h: 0.16, d: 2.24, c: C_BOIS });
-      for (let j = 0; j < v.K; j++) {
-        const d = this.app - (0.2 + i * 0.22 + j * 0.035); if (d < 0) continue;
-        const lv = Math.floor(j / 6), r = j % 6, chute = (1 - adoucir(d / 0.45)) * 5, plein = j < v.F;
-        L.push({ x: cx - 1.62 + (r % 3) * 1.08, y: 0.16 + lv * 0.98 + chute, z: -0.94 + Math.floor(r / 3) * 1.08, w: 1.04, h: 0.94, d: 1.04, c: v.fin ? C_BON : C_FAIT, fil: !plein, a: plein ? 1 : 0.8 });
-      }
-      if (!v.fin && v.prep > 0) {             /* un préparateur travaille devant la vague en cours */
-        const s = ((t * 1.2 + i) % 5 + 5) % 5, al = s < 2.5, px = cx - 1.5 + (al ? s : 5 - s);
-        perso(L, { x: px, z: 2.25, fx: al ? 1 : -1, fz: 0, marche: !this.fige, ph: t * 7 + i, porte: true, gilet: C_JAUNE, ech: 0.9 });
-        chariot(L, { x: px + (al ? 1 : -1) * 0.98, z: 2.25, fx: al ? 1 : -1, fz: 0, charge: al ? 0.7 : 0.15, ech: 0.9 });
-      }
+    const H = this.h, n = this.s.length, t = this.fige ? 0 : this.t, L = []; this.app += dt;
+    this.sol(8, Math.ceil(n * 0.9) + 1, 1.3);
+    this.s.forEach((sv, i) => {
+      const z = (i - (n - 1) / 2) * 1.9, p = clamp(sv.p, 0, 1) * adoucir(clamp((this.app - 0.15 - i * 0.12) / 1.4, 0, 1)), fini100 = sv.p >= 0.999;
+      const c = fini100 ? [40, 200, 90] : sv.moi ? [61, 219, 245] : C_FAIT;
+      this.dalle(-8, z - 0.72, 8, z + 0.72, "rgba(255,255,255,.04)", `rgba(${ENCRE2},.3)`, 1);
+      if (p > 0.002) this.dalle(-8, z - 0.72, -8 + 16 * p, z + 0.72, rvb(c, 0.38), rvb(c, 0.9), 1.5);
+      /* ligne d'arrivée en damier */
+      for (let k = 0; k < 6; k++) this.dalle(8 + (k % 2) * 0.24, z - 0.72 + k * 0.24, 8.24 + (k % 2) * 0.24, z - 0.48 + k * 0.24, "rgba(243,246,251,.85)", null);
+      engin(L, { x: clamp(-8 + 16 * p, -6.9, 7.2), z, fx: 1, fz: 0, charge: sv.p, colis: c, ech: 0.62 });
     });
     this.peindre(L);
-    const tH = clamp(H * 0.075, 14, 60), tS = clamp(H * 0.032, 10, 26), tP = clamp(H * 0.085, 16, 70);
-    this.v.forEach((v, i) => {
-      const cx = (i - (n - 1) / 2) * 4.8, bas = this.p(cx, 0, 2.9), haut = this.p(cx, 0.16 + Math.ceil(v.K / 6) * 0.98 + 0.5, 0), y0 = Math.min(this.p(0, 0, 2.9)[1] + tH * 1.2, H - tS * 6.4);
-      this.texte(Math.floor(v.p * 100 + 1e-6) + " %", haut[0], haut[1] - 4, { t: tP, gras: 900, f: F_D, c: v.fin ? "rgb(95,219,95)" : "rgb(243,246,251)" });
-      this.texte(v.heure, bas[0], y0, { t: n > 1 ? Math.min(tH, Math.abs(this.p(4.8, 0, 2.9)[0] - this.p(0, 0, 2.9)[0]) * 0.36) : tH, gras: 900, f: F_D });
-      /* le détail tient dans la largeur d'une vague : on réduit le texte quand elles sont nombreuses */
-      const larg = n > 1 ? Math.abs(this.p(4.8, 0, 2.9)[0] - this.p(0, 0, 2.9)[0]) * 0.9 : this.w, det = `${n0(v.prep)} / ${n0(v.prev)}`, tD = Math.min(tS * 1.1, larg / (det.length * 0.6));
-      this.texte(det, bas[0], y0 + tS * 1.5, { t: tD, c: `rgb(${ENCRE2})` });
-      this.texte(v.fin ? "TERMINÉE" : v.prep > 0 ? "EN COURS" : "LANCÉE", bas[0], y0 + tS * 2.9, { t: n > 1 ? Math.min(tS, larg / 8) : tS, gras: 700, esp: "0.06em", c: v.fin ? "rgb(95,219,95)" : v.prep > 0 ? "rgb(125,184,255)" : `rgb(${ENCRE2})` });
-      /* avancement du pick (détail et carton) dans la vague */
-      if (v.pick != null) {
-        const tP2 = n > 1 ? Math.min(tS * 2, larg / 5.6) : tS * 2, ok = v.pick >= 1;
-        this.texte(v.pick < 0 ? "PICK : aucune ligne" : `PICK ${Math.floor(v.pick * 100 + 1e-6)} %`, bas[0], y0 + tS * 2.9 + tP2 * 1.3, { t: v.pick < 0 ? tP2 * 0.5 : tP2, gras: 900, f: v.pick < 0 ? undefined : F_D, c: v.pick < 0 ? `rgb(${ENCRE2})` : ok ? "rgb(95,219,95)" : "rgb(61,219,245)" });
-      }
+    const pas = n > 1 ? Math.abs(this.p(0, 0, 1.9)[1] - this.p(0, 0, 0)[1]) : H * 0.2, tT = clamp(pas * 0.34, 10, 44), tP = clamp(pas * 0.5, 13, 70), tS = clamp(pas * 0.2, 8, 22);
+    this.s.forEach((sv, i) => {
+      const z = (i - (n - 1) / 2) * 1.9, g = this.p(-8.5, 0, z), d = this.p(8.9, 0, z), fini100 = sv.p >= 0.999;
+      this.texte(sv.lib.toUpperCase(), g[0], g[1] + tT * 0.35, { t: tT, gras: 900, f: F_D, al: "right", esp: "0.04em", c: sv.moi ? "rgb(61,219,245)" : `rgb(${ENCRE})` });
+      this.texte(Math.floor(sv.p * 100 + 1e-6) + " %", d[0], g[1] + tP * 0.2, { t: tP, gras: 900, f: F_D, al: "left", c: fini100 ? "rgb(95,219,95)" : `rgb(${ENCRE})` });
+      this.texte(fini100 ? "terminé" : `reste ${n0(sv.restant)} lignes`, d[0], g[1] + tP * 0.2 + tS * 1.25, { t: tS, al: "left", c: `rgb(${ENCRE2})` });
     });
   }
 }
@@ -2434,7 +2408,7 @@ const ECRANS = [
   {
     id: "journee", nom: "La journée", question: "Où en est-on ?", scene: "quai",
     html: `<div class="corps e1">
-      <div class="vue3d anim" style="--i:0"><canvas id="c-quai" role="img" aria-label="Animation : le camion du jour se remplit à mesure que les lignes sont préparées, les chariots vides attendent un préparateur"></canvas></div>
+      <div class="vue3d anim" style="--i:0"><canvas id="c-quai" role="img" aria-label="Animation : l'équipe pose sur le convoyeur ce qu'il reste à faire, les chariots vides attendent un préparateur"></canvas></div>
       <div class="col">
         <div class="bloc anim" style="--i:1">
           <div class="duo"><div class="geant"><span id="e1-pct">–</span><small>%</small></div><p class="expl">de la charge du jour<br>est <b>déjà réalisée</b></p></div>
@@ -2446,9 +2420,9 @@ const ECRANS = [
           <div class="mini" id="e1-mtl"><span class="l">Chariots en attente</span><b id="e1-tl">–</b><span class="s">sans préparateur</span></div>
         </div>
         <div class="bloc cadb anim" style="--i:3"><h3>${ic("vitesse")}La cadence, en lignes par heure</h3>
-          <div class="cad"><div><span class="l">Nécessaire</span><b id="e1-need">–</b><span class="s" id="e1-need-s">pour finir à l'heure</span></div>
-            <div><span class="l">Théorique</span><b id="e1-theo">–</b><span class="s">cadences de l'équipe présente</span></div>
-            <div id="e1-reel-b"><span class="l">Réelle</span><b id="e1-reel">–</b><span class="s" id="e1-reel-s">sur la dernière heure</span></div></div>
+          <div class="cad"><div><span class="l">À tenir</span><b id="e1-need">–</b><span class="s" id="e1-need-s">pour finir à l'heure</span></div>
+            <div id="e1-reel-b"><span class="l">Réelle</span><b id="e1-reel">–</b><span class="s" id="e1-reel-s">sur la dernière heure</span></div>
+            <div><span class="l">Théorique</span><b id="e1-theo">–</b><span class="s">cadences de l'équipe présente</span></div></div>
           <div class="ligne" style="justify-content:center"><span id="e1-past"></span></div>
         </div>
       </div>
@@ -2473,45 +2447,36 @@ const ECRANS = [
     }
   },
 
-  /* ───────── Les vagues ───────── */
+  /* ───────── Les services ───────── */
   {
-    id: "vagues", nom: "Les vagues", question: "Où en sont les vagues ?", scene: "vagues",
+    id: "vagues", nom: "Les services", question: "Où en sont les préparations ?", scene: "vagues",
     html: `<div class="corps e4">
-      <div class="vue3d anim" style="--i:0"><canvas id="c-vag" role="img" aria-label="Animation : une palette par vague lancée, remplie à mesure que la vague est préparée"></canvas>
-        <div class="titre3d"><div class="titre3">${ic("couches")}Vagues lancées aujourd'hui · lignes préparées / prévues</div><span class="note" id="e4-unite"></span></div>
+      <div class="vue3d anim" style="--i:0"><canvas id="c-vag" role="img" aria-label="Animation : une piste par service, l'engin avance jusqu'au pourcentage de lignes préparées"></canvas>
+        <div class="titre3d"><div class="titre3">${ic("cible")}Avancement de chaque préparation du site</div><span class="note">ligne d'arrivée = 100 % des lignes préparées</span></div>
       </div>
       <div class="col">
-        <div class="bloc svc anim" style="--i:1"><h3>${ic("cible")}Toutes les préparations du site</h3><div class="svcs" id="e4-services"></div></div>
-        <div class="bloc anim" style="--i:2" id="e4-bloc-z"><h3>${ic("plan")}Reste à préparer, par zone d'allées</h3><div class="liste-jauges serre" id="e4-zones"></div></div>
-        <div class="deux anim" style="--i:3">
-          <div class="bloc"><h3>${ic("reste")}Reste dans les vagues</h3><div class="gros" id="e4-reste">–</div><p class="note" id="e4-reste-t"></p></div>
-          <div class="bloc" id="e4-bloc-r"><h3>${ic("warn")}<span id="e4-rupt-t">Ruptures</span></h3><div class="gros" id="e4-rupt">–</div><p class="note" id="e4-rupt-n">lignes non servies par le stock</p></div>
-        </div>
+        <div class="bloc anim" style="--i:1"><h3>${ic("reste")}Reste à préparer, Pick &amp; Pack</h3><div class="gros" id="e4-reste">–</div><p class="note" id="e4-reste-t"></p></div>
+        <div class="bloc anim" style="--i:2" id="e4-bloc-r"><h3>${ic("warn")}<span id="e4-rupt-t">Ruptures</span></h3><div class="gros" id="e4-rupt">–</div><p class="note" id="e4-rupt-n"></p></div>
+        <div class="bloc anim" style="--i:3" id="e4-bloc-z"><h3>${ic("plan")}Reste à préparer, par zone d'allées</h3><div class="liste-jauges serre" id="e4-zones"></div></div>
       </div>
     </div>`,
-    dispo: M => M.vagues.length > 0 || M.services.length > 0,
+    dispo: M => M.aCharge || M.services.length > 0,
     maj(M) {
-      /* les 6 dernières vagues qui comptent : celles de quelques lignes (reliquats) ne sont pas dessinées */
-      const maxV = Math.max(0, ...M.vagues.map(x => x.ligPrev)), grandes = M.vagues.filter(x => x.ligPrev >= Math.max(20, maxV * 0.03));
-      const v = (grandes.length ? grandes : M.vagues).slice(-6);
-      Scenes.vagues.donnees(v);
-      T("e4-unite", v.length ? `1 colis dessiné ≈ ${n0(Scenes.vagues.unite)} lignes` : "Aucune vague lancée pour l'instant.");
       /* le carton (utile au service) remplace le vrac dans la liste */
       const carton = M.types.find(t => /cart/i.test(t.lib));
-      const tous = [{ lib: M.cfg.service, fait: M.fait, restant: M.restant, moi: true }].concat(carton ? [{ lib: "Carton", fait: carton.fait, restant: carton.restant, moi: true }] : [], M.services.filter(x => !/vrac/i.test(x.lib)));
-      $("#e4-services").classList.toggle("dense", tous.length > 4);
-      Hh("e4-services", tous.map(t => { const tot = t.fait + t.restant, p = tot ? t.fait / tot : 0; return `<div class="svc-l${t.moi ? " moi" : ""}"><span class="n">${esc(t.lib)}</span><span class="p">${Math.floor(p * 100 + 1e-6)} %</span><div class="jauge" style="--v:${(p * 100).toFixed(1)}%"><i></i></div><span class="v"><b>${n0(t.fait)}</b> faites sur ${n0(tot)} lignes · reste <b>${n0(t.restant)}</b></span></div>`; }).join(""));
-      const finies = M.vagues.filter(x => x.ligPrev > 0 && x.ligPrep >= x.ligPrev).length, reste = M.vagues.reduce((s, x) => s + Math.max(0, x.ligPrev - x.ligPrep), 0), rupt = M.vagues.reduce((s, x) => s + x.ligRupt, 0);
-      T("e4-reste", M.vagues.length ? n0(reste) : "–"); T("e4-reste-t", `lignes, dans ${M.vagues.length - finies} ${pluriel(M.vagues.length - finies, "vague")} en cours`);
-      const zmax = Math.max(1, ...M.zones.map(z => z.restant));
-      $("#e4-bloc-z").hidden = !M.zones.length;
-      Hh("e4-zones", M.zones.map(z => `<div class="lj"><span class="lj-n">${esc(z.lib)}</span><div class="jauge etat" data-niv="na" style="--v:${(z.restant / zmax * 100).toFixed(1)}%"><i${z.restant ? "" : ' style="display:none"'}></i></div><span class="lj-v">reste <b>${n0(z.restant)}</b></span></div>`).join(""));
-      /* ruptures du Pick & Pack (lignes détail et carton du jour) quand le module les fournit, sinon celles de toutes les vagues */
-      const rpp = M.stock && M.stock.ruptures != null && fini(+M.stock.ruptures) ? +M.stock.ruptures : null, ru = rpp != null ? rpp : rupt;
+      const tous = [{ lib: M.cfg.service, fait: M.fait, restant: M.restant, moi: true }].concat(carton ? [{ lib: "Carton", fait: carton.fait, restant: carton.restant, moi: true }] : [], M.services.filter(x => !/vrac/i.test(x.lib)))
+        .map(t => ({ lib: t.lib, moi: !!t.moi, fait: t.fait, restant: t.restant, p: t.fait + t.restant > 0 ? t.fait / (t.fait + t.restant) : 0 })).slice(0, 9);
+      Scenes.vagues.donnees(tous);
+      T("e4-reste", M.aCharge ? n0(M.restant) : "–"); T("e4-reste-t", M.aCharge ? `lignes lancées, sur ${n0(M.fait + M.restant)} aujourd'hui` : "");
+      const rupt = M.vagues.reduce((s, x) => s + x.ligRupt, 0), rpp = M.stock && M.stock.ruptures != null && fini(+M.stock.ruptures) ? +M.stock.ruptures : null, ru = rpp != null ? rpp : rupt;
       T("e4-rupt-t", rpp != null ? "Ruptures Pick & Pack" : "Ruptures, tous services");
       T("e4-rupt-n", rpp != null ? "lignes détail et carton en rupture aujourd'hui" : "lignes non servies par le stock, toutes vagues");
       T("e4-rupt", rpp != null || M.vagues.length ? n0(ru) : "–"); Niv("e4-bloc-r", ru > 0 ? "warn" : null);
-      return M.vagues.length ? `<b>${M.vagues.length} ${pluriel(M.vagues.length, "vague")}</b> ${pluriel(M.vagues.length, "lancée")} aujourd'hui, dont <b>${finies} ${pluriel(finies, "terminée")}</b>. Il reste ${n0(reste)} lignes dans les vagues en cours.` : "Aucune vague lancée pour l'instant.";
+      const zmax = Math.max(1, ...M.zones.map(z => z.restant));
+      $("#e4-bloc-z").hidden = !M.zones.length;
+      Hh("e4-zones", M.zones.map(z => `<div class="lj"><span class="lj-n">${esc(z.lib)}</span><div class="jauge etat" data-niv="na" style="--v:${(z.restant / zmax * 100).toFixed(1)}%"><i${z.restant ? "" : ' style="display:none"'}></i></div><span class="lj-v">reste <b>${n0(z.restant)}</b></span></div>`).join(""));
+      const moi = tous[0], der = tous.slice(1).filter(x => !x.moi).sort((a, b) => a.p - b.p)[0];
+      return `<b>${esc(moi.lib)}</b> est à <b>${Math.floor(moi.p * 100 + 1e-6)} %</b>.` + (der ? ` Le service le moins avancé : <b>${esc(der.lib)}</b>, à ${Math.floor(der.p * 100 + 1e-6)} %.` : "");
     }
   },
 
@@ -2918,6 +2883,7 @@ const Appli = (() => {
       $$("#enc-table th").forEach(th => { const agir = () => { const k = th.dataset.tri; if (tri === k) sens = -sens; else { tri = k; sens = k === "nom" ? 1 : -1; } rendre(); }; th.addEventListener("click", agir); th.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); agir(); } }); });
     };
     rendre();
+    if (M.vagues.length) $("#enc-table").insertAdjacentHTML("afterend", "<h4>Vagues du jour</h4>" + table(["Lancée à", "N°", "Lignes préparées", "Lignes prévues", "Avancement", "Pick (détail + carton)", "Ruptures", "État"], M.vagues.map(v => [v.heure || "", v.num || "", n0(v.ligPrep), n0(v.ligPrev), v.ligPrev ? Math.floor(v.ligPrep / v.ligPrev * 100) + " %" : "–", v.pickPrev == null ? "–" : v.pickPrev > 0 ? Math.floor(v.pickPrep / v.pickPrev * 100) + " %  (" + n0(v.pickPrep) + " / " + n0(v.pickPrev) + ")" : "aucune ligne", n0(v.ligRupt), v.etat])));
     if (A && A.vigilance.length) $("#enc-table").insertAdjacentHTML("afterend", "<h4>Vigilance qualité : décelées du jour par matricule</h4>" + table(["Matricule", "Décelées", "Dossard"], A.vigilance.map(v => [v.mat, n0(v.n), v.d])));
   }
 
