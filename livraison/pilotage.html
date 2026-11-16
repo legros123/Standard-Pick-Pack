@@ -2127,12 +2127,12 @@ const C_DOSSARD = { jaune: C_JAUNE, orange: C_ORANGE, rouge: C_ROUGE };
 class SceneControle extends Scene3D {
   constructor(cv) {
     super(cv);
-    this.yaw0 = this.cam.yaw = -0.74; this.cam.pitch = 0.5; this.balancement = 0.05;
+    this.yaw0 = this.cam.yaw = -0.42; this.cam.pitch = 0.5; this.balancement = 0.04;
     this.marges = [0.02, 0.17, 0.02, 0.08];
     this.colis = []; this.taux = 0.02; this.prochain = 0; this.serie = 0; this.eclat = null; this.ops = []; this.tc = 0;
   }
-  esp() { const n = this.ops.length; return Math.min(3.5, 12.6 / Math.max(1, n)); }
-  bornes() { const n = this.ops.length; return [-6.2, 0, -1.4, Math.max(6.8, 2.2 + (n - 1) / 2 * this.esp() + 1.3), 4.4, n ? 10.4 : 7.4]; }
+  esp() { const n = this.ops.length; return Math.min(4.2, 28 / Math.max(1, n)); }   // assez d'écart pour lire chaque matricule
+  bornes() { const n = this.ops.length, d = (n - 1) / 2 * this.esp() + 1.3; return [Math.min(-6.2, 2.2 - d), 0, -1.4, Math.max(6.8, 2.2 + d), 4.4, n ? 10.4 : 7.4]; }
   donnees(taux, vig) {
     this.taux = fini(taux) ? clamp(taux, 0.003, 0.4) : 0.02;
     const ops = (vig || []).slice(0, 7), cle = ops.map(o => o.mat + ":" + o.n).join("|");
@@ -2198,19 +2198,19 @@ class SceneControle extends Scene3D {
         perso(L, { x: q.x, z: q.z, fx: q.fx, fz: q.fz, marche, ph: t * 8 + k, porte: vus > 0, gilet: g, num: o.mat, ech: E, e: o.d === "rouge" && !this.fige ? 0.12 * Math.sin(t * 6) : 0 });
         const B = repere({ x: q.x, z: q.z, fx: q.fx, fz: q.fz, ech: E });
         for (let j = 0; j < vus; j++) B(L, 0.52, 0, 1.22 + j * 0.3, 0.46, 0.5, 0.27, C_ALERTE, { sansTrait: false });
-        L.push({ lab: true, s: `${o.mat}  ×${o.n}`, x: q.x, y: Math.max(3.25, (1.5 + vus * 0.3) * E + 0.45) + (k % 2 ? 1.0 : 0), z: q.z, t: 0.72, bg: rvb(g), c: "#12151C", bd: "rgba(0,0,0,.55)", av: 3, min: 10 });
+        L.push({ lab: true, s: `${o.mat}  ×${o.n}`, x: q.x, y: Math.max(3.25, (1.5 + vus * 0.3) * E + 0.45) + (k % 2 ? 1.5 : 0), z: q.z, t: 0.72, bg: rvb(g), c: "#12151C", bd: "rgba(0,0,0,.55)", av: 3, min: 10 });
       });
       for (let j = 0; j < Math.min(surTable, 18); j++) L.push({ x: 0.45 + (j % 6) * 0.6, y: 1.02 + Math.floor(j / 6) * 0.4, z: 5.5, w: 0.55, h: 0.37, d: 0.6, c: C_ALERTE });
     }
-    this.peindre(L);
     if (this.eclat) {
       const q = this.p(-2, 3.1, 0), r = H * 0.16, g = x.createRadialGradient(q[0], q[1], 0, q[0], q[1], r), c = this.eclat.rejet ? "250,178,25" : "40,190,60";
       g.addColorStop(0, `rgba(${c},${0.5 * this.eclat.t / 0.55})`); g.addColorStop(1, `rgba(${c},0)`);
       x.fillStyle = g; x.fillRect(q[0] - r, q[1] - r, r * 2, r * 2);
     }
     const tt = clamp(H * 0.03, 11, 26);
+    this.peindre(L);
     const a = this.p(-2, 4.25, 0); this.texte("BALANCE", a[0], a[1], { t: tt, esp: "0.14em", c: `rgb(${ENCRE2})` });
-    const c = this.p(0, 1.3, 5.6); this.texte("POSTE DE CONTRÔLE", c[0] - tt * 0.5, c[1], { t: tt, esp: "0.14em", c: "rgb(250,178,25)", al: "right" });
+    const c = this.p(4.2, 5.6, 0); this.texte("POSTE DE CONTRÔLE ↓", c[0], c[1], { t: tt, esp: "0.14em", c: "rgb(250,178,25)" });
     if (n) { this.texte("ERREURS DÉCELÉES : CHACUN RÉCUPÈRE SES COLIS AU CONTRÔLE", this.w / 2, H - tt * 0.9, { t: tt, esp: "0.12em", c: "rgb(255,138,138)" }); }
   }
 }
@@ -2218,14 +2218,16 @@ class SceneControle extends Scene3D {
 /* ───────── Scène « les allées » : le vrai plan, 12 m ou 4 m de haut, couleur selon le rang des erreurs ───────── */
 const C_RANG = [[255, 40, 40], [226, 100, 8], [255, 190, 96], [36, 178, 84]];
 const CSS_RANG = ["#FF2828", "#E26408", "#FFBE60", "#24B254"];
-const Z_NUM = [9.5, 18.5];   // numéros d'allée en quinconce sur deux rangs, pour pouvoir les écrire en très gros
+const ALLEE_PAS = 3.4;   // largeur d'un couloir + un palettier
+const C_PALETTIER = [46, 78, 160], C_LISSE = [214, 150, 44];
 class SceneAllees extends Scene3D {
+  /* l'allée, c'est le couloir entre deux palettiers : c'est lui qui prend la couleur, le numéro est posé à son entrée */
   constructor(cv) {
     super(cv);
-    this.yaw0 = this.cam.yaw = -0.16; this.cam.pitch = 0.72; this.balancement = 0.05; this.cam.focale = 4.6;
-    this.marges = [0.02, 0.1, 0.02, 0.04]; this.al = []; this.app = 1; this.tete = [];
+    this.yaw0 = this.cam.yaw = -0.14; this.cam.pitch = 0.6; this.balancement = 0.04; this.cam.focale = 4.6;
+    this.marges = [0.02, 0.08, 0.02, 0.04]; this.al = []; this.racks = []; this.app = 1; this.tete = [];
   }
-  bornes() { const w = this.al.length ? this.al[this.al.length - 1].x + 1.6 : 12; return [-w, 0, -4.3, w, 6.6, Z_NUM[1] + 1.4]; }
+  bornes() { const w = this.racks.length ? Math.max(...this.racks.map(r => Math.abs(r.x))) + 0.8 : 12; return [-w, 0, -4.3, w, 6.6, 5.6]; }
   donnees(allees, cfg) {
     const a = allees || {}, val = {};
     Object.keys(a).forEach(k => { const n = parseInt(k, 10); if (n >= 1 && n <= 99) val[n] = (val[n] || 0) + (+a[k] || 0); });
@@ -2234,31 +2236,49 @@ class SceneAllees extends Scene3D {
     const hautes = new Set((Array.isArray(cfg.alleesHautes) ? cfg.alleesHautes : [1, 2, 3, 14, 21]).map(Number));
     const ordre = ids.filter(n => val[n] > 0).sort((p, q) => val[q] - val[p] || p - q), rang = {};
     ordre.forEach((n, i) => (rang[n] = i < 2 ? 0 : i < 5 ? 1 : i < 10 ? 2 : 3));
+    const P = ALLEE_PAS;   // couloir + un palettier
     let xx = 0;
-    const al = ids.map((n, i) => { if (i) xx += n - ids[i - 1] > 1 ? 5.2 : 3.6; return { n, v: val[n] || 0, r: rang[n] == null ? 3 : rang[n], haute: hautes.has(n), x: xx, saut: i > 0 && n - ids[i - 1] > 1 }; });
+    const al = ids.map((n, i) => { const saut = i > 0 && n - ids[i - 1] > 1; if (i) xx += saut ? P + 2.6 : P; return { n, v: val[n] || 0, r: rang[n] == null ? 3 : rang[n], haute: hautes.has(n), x: xx, saut }; });
     al.forEach(q => (q.x -= xx / 2));
+    /* palettiers : un de chaque côté du couloir, partagé entre deux allées qui se suivent */
+    const racks = [];
+    al.forEach((q, i) => {
+      const prev = al[i - 1], next = al[i + 1];
+      if (!prev || q.saut) racks.push({ x: q.x - P / 2, haut: q.haute });
+      racks.push({ x: q.x + P / 2, haut: q.haute || !!(next && !next.saut && next.haute) });
+    });
     if (al.length !== this.al.length) this.cadre = null;
-    this.al = al; this.tete = ordre.slice(0, 2); this.rangs = rang;
+    this.al = al; this.racks = racks; this.tete = ordre.slice(0, 2); this.rangs = rang;
     this.rafraichir();
   }
   entree() { this.app = this.fige ? 1 : 0; }
   dessiner(dt) {
-    const H = this.h, t = this.fige ? 0 : this.t, L = [];
+    const H = this.h, t = this.fige ? 0 : this.t, L = [], P = ALLEE_PAS, LR = 1.0;
     this.app = Math.min(1, this.app + dt * 0.9);
-    const w = this.al.length ? this.al[this.al.length - 1].x + 1.6 : 12;
-    const TN = clamp(Math.min(H * 0.13, this.w / Math.max(8, this.al.length) * 1.55), 24, 150);   // numéro d'allée : ~3x l'ancienne taille
+    const w = this.racks.length ? Math.max(...this.racks.map(r => Math.abs(r.x))) + 1 : 12;
     this.sol(Math.ceil(w / 1.2), 5, 1.2);
-    this.trait([-w, 0, 4.25], [w, 0, 4.25], "rgba(255,214,10,.5)", 2);
-    this.al.forEach((q, i) => {
-      const c = C_RANG[q.r], nv = q.haute ? 6 : 4, HT = (q.haute ? 5.4 : 1.8) * adoucir(clamp(this.app * 1.6 - i * 0.03, 0, 1)), hn = HT / nv;
-      const e = q.r === 0 ? 0.16 + 0.2 * Math.sin(t * 5.5) : 0;
-      this.dalle(q.x - 0.72, -4.05, q.x + 0.72, 4.05, rvb(c, q.r === 0 ? 0.3 : 0.14), null);
-      for (let k = 0; k < nv; k++) L.push({ x: q.x - 0.62, y: k * hn, z: -4, w: 1.24, h: hn - Math.min(0.1, hn * 0.25), d: 8, c, e });
-      const zn = Z_NUM[i % 2];
-      this.trait([q.x, 0.02, 4.05], [q.x, 0.02, zn - 0.6], "rgba(255,214,10,.75)", 3);
-      L.push({ lab: true, s: String(q.n).padStart(2, "0"), x: q.x, y: 0.46, z: zn, px: TN, pad: 0.32, bg: "#FFD60A", c: "#12151C", bd: "#12151C", av: 4 });
-      if (q.v > 0) L.push({ lab: true, s: String(q.v), x: q.x, y: HT + (q.r === 0 ? 1.0 : 0.72), z: 3.6, px: TN * (q.r === 0 ? 0.72 : q.r === 1 ? 0.56 : 0.46), pad: 0.4, bg: "rgba(5,9,18,.82)", bd: rvb(c), c: q.r === 3 ? "#DFF7E6" : rvb(c.map(v => v * 1.1 + 30)), halo: q.r === 0 ? "rgba(255,40,40,.9)" : null, av: 6 });
-      if (q.saut) { const m = this.p(q.x - 2.4, 0, 4.75); this.texte("…", m[0], m[1], { t: clamp(H * 0.05, 12, 40), c: `rgb(${ENCRE2})` }); }
+    /* couloirs colorés selon le rang des erreurs */
+    this.al.forEach(q => {
+      const c = C_RANG[q.r], e = q.r === 0 ? 0.55 + 0.25 * Math.sin(t * 5.5) : q.r === 1 ? 0.5 : q.r === 2 ? 0.42 : 0.3;
+      this.dalle(q.x - (P - LR) / 2 + 0.06, -4.05, q.x + (P - LR) / 2 - 0.06, 4.6, rvb(c, e), rvb(c, 0.95), q.r === 0 ? 3 : 2);
+    });
+    /* palettiers neutres (montants bleus, lisses orange), 12 m ou 4 m */
+    this.racks.forEach((r, i) => {
+      const nv = r.haut ? 6 : 4, HT = (r.haut ? 5.4 : 1.8) * adoucir(clamp(this.app * 1.6 - i * 0.03, 0, 1)), hn = HT / nv;
+      for (let k = 0; k < nv; k++) {
+        L.push({ x: r.x - LR / 2, y: k * hn, z: -4, w: LR, h: hn - Math.min(0.08, hn * 0.2), d: 8, c: C_PALETTIER });
+        L.push({ x: r.x - LR / 2 - 0.02, y: (k + 1) * hn - Math.min(0.08, hn * 0.2), z: -4, w: LR + 0.04, h: Math.min(0.08, hn * 0.2), d: 8, c: C_LISSE, sansTrait: true });
+      }
+    });
+    /* taille des plaques : on mesure la largeur d'un couloir à l'écran */
+    let pasPx = 60;
+    if (this.al.length > 1) { const a = this.p(this.al[0].x, 0, 4.6), b = this.p(this.al[0].x + P, 0, 4.6); pasPx = Math.abs(b[0] - a[0]); }
+    const TN = clamp(Math.min(pasPx * 0.5, H * 0.075), 14, 64);
+    this.al.forEach(q => {
+      const c = C_RANG[q.r], hMax = q.haute ? 5.4 : 1.8;
+      L.push({ lab: true, s: String(q.n).padStart(2, "0"), x: q.x, y: 0.05, z: 5.1, px: TN, pad: 0.3, bg: "#FFD60A", c: "#12151C", bd: "#12151C", av: 4 });
+      if (q.v > 0) L.push({ lab: true, s: String(q.v), x: q.x, y: hMax + 1.1, z: 0, px: TN * (q.r === 0 ? 1.15 : q.r === 1 ? 0.95 : 0.85), pad: 0.4, bg: "rgba(5,9,18,.85)", bd: rvb(c), c: q.r === 3 ? "#DFF7E6" : rvb(c.map(v => v * 1.1 + 30)), halo: q.r === 0 ? "rgba(255,40,40,.9)" : null, av: 6 });
+      if (q.saut) { const m = this.p(q.x - P / 2 - 1.3, 0, 4.6); this.texte("…", m[0], m[1], { t: clamp(H * 0.05, 12, 40), c: `rgb(${ENCRE2})` }); }
     });
     this.peindre(L);
   }
@@ -2745,7 +2765,9 @@ const Appli = (() => {
     const now = mode === "demo" ? new Date(brut.maj) : new Date(), avant = M, forcer = {};
     if (reg.finVisee) forcer.finVisee = reg.finVisee;
     try {
-      const dP = brut || pilotageDepuisLive(brutL, now);
+      let dP = brut || pilotageDepuisLive(brutL, now);
+      /* la charge vient de Logys (data.js) dès qu'il est là, comme l'accueil : sinon « La journée » et l'accueil ne disent pas la même chose */
+      if (brut && brutL && brutL.jour) { const ch = pilotageDepuisLive(brutL, now).charge; dP = Object.assign({}, brut, { charge: Object.assign({}, brut.charge || {}, ch) }); }
       M = calculer(dP, forcer); M.synth = !!dP.synth;
       A = modeleAccueil(brutL, M, now, mode === "demo" ? forceStatut : null);
     } catch (err) { console.error("Données illisibles", err); return; }
