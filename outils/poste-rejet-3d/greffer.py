@@ -3,6 +3,14 @@
 import sys
 src, greffe, dst = sys.argv[1], sys.argv[2], sys.argv[3]
 s = open(src, encoding="utf-8").read(); g = open(greffe, encoding="utf-8").read()
+# pilotage déjà greffé : on remplace seulement le bloc 3D (three.js + scène), le reste est déjà branché
+DEBUT = "<!-- ═══ Scène 3D du poste de rejet"
+if DEBUT in s:
+    i = s.index(DEBUT); j = s.index("</script>\n", s.index('<script id="poste-rejet-3d">', i)) + len("</script>\n")
+    s = s[:i] + g + s[j:]
+    open(dst, "w", encoding="utf-8").write(s)
+    print("déjà greffé : scène 3D mise à jour ·", dst, round(len(s.encode("utf-8")) / 1024), "Ko")
+    sys.exit(0)
 def rempl(a, b, n=1):
     global s
     assert s.count(a) == n, (s.count(a), a[:90])

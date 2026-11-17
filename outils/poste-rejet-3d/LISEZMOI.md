@@ -12,15 +12,30 @@ qui viennent chercher les colis de leurs erreurs.
 | `assembler.js` | Reconstruit la page autonome et le bloc à greffer (`sortie/`). |
 | `greffer.py` | Greffe la scène dans un fichier de pilotage. |
 
-## Refaire la page et greffer la scène dans le pilotage
+## Le pilotage de référence : `pilotage.html` à la racine
+
+C'est la version à jour, à copier dans le dossier du poste (à côté de `pilotage_data.js`). Elle réunit :
+
+- l'accueil Live « entrepôt vivant » (17/11 matin, commit 42c8fa9) ;
+- les indicateurs (titres en gros, barèmes Prod P&P 515/490, avérées 200/240, rejets 130, décelées 20),
+  les dossards tous visibles et les allées en couloirs entre palettiers (16/11 soir, commits 6ef0936 et 22e3a7d) ;
+- la scène 3D du poste de rejet.
+
+Ces versions avaient été faites en parallèle sur des branches différentes ; elles ont été fusionnées à trois voies
+depuis leur base commune, sans conflit. Une seule retouche : la couleur des lisses des allées s'appelle
+`C_LISSE_ALLEE`, car `C_LISSE` était déjà pris par l'accueil.
+
+**Pour toute nouvelle modification du pilotage, partir de ce fichier**, sinon les modifications précédentes se perdent.
+
+## Mettre à jour la scène 3D
 
 ```bash
 node    outils/poste-rejet-3d/assembler.js
-python3 outils/poste-rejet-3d/greffer.py pilotage_origine.html outils/poste-rejet-3d/sortie/greffe.html pilotage.html
+python3 outils/poste-rejet-3d/greffer.py pilotage.html outils/poste-rejet-3d/sortie/greffe.html pilotage.html
 ```
 
-Le pilotage lui-même n'est pas versionné ici : il vit dans le dossier du poste, à côté de `pilotage_data.js`.
-La greffe ne modifie jamais le fichier d'origine ; elle s'arrête avec une erreur si un point d'ancrage a changé.
+Sur un pilotage déjà greffé, l'outil remplace seulement le bloc 3D. Sur un pilotage sans 3D, il fait la greffe
+complète ; il ne modifie jamais le fichier d'origine et s'arrête avec une erreur si un point d'ancrage a changé.
 
 ## Ce que fait la greffe
 
