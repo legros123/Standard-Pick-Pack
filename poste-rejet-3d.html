@@ -397,10 +397,22 @@ void main(){
   gl_FragColor = vec4(c + (n - 0.5) / 255.0, 1.0);
 }`;
 
+/* la carte graphique sait-elle dessiner dans une image en demi-flottants ? (sinon : rendu direct, sans halo ni reflet) */
+function sondeHDR(r) {
+  const gl = r.getContext(); let ok = false;
+  try {
+    const t = gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D, t); gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA16F, 4, 4, 0, gl.RGBA, gl.HALF_FLOAT, null);
+    const f = gl.createFramebuffer(); gl.bindFramebuffer(gl.FRAMEBUFFER, f); gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, t, 0);
+    ok = gl.checkFramebufferStatus(gl.FRAMEBUFFER) === gl.FRAMEBUFFER_COMPLETE;
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null); gl.bindTexture(gl.TEXTURE_2D, null); gl.deleteFramebuffer(f); gl.deleteTexture(t);
+  } catch (e) { ok = false; }
+  r.resetState(); return ok;
+}
+
 class Rendu {
   constructor(sc) {
     this.sc = sc; const r = this.r = sc.renderer;
-    this.hdr = r.capabilities.isWebGL2 && r.extensions.has("EXT_color_buffer_float");
+    this.hdr = r.capabilities.isWebGL2 && (r.extensions.has("EXT_color_buffer_float") || r.extensions.has("EXT_color_buffer_half_float")) && sondeHDR(r);
     this.halo = this.hdr; this.reflet = this.hdr;
     this.cam = new T.OrthographicCamera(-1, 1, 1, -1, 0, 1);
     const g = new T.BufferGeometry();
@@ -1419,8 +1431,8 @@ class PosteRejet3D {
     const sc = new T.Mesh(G.box, this.M.jaune); sc.scale.set(0.05, 0.1, 0.07); sc.position.set(0, -0.31, 0.03); this.ctrl.coude[1].add(sc);
     const sn = new T.Mesh(G.box, this.M.noir); sn.scale.set(0.055, 0.05, 0.09); sn.position.set(0, -0.36, 0.045); this.ctrl.coude[1].add(sn);
     this.rendu = new Rendu(this);
-    this.q = { pr: Math.min(o.pr || window.devicePixelRatio || 1, 2), niveau: 0 }; this.w = 0; this.h = 0;
-    if (o.qualite === "basse") { this.rendu.halo = this.rendu.reflet = false; this.rendu.mode(); this.q.pr = 1; }
+    this.q = { prMax: Math.min(o.pr || window.devicePixelRatio || 1, 2), pr: 1, budget: 2.4e6, niveau: 0 }; this.w = 0; this.h = 0;
+    if (o.qualite === "basse") { this.rendu.halo = this.rendu.reflet = false; this.rendu.mode(); this.q.budget = 1.2e6; }
     this.cam = { c: new T.Vector3(), az: 0, el: 0, d: 10 }; this.vel = {}; this.plan = 0; this.tPlan = 0; this.auto = o.auto !== false; this.libre = { az: 0, el: 0, z: 1, t: 0 };
     this.actif = false; this._raf = 0; this._der = 0; this.temps = 0; this.noir = 0; this.fondu = null; this.pret = false;
     this.perf = { n: 0, s: 0, calme: 0 }; this._boucle = this._boucle.bind(this);
@@ -1471,7 +1483,7 @@ class PosteRejet3D {
     cv.addEventListener("pointerup", fin); cv.addEventListener("pointercancel", fin);
     cv.addEventListener("wheel", e => { e.preventDefault(); L.z = clamp(L.z * Math.exp(e.deltaY * 0.0012), 0.35, 1.8); L.t = 9; }, { passive: false });
   }
-  allerAuPlan(i, auto) { this.plan = ((i % PLANS.length) + PLANS.length) % PLANS.length; this.tPlan = 0; if (auto != null) this.auto = auto; this.libre.t = 0; if (this.o.surPlan) this.o.surPlan(this.plan, this.auto); }
+  allerAuPlan(i, auto) { this.plan = ((i % PLANS.length) + PLANS.length) % PLANS.length; this.tPlan = 0; if (auto != null) this.auto = auto; this.libre.t = 0; if (this.o.surPlan) this.o.surPlan(this.plan, this.auto); if (this.fige && this.actif) this.image(0); }
   cadrer(dt, net) {
     const L = this.libre, A = this.w / Math.max(1, this.h) || 1.6, portrait = A < 0.95, P = PLANS[this.plan], cam = this.camera;
     if (L.t > 0) L.t -= dt; else { L.az = vers(L.az, 0, dt * 1.6); L.el = vers(L.el, 0, dt * 1.6); L.z = vers(L.z, 1, dt * 1.6); if (this.auto && !this.fige) this.tPlan += dt; }
@@ -1502,18 +1514,19 @@ class PosteRejet3D {
   taille() {
     const w = this.cv.clientWidth, h = this.cv.clientHeight;
     if (w < 4 || h < 4) return false;
-    if (w !== this.w || h !== this.h || this.q.pr !== this.prCourant) { this.w = w; this.h = h; this.prCourant = this.q.pr; this.rendu.taille(w, h, this.q.pr); }
+    const pr = Math.min(this.q.prMax, Math.sqrt(this.q.budget / (w * h)));       // jamais plus de pixels que le budget, même sur un écran 4K
+    if (w !== this.w || h !== this.h || pr !== this.prCourant) { this.w = w; this.h = h; this.prCourant = this.q.pr = pr; this.rendu.taille(w, h, pr); }
     return true;
   }
   /* si le poste peine, on allège : définition, puis reflet du sol, puis halo, puis ombres */
   alleger() {
     const q = this.q, R = this.rendu;
-    if (q.pr > 1.01) q.pr = Math.max(1, q.pr - 0.5);
+    if (q.budget > 1.1e6) q.budget *= 0.66;
     else if (R.reflet) R.reflet = false;
     else if (R.halo) { R.halo = false; R.mode(); for (const n in this.M) { const m = this.M[n]; if (m && m.isMaterial) m.needsUpdate = true; } }
     else if (this.cle.shadow.mapSize.x > 1024) { this.cle.shadow.mapSize.set(1024, 1024); if (this.cle.shadow.map) { this.cle.shadow.map.dispose(); this.cle.shadow.map = null; } }
     else return;
-    q.niveau++; this.prCourant = -1;
+    q.niveau++; this.prCourant = -1; this.rendu.liberer();
   }
   pas(dt) {
     let reste = dt; while (reste > 1e-5) { const d = Math.min(reste, 0.034); this.simuler(d); reste -= d; }
