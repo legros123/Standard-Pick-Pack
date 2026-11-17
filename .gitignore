@@ -3,3 +3,6 @@ bilan/
 *.xlsx
 *.xlsm
 __pycache__/
+
+# sorties intermédiaires de la scène 3D
+outils/poste-rejet-3d/sortie/

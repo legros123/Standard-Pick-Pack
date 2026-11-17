@@ -1,0 +1,22 @@
+<div id="scene">
+  <canvas id="gl" role="img" aria-label="Animation en trois dimensions du poste de rejet : les colis passent la balance, les rejets sont déviés vers le poste de contrôle, les colis conformes partent aux cercleuses, les opérateurs en dossard viennent chercher les colis de leurs erreurs."></canvas>
+  <div class="hud">
+    <div class="haut">
+      <div class="titre">
+        <small>Pick &amp; Pack · contrôle pondéral</small>
+        <h1>Poste de rejet</h1>
+        <p>Erreurs décelées : chacun récupère ses colis au contrôle.</p>
+      </div>
+      <div class="cpts" aria-live="off">
+        <div class="cpt"><span>Colis pesés</span><b id="c-pes">–</b></div>
+        <div class="cpt rej"><span>Rejets</span><b id="c-rej">–</b></div>
+        <div class="cpt dec"><span>Décelées</span><b id="c-dec">–</b></div>
+      </div>
+    </div>
+    <div class="bas">
+      <div class="plans" id="plans" role="group" aria-label="Plans de caméra"></div>
+      <div class="aide">Glisser pour tourner autour de la scène · molette ou pincement pour zoomer</div>
+    </div>
+  </div>
+  <div class="voile" id="voile"><div><i></i><span id="voile-txt">Préparation de la scène…</span></div></div>
+</div>

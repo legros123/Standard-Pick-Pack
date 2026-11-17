@@ -1,0 +1,44 @@
+/* Mise en page : la scène 3D occupe tout l'écran ; titre en haut à gauche, compteurs en haut à droite, plans de caméra en bas.
+   Un seul univers, sombre : celui du tableau de bord Pick & Pack. */
+:root{
+  --fond:#060B16; --voile:rgba(6,11,22,.58); --trait:rgba(150,180,240,.22);
+  --encre:#F3F6FB; --encre-2:#BCC8DD; --encre-3:#8696B0;
+  --bleu:#7DB8FF; --rejet:#FAB219; --decelee:#FF8A8A; --actif:#3987E5;
+  --f-d:'Big Shoulders Display','Arial Narrow','Segoe UI',sans-serif;
+  --f-t:'Lexend','Segoe UI',system-ui,-apple-system,'Helvetica Neue',Arial,sans-serif;
+  color-scheme:dark;
+}
+*,*::before,*::after{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;background:var(--fond);color:var(--encre);font-family:var(--f-t);font-size:16px;line-height:1.35;overflow:hidden;-webkit-font-smoothing:antialiased}
+#scene{position:relative;width:100%;height:100%;overflow:hidden;background:var(--fond)}
+#gl{position:absolute;inset:0;width:100%;height:100%;display:block;cursor:grab;outline:none}
+#gl:active{cursor:grabbing}
+.hud{position:absolute;inset:0;z-index:1;display:flex;flex-direction:column;justify-content:space-between;pointer-events:none;
+  padding-block:clamp(12px,2.2vh,28px);padding-left:max(16px,env(safe-area-inset-left,0px),2vw);padding-right:max(16px,env(safe-area-inset-right,0px),2vw)}
+.hud::before{content:"";position:absolute;inset:0 0 auto;height:30%;background:linear-gradient(180deg,rgba(6,11,22,.86),rgba(6,11,22,.5) 45%,rgba(6,11,22,0));z-index:-1}
+.hud::after{content:"";position:absolute;inset:auto 0 0;height:18%;background:linear-gradient(0deg,rgba(6,11,22,.72),rgba(6,11,22,0));z-index:-1}
+.haut{display:flex;flex-wrap:wrap;gap:12px 28px;justify-content:space-between;align-items:flex-start}
+.titre{min-width:0;text-shadow:0 1px 14px rgba(6,11,22,.7)}
+.titre small{display:block;font:500 clamp(10px,1.05vw,15px)/1.2 var(--f-t);letter-spacing:.16em;text-transform:uppercase;color:var(--bleu)}
+.titre h1{margin:.12em 0 0;font:900 clamp(30px,4.4vw,74px)/.95 var(--f-d);letter-spacing:.02em;text-transform:uppercase;text-wrap:balance}
+.titre p{margin:.5em 0 0;max-width:34em;font:400 clamp(12px,1.15vw,17px)/1.35 var(--f-t);color:var(--encre-2)}
+.cpts{display:flex;gap:clamp(8px,1vw,16px);flex-wrap:wrap}
+.cpt{min-width:clamp(88px,9.5vw,170px);padding:clamp(7px,.8vw,13px) clamp(10px,1.1vw,18px);border:1px solid var(--trait);border-radius:14px;background:var(--voile);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+.cpt span{display:block;font:500 clamp(9px,.85vw,13px)/1.2 var(--f-t);letter-spacing:.14em;text-transform:uppercase;color:var(--encre-2);white-space:nowrap}
+.cpt b{display:block;margin-top:.08em;font:900 clamp(26px,3.3vw,56px)/1 var(--f-d);font-variant-numeric:tabular-nums;color:var(--bleu)}
+.cpt.rej b{color:var(--rejet)} .cpt.dec b{color:var(--decelee)}
+.bas{display:flex;flex-wrap:wrap;gap:10px 20px;justify-content:space-between;align-items:flex-end}
+.plans{display:flex;gap:8px;max-width:100%;overflow-x:auto;scrollbar-width:none;pointer-events:auto;padding:2px}
+.plans::-webkit-scrollbar{display:none}
+.plans button{flex:none;appearance:none;border:1px solid var(--trait);background:var(--voile);color:var(--encre-2);font:500 clamp(11px,.95vw,15px)/1 var(--f-t);padding:.72em 1.05em;border-radius:99px;cursor:pointer;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);transition:background .2s,color .2s,border-color .2s;white-space:nowrap}
+.plans button:hover{color:var(--encre);border-color:rgba(150,180,240,.5)}
+.plans button:focus-visible{outline:2px solid var(--bleu);outline-offset:2px}
+.plans button[aria-pressed=true]{background:var(--actif);border-color:var(--bleu);color:#fff}
+.aide{font:400 clamp(10px,.85vw,13px)/1.3 var(--f-t);color:var(--encre-3);text-align:right}
+.voile{position:absolute;inset:0;display:grid;place-items:center;background:var(--fond);color:var(--encre-2);font:500 clamp(13px,1.2vw,18px)/1.4 var(--f-t);letter-spacing:.08em;text-align:center;padding:24px;transition:opacity .7s;z-index:3}
+.voile.parti{opacity:0;pointer-events:none}
+.voile i{display:block;width:44px;height:44px;margin:0 auto 18px;border-radius:50%;border:3px solid var(--trait);border-top-color:var(--bleu);animation:tourne 1s linear infinite}
+@keyframes tourne{to{transform:rotate(360deg)}}
+@media (max-width:640px){ .titre p{display:none} .aide{display:none} .cpt{min-width:0;flex:1 1 0} .cpts{width:100%} }
+@media (prefers-reduced-motion:reduce){ .voile i{animation:none} .plans button,.voile{transition:none} }
