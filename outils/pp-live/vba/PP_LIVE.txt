@@ -1,0 +1,447 @@
+Attribute VB_Name = "PP_LIVE"
+Option Explicit
+'==============================================================================
+'  PICK & PACK LIVE  -  les 4 commandes (boutons de l'onglet ACCUEIL, ou Alt+F8)
+'
+'    NOUVELLE_JOURNEE     Ctrl+Maj+N   équipe rechargée depuis le Suivi Op, tout le monde
+'                                      présent, saisie du jour vidée
+'    DEMARRER_JOURNEE     Ctrl+Maj+D   lance la mise à jour de l'écran (data.js et pilotage_data.js)
+'    ACTUALISER_DONNEES   Ctrl+Maj+A   met l'écran à jour tout de suite
+'    TEST                 Ctrl+Maj+T   vérifie tout et dit ce qu'il faut corriger
+'
+'  À l'ouverture du classeur, la journée démarre seule au bout de 15 secondes.
+'  À la fermeture, tout s'arrête.
+'
+'  Le travail est fait par les modules M01_LOGYS (Logys), M02_SUIVIOP (équipe),
+'  M03_EXPORT (data.js) et modPilotageLive (pilotage_data.js). Leurs procédures
+'  sont masquées de la liste des macros : on n'y touche pas.
+'==============================================================================
+
+Private Const TITRE As String = "Pick & Pack Live"
+Private Const FEUILLE_ACCUEIL As String = "ACCUEIL"
+Private Const FEUILLE_PILOTAGE As String = "PILOTAGE"
+Private Const NOM_DOSSIER_LIVE As String = "P_DOSSIER_EXPORT"     ' PARAMETRES : dossier de data.js
+Private Const CLE_DOSSIER_PILOTAGE As String = "DOSSIER_SORTIE"   ' PILOTAGE : dossier de pilotage_data.js
+Private Const ATTENTE_DEMARRAGE As Long = 15                      ' secondes entre l'ouverture et le démarrage
+
+Private mAuto As Date          ' démarrage automatique en attente (0 = aucun)
+Private mSonde As Date         ' contrôle de la minuterie en attente (0 = aucun)
+
+'==============================================================================
+'  LES 4 COMMANDES
+'==============================================================================
+Public Sub NOUVELLE_JOURNEE()
+Attribute NOUVELLE_JOURNEE.VB_ProcData.VB_Invoke_Func = "N\n14"
+    Dim msg As String, enMarche As Boolean
+    If MsgBox("Préparer une nouvelle journée ?" & vbCrLf & vbCrLf & _
+              "- l'équipe est rechargée depuis le Suivi Op et tout le monde passe présent ;" & vbCrLf & _
+              "- la saisie du jour (1re vague, attendus) est effacée ;" & vbCrLf & _
+              "- Logys, le Suivi Op et le Contrôle des rejets seront relus entièrement.", _
+              vbQuestion + vbOKCancel, TITRE) <> vbOK Then Exit Sub
+    On Error GoTo Erreur
+    Application.Cursor = xlWait
+    msg = Equipe_PreparerJournee()
+    Application.Cursor = xlDefault
+    If Left$(msg, 6) = "ERREUR" Then
+        Informer "Nouvelle journée : l'équipe n'a pas pu être rechargée"
+        MsgBox msg, vbExclamation, TITRE
+        Exit Sub
+    End If
+    Pilotage_Reinitialiser
+    enMarche = Export_EnMarche() Or Pilotage_EnMarche()
+    If enMarche Then ToutActualiser                ' l'écran montre tout de suite la nouvelle journée
+    Informer "Nouvelle journée préparée"
+    Montrer "EQUIPE"
+    If enMarche Then
+        MsgBox "Nouvelle journée prête." & vbCrLf & vbCrLf & msg & vbCrLf & vbCrLf & _
+               "Onglet EQUIPE : passe les absents à NON." & vbCrLf & _
+               "Onglet SAISIE : la 1re vague, puis les attendus de 15h45 et 17h45.", vbInformation, TITRE
+    Else
+        MsgBox "Nouvelle journée prête." & vbCrLf & vbCrLf & msg & vbCrLf & vbCrLf & _
+               "Onglet EQUIPE : passe les absents à NON." & vbCrLf & _
+               "Onglet SAISIE : la 1re vague, puis les attendus de 15h45 et 17h45." & vbCrLf & vbCrLf & _
+               "Puis clique « Démarrer la journée ».", vbInformation, TITRE
+    End If
+    Exit Sub
+Erreur:
+    Application.Cursor = xlDefault
+    MsgBox "Nouvelle journée impossible : " & Err.Description, vbExclamation, TITRE
+End Sub
+
+Public Sub DEMARRER_JOURNEE()
+Attribute DEMARRER_JOURNEE.VB_ProcData.VB_Invoke_Func = "D\n14"
+    Demarrer False
+End Sub
+
+Public Sub ACTUALISER_DONNEES()
+Attribute ACTUALISER_DONNEES.VB_ProcData.VB_Invoke_Func = "A\n14"
+    Dim pb As String, rap As String, texte As String, enMarche As Boolean
+    On Error GoTo Erreur
+    ReglerDossier
+    pb = Problemes()
+    If Len(pb) > 0 Then
+        MsgBox "Actualisation impossible :" & vbCrLf & vbCrLf & pb & vbCrLf & vbCrLf & _
+               "Clique TEST pour le détail.", vbExclamation, TITRE
+        Exit Sub
+    End If
+    ToutActualiser
+    rap = Incidents()
+    enMarche = Export_EnMarche() And Pilotage_EnMarche()
+    Informer "Données actualisées"
+    If Len(rap) = 0 Then
+        texte = "Écran mis à jour (" & Format$(Now, "hh:nn") & ")."
+    Else
+        texte = "Écran mis à jour, avec des incidents :" & vbCrLf & vbCrLf & rap
+    End If
+    If Not enMarche Then texte = texte & vbCrLf & vbCrLf & _
+        "Attention : la mise à jour automatique n'est pas en marche. Clique « Démarrer la journée »."
+    If Len(rap) = 0 And enMarche Then
+        MsgBox texte, vbInformation, TITRE
+    Else
+        MsgBox texte, vbExclamation, TITRE
+    End If
+    Exit Sub
+Erreur:
+    Application.Cursor = xlDefault
+    MsgBox "Actualisation impossible : " & Err.Description, vbExclamation, TITRE
+End Sub
+
+Public Sub TEST()
+Attribute TEST.VB_ProcData.VB_Invoke_Func = "T\n14"
+    Dim r As String, ok As Boolean, d As String, x As String, t0 As Date
+    On Error GoTo Erreur
+    ok = True
+    ReglerDossier
+
+    ' 1. le dossier de l'écran et la page
+    d = AvecBarre(ThisWorkbook.Path)
+    If FichierExiste(d & "pilotage.html") Then
+        Ligne r, ok, True, "pilotage.html est à côté de ce classeur (" & d & ")"
+    Else
+        Ligne r, ok, False, "pilotage.html n'est PAS à côté de ce classeur : mets-le dans " & d
+    End If
+
+    ' 2. dossiers de sortie et Logys
+    x = Problemes()
+    If Len(x) = 0 Then
+        Ligne r, ok, True, "data.js et pilotage_data.js iront dans " & AvecBarre(NomVal(NOM_DOSSIER_LIVE))
+    Else
+        Ligne r, ok, False, x
+    End If
+
+    ' 3. les fichiers lus sur le commun
+    VerifierChemin r, ok, "Suivi Op (équipe, cadences)", NomVal("P_SUIVI_OP"), False
+    VerifierChemin r, ok, "Dossier des décelées", NomVal("P_DOSSIER_DECELEES"), True
+    VerifierChemin r, ok, "Contrôle des rejets (dossards)", Pilotage_Reglage("FICHIER_REJETS"), False
+    VerifierChemin r, ok, "Suivi Op (indicateurs)", Pilotage_Reglage("FICHIER_SUIVI_OP"), False
+
+    ' 4. un passage complet : Logys, data.js, pilotage_data.js
+    If Len(x) = 0 Then
+        t0 = Now
+        ToutActualiser
+        x = NomVal("C_MSG")
+        If UCase$(Left$(x, 2)) = "OK" Then
+            Ligne r, ok, True, "Logys : " & x
+        Else
+            Ligne r, ok, False, "Logys : " & IIf(Len(x) = 0, "aucune réponse", x)
+        End If
+        If FichierRecent(AvecBarre(NomVal(NOM_DOSSIER_LIVE)) & "data.js", t0) Then
+            Ligne r, ok, True, "data.js écrit à " & Format$(Now, "hh:nn:ss")
+        Else
+            Ligne r, ok, False, "data.js n'a pas été écrit (onglet EXPORT pour le détail)"
+        End If
+        If FichierRecent(Pilotage_Fichier(), t0) Then
+            Ligne r, ok, True, "pilotage_data.js écrit (" & Pilotage_NbRequetes() & " requêtes Logys)"
+        Else
+            Ligne r, ok, False, "pilotage_data.js n'a pas été écrit : " & Pilotage_Fichier()
+        End If
+        x = Incidents()
+        If Len(x) > 0 Then Ligne r, ok, False, "Incidents du passage :" & vbCrLf & "        " & Replace(x, vbCrLf, vbCrLf & "        ")
+    End If
+
+    ' 5. la mise à jour automatique
+    If Export_EnMarche() And Pilotage_EnMarche() Then
+        Ligne r, ok, True, "Mise à jour automatique : en marche"
+    Else
+        Ligne r, ok, False, "Mise à jour automatique : arrêtée (clique « Démarrer la journée »)"
+    End If
+
+    ' 6. la minuterie d'Excel : c'est elle qui relance les mises à jour
+    AnnulerSonde
+    mSonde = Now + TimeSerial(0, 0, 2)
+    Application.OnTime mSonde, "'" & ThisWorkbook.Name & "'!PP_Sonde"
+    Ligne r, ok, True, "Minuterie d'Excel : contrôlée dans 2 secondes (résultat sur l'onglet ACCUEIL)"
+
+    If ok Then
+        Informer "Test : tout est bon"
+        MsgBox "Tout est bon." & vbCrLf & vbCrLf & r, vbInformation, TITRE & " - test"
+    Else
+        Informer "Test : des points à corriger"
+        MsgBox "Il y a des points à corriger :" & vbCrLf & vbCrLf & r, vbExclamation, TITRE & " - test"
+    End If
+    Exit Sub
+Erreur:
+    Application.Cursor = xlDefault
+    MsgBox "Le test s'est arrêté : " & Err.Description & vbCrLf & vbCrLf & r, vbExclamation, TITRE & " - test"
+End Sub
+
+'==============================================================================
+'  APPELÉES PAR LE CLASSEUR ET PAR LA MINUTERIE (masquées de la liste des macros)
+'==============================================================================
+' À l'ouverture du classeur (ThisWorkbook)
+Public Sub PP_Ouverture(Optional ByVal masque As Variant)
+    On Error Resume Next
+    ThisWorkbook.Worksheets(FEUILLE_ACCUEIL).Activate
+    AnnulerAuto
+    mAuto = Now + TimeSerial(0, 0, ATTENTE_DEMARRAGE)
+    Application.OnTime mAuto, "'" & ThisWorkbook.Name & "'!PP_DemarrageAuto"
+    Informer "Démarrage automatique à " & Format$(mAuto, "hh:nn:ss") & " (ou clique « Démarrer la journée »)"
+    On Error GoTo 0
+End Sub
+
+' À la fermeture du classeur (ThisWorkbook)
+Public Sub PP_Fermeture(Optional ByVal masque As Variant)
+    On Error Resume Next
+    AnnulerAuto
+    AnnulerSonde
+    ARRETER_LIVE
+    ARRETER_AUTO
+    Pilotage_Arreter
+    On Error GoTo 0
+End Sub
+
+Public Sub PP_DemarrageAuto(Optional ByVal masque As Variant)
+    mAuto = 0
+    Demarrer True
+End Sub
+
+' Réponse de la minuterie au TEST : si ce texte apparaît, les mises à jour automatiques peuvent tourner.
+Public Sub PP_Sonde(Optional ByVal masque As Variant)
+    mSonde = 0
+    Ecrire "J_INFO", Lire("J_INFO") & "   ·   minuterie d'Excel OK"
+End Sub
+
+'==============================================================================
+'  OUTILS
+'==============================================================================
+Private Sub Demarrer(ByVal silencieux As Boolean)
+    Dim pb As String, rap As String
+    On Error GoTo Erreur
+    AnnulerAuto
+    ReglerDossier
+    pb = Problemes()
+    If Len(pb) > 0 Then
+        Informer "Démarrage impossible : clique TEST pour savoir quoi corriger"
+        If Not silencieux Then MsgBox "La journée ne peut pas démarrer :" & vbCrLf & vbCrLf & pb & vbCrLf & vbCrLf & _
+                                     "Clique TEST pour le détail.", vbExclamation, TITRE
+        Exit Sub
+    End If
+    Informer "Démarrage en cours..."
+    Application.Cursor = xlWait
+    DEMARRER_LIVE                  ' data.js : un passage tout de suite, puis toutes les P_REFRESH_SEC secondes
+    Pilotage_Demarrer              ' pilotage_data.js : un passage tout de suite, puis toutes les INTERVALLE_SEC secondes
+    Application.Cursor = xlDefault
+    rap = Incidents()
+    If Len(rap) = 0 Then
+        Informer "Journée démarrée : l'écran se met à jour tout seul"
+    Else
+        Informer "Journée démarrée, avec des incidents (clique TEST pour le détail)"
+    End If
+    If Not silencieux Then
+        If Len(rap) = 0 Then
+            MsgBox "C'est parti : l'écran est mis à jour maintenant, puis toutes les minutes." & vbCrLf & vbCrLf & _
+                   "Laisse ce classeur ouvert.", vbInformation, TITRE
+        Else
+            MsgBox "C'est parti, mais le premier passage a rencontré des incidents :" & vbCrLf & vbCrLf & rap & vbCrLf & vbCrLf & _
+                   "Clique TEST pour savoir quoi corriger.", vbExclamation, TITRE
+        End If
+    End If
+    Exit Sub
+Erreur:
+    Application.Cursor = xlDefault
+    Informer "Démarrage impossible : " & Err.Description
+    If Not silencieux Then MsgBox "Démarrage impossible : " & Err.Description, vbExclamation, TITRE
+End Sub
+
+' Un passage complet des deux moteurs ; les boucles en marche repartent de ce passage.
+Private Sub ToutActualiser()
+    Application.Cursor = xlWait
+    Export_Maintenant              ' Logys (tournées, rejets) puis data.js
+    Pilotage_ActualiserMaintenant  ' charge, vagues, Contrôle des rejets, Suivi Op : pilotage_data.js
+    Application.Cursor = xlDefault
+End Sub
+
+' Incidents du dernier passage des deux moteurs (vide = aucun)
+Private Function Incidents() As String
+    Dim m As String, x As String
+    x = NomVal("C_MSG")
+    If Len(x) > 0 And UCase$(Left$(x, 2)) <> "OK" Then m = m & "Logys : " & x & vbCrLf
+    x = Export_Alertes()
+    If Len(x) > 0 Then m = m & "data.js : " & Replace(x, vbCrLf, vbCrLf & "data.js : ") & vbCrLf
+    x = Pilotage_Journal()
+    If Len(x) > 0 Then m = m & "pilotage : " & Replace(x, vbCrLf, vbCrLf & "pilotage : ") & vbCrLf
+    If Len(m) > 0 Then m = Left$(m, Len(m) - 2)
+    Incidents = m
+End Function
+
+' Ce qui empêche de démarrer : feuille PILOTAGE, dossiers de sortie, DSN
+Private Function Problemes() As String
+    Dim m As String, c As Range, a As String, b As String
+    Set c = CelluleDossierPilotage()
+    a = NomVal(NOM_DOSSIER_LIVE)
+    If c Is Nothing Then
+        m = m & "- l'onglet " & FEUILLE_PILOTAGE & " est absent de ce classeur" & vbCrLf
+    Else
+        b = CStr(c.Value)
+    End If
+    If Len(SansBarre(a)) = 0 Then
+        m = m & "- dossier de l'écran vide (onglet PARAMETRES, ligne « Dossier d'export du dashboard »)" & vbCrLf
+    ElseIf Not DossierExiste(a) Then
+        m = m & "- dossier de l'écran introuvable : " & a & vbCrLf
+    ElseIf Not c Is Nothing Then
+        If SansBarre(a) <> SansBarre(b) Then
+            m = m & "- data.js et pilotage_data.js ne vont pas dans le même dossier :" & vbCrLf & _
+                    "      " & a & vbCrLf & "      " & b & vbCrLf & _
+                    "  Enregistre ce classeur sur le disque du PC (ex. C:\PickPackLive), à côté de pilotage.html." & vbCrLf
+        End If
+    End If
+    If Len(Trim$(NomVal("P_DSN"))) = 0 Then m = m & "- source Logys vide (onglet PARAMETRES, ligne DSN ODBC)" & vbCrLf
+    If Len(m) > 0 Then m = Left$(m, Len(m) - 2)
+    Problemes = m
+End Function
+
+' Les deux fichiers vont dans le dossier de ce classeur (là où doit être pilotage.html).
+' Si le classeur est ouvert depuis OneDrive (chemin en https), on garde le dossier déjà inscrit.
+Private Sub ReglerDossier()
+    Dim d As String, c As Range
+    d = ThisWorkbook.Path
+    If Not (Mid$(d, 2, 2) = ":\" Or Left$(d, 2) = "\\") Then Exit Sub
+    d = AvecBarre(d)
+    On Error Resume Next
+    ThisWorkbook.Names(NOM_DOSSIER_LIVE).RefersToRange.Value = d
+    Set c = CelluleDossierPilotage()
+    If Not c Is Nothing Then c.Value = d
+    On Error GoTo 0
+End Sub
+
+Private Function CelluleDossierPilotage() As Range
+    Dim ws As Worksheet, r As Long
+    On Error Resume Next
+    Set ws = ThisWorkbook.Worksheets(FEUILLE_PILOTAGE)
+    On Error GoTo 0
+    If ws Is Nothing Then Exit Function
+    For r = 1 To 80
+        If UCase$(Trim$(CStr(ws.Cells(r, 1).Value))) = CLE_DOSSIER_PILOTAGE Then
+            Set CelluleDossierPilotage = ws.Cells(r, 2)
+            Exit Function
+        End If
+    Next r
+End Function
+
+Private Sub VerifierChemin(ByRef r As String, ByRef ok As Boolean, ByVal quoi As String, ByVal p As String, ByVal dossier As Boolean)
+    Dim trouve As Boolean
+    p = Trim$(p)
+    If Len(p) = 0 Or UCase$(p) = "À RENSEIGNER" Then
+        Ligne r, ok, True, quoi & " : pas renseigné"
+        Exit Sub
+    End If
+    If dossier Then trouve = DossierExiste(p) Else trouve = FichierExiste(p)
+    If trouve Then
+        Ligne r, ok, True, quoi & " : trouvé"
+    Else
+        Ligne r, ok, False, quoi & " : introuvable (" & p & ")"
+    End If
+End Sub
+
+Private Sub AnnulerAuto()
+    If mAuto = 0 Then Exit Sub
+    On Error Resume Next
+    Application.OnTime mAuto, "'" & ThisWorkbook.Name & "'!PP_DemarrageAuto", , False
+    On Error GoTo 0
+    mAuto = 0
+End Sub
+
+Private Sub AnnulerSonde()
+    If mSonde = 0 Then Exit Sub
+    On Error Resume Next
+    Application.OnTime mSonde, "'" & ThisWorkbook.Name & "'!PP_Sonde", , False
+    On Error GoTo 0
+    mSonde = 0
+End Sub
+
+Private Sub Ligne(ByRef r As String, ByRef ok As Boolean, ByVal bon As Boolean, ByVal texte As String)
+    If bon Then
+        r = r & "OK         " & texte & vbCrLf
+    Else
+        r = r & "À FAIRE   " & texte & vbCrLf
+        ok = False
+    End If
+End Sub
+
+Private Function NomVal(ByVal nom As String) As String
+    On Error Resume Next
+    NomVal = Trim$(CStr(ThisWorkbook.Names(nom).RefersToRange.Value))
+    On Error GoTo 0
+End Function
+
+Private Function AvecBarre(ByVal d As String) As String
+    d = Trim$(d)
+    If Len(d) > 0 And Right$(d, 1) <> "\" Then d = d & "\"
+    AvecBarre = d
+End Function
+
+Private Function SansBarre(ByVal s As String) As String
+    s = LCase$(Trim$(s))
+    Do While Len(s) > 3 And (Right$(s, 1) = "\" Or Right$(s, 1) = "/")
+        s = Left$(s, Len(s) - 1)
+    Loop
+    SansBarre = s
+End Function
+
+Private Function DossierExiste(ByVal d As String) As Boolean
+    If Len(Trim$(d)) = 0 Then Exit Function
+    On Error Resume Next
+    DossierExiste = ((GetAttr(SansBarre(d)) And vbDirectory) = vbDirectory)
+    If Err.Number <> 0 Then DossierExiste = False
+    On Error GoTo 0
+End Function
+
+Private Function FichierExiste(ByVal f As String) As Boolean
+    If Len(Trim$(f)) = 0 Then Exit Function
+    On Error Resume Next
+    FichierExiste = ((GetAttr(f) And vbDirectory) = 0)
+    If Err.Number <> 0 Then FichierExiste = False
+    On Error GoTo 0
+End Function
+
+' Le fichier a-t-il été écrit depuis t0 (à 2 secondes près) ?
+Private Function FichierRecent(ByVal f As String, ByVal t0 As Date) As Boolean
+    If Not FichierExiste(f) Then Exit Function
+    On Error Resume Next
+    FichierRecent = (FileDateTime(f) >= t0 - TimeSerial(0, 0, 2))
+    If Err.Number <> 0 Then FichierRecent = False
+    On Error GoTo 0
+End Function
+
+' Cellule nommée J_INFO de l'onglet ACCUEIL : la dernière commande et son résultat
+Private Sub Ecrire(ByVal nom As String, ByVal valeur As Variant)
+    On Error Resume Next
+    ThisWorkbook.Names(nom).RefersToRange.Value = valeur
+    On Error GoTo 0
+End Sub
+
+Private Function Lire(ByVal nom As String) As String
+    On Error Resume Next
+    Lire = CStr(ThisWorkbook.Names(nom).RefersToRange.Value)
+    On Error GoTo 0
+End Function
+
+Private Sub Informer(ByVal texte As String)
+    Ecrire "J_INFO", Format$(Now, "dd/mm hh:nn") & "   " & texte
+End Sub
+
+Private Sub Montrer(ByVal feuille As String)
+    On Error Resume Next
+    ThisWorkbook.Worksheets(feuille).Activate
+    On Error GoTo 0
+End Sub

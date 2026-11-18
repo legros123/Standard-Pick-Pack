@@ -1,0 +1,11 @@
+Option Explicit
+
+' Ouverture : onglet ACCUEIL, puis démarrage automatique de la journée au bout de 15 secondes.
+Private Sub Workbook_Open()
+    PP_Ouverture
+End Sub
+
+' Fermeture : les mises à jour automatiques s'arrêtent.
+Private Sub Workbook_BeforeClose(Cancel As Boolean)
+    PP_Fermeture
+End Sub

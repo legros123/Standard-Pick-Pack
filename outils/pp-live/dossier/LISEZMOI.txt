@@ -1,0 +1,50 @@
+﻿PICK & PACK LIVE — LE DOSSIER DE L'ÉCRAN DU FLIP
+================================================
+
+CE QU'IL Y A DEDANS
+   PP_LIVE.xlsm                          votre classeur : mêmes onglets, mêmes réglages, 4 commandes seulement
+   pilotage.html                         l'écran (dernières animations, plus fluide sur le Flip)
+   slides\                               les pages des standards
+   Lancer Pick Pack Live.bat             ouvre le classeur puis l'écran en plein écran
+   Creer le raccourci sur le Bureau.bat  à faire une fois : met l'icône « Pick & Pack Live » sur le Bureau
+   pick-pack-live.ico                    l'icône de ce raccourci
+   secours\                              les macros en fichiers séparés (inutile si tout marche)
+
+INSTALLER (une seule fois)
+ 1. Fermer l'ancien PP_LIVE.xlsm s'il est ouvert. Renommer l'ancien dossier C:\PickPackLive en
+    C:\PickPackLive_ancien : c'est votre copie de secours.
+ 2. Clic droit sur le zip > Propriétés > cocher « Débloquer » (en bas) > OK, puis dézipper.
+    Sans cela, Windows bloque les macros d'un classeur venu d'Internet.
+ 3. Copier le dossier PickPackLive sur C:\ (C:\PickPackLive). Pas dans OneDrive ni sur le Bureau.
+ 4. Double-clic sur « Creer le raccourci sur le Bureau.bat » : l'icône Pick & Pack Live apparaît sur le Bureau.
+
+CHAQUE JOUR
+ Double-clic sur l'icône Pick & Pack Live du Bureau. Le classeur s'ouvre (« Activer le contenu » si Excel le
+ demande), la journée démarre seule 15 secondes plus tard, puis l'écran s'ouvre en plein écran.
+
+ Dans le classeur, onglet ACCUEIL, 4 boutons (Maj = la touche majuscule) :
+   NOUVELLE JOURNÉE          le matin : équipe rechargée depuis le Suivi Op, tout le monde présent,
+                             saisie vidée                                            Ctrl+Maj+N
+   DÉMARRER LA JOURNÉE       se fait tout seul à l'ouverture du classeur             Ctrl+Maj+D
+   ACTUALISER LES DONNÉES    l'écran à jour tout de suite                            Ctrl+Maj+A
+   TEST                      vérifie tout et dit quoi corriger                       Ctrl+Maj+T
+
+ Comme avant : onglet EQUIPE, passer les absents à NON ; onglet SAISIE, la 1re vague puis les attendus.
+ Laisser le classeur ouvert toute la journée : le fermer arrête les mises à jour.
+ Sur l'écran : F11 sort du plein écran, Alt+F4 le ferme.
+
+CE QUI A CHANGÉ
+ - Alt+F8 ne montre plus que les 4 commandes. Les anciennes (TOUT_DEMARRER, DEMARRER_LIVE, Pilotage_...,
+   CHARGER_EQUIPE...) sont cachées ou remplacées : elles travaillent en coulisse, rien à lancer à la main.
+ - L'onglet ACCUEIL montre en direct l'état de l'écran, de Logys et du pilotage.
+ - Le Contrôle des rejets n'est plus rouvert à chaque passage s'il n'a pas changé : Excel travaille moins
+   et l'écran du Flip rame moins.
+ - L'écran s'adapte seul à la puissance du PC. S'il rame encore : ajouter ?fluide=3 à la fin de l'adresse
+   de la page (mode le plus léger).
+
+SI QUELQUE CHOSE NE VA PAS
+ - Cliquer TEST et m'envoyer une photo du compte rendu.
+ - Excel propose de « réparer » le classeur ou affiche une erreur à l'ouverture : m'envoyer une photo du
+   message et, en attendant, reprendre C:\PickPackLive_ancien.
+ - Le message « Impossible d'exécuter la macro » 2 secondes après TEST : m'envoyer une photo (la minuterie
+   d'Excel ne retrouve pas les procédures cachées).
