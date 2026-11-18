@@ -108,11 +108,135 @@ Public Sub Export_Maintenant(Optional ByVal masque As Variant)
 End Sub
 
 Private Sub AppelerM01()''')
+i0 = code["M03_EXPORT"].index("Private Sub LireDecelees()")
+i1 = code["M03_EXPORT"].index("'--- 1 ligne = 1 decelee")
+code["M03_EXPORT"] = code["M03_EXPORT"][:i0] + """Private Sub LireDecelees()
+    ' Controle_Rejets.xlsm (onglet PILOTAGE, ligne FICHIER_REJETS), lu par modPilotageLive : une seule lecture
+    ' pour data.js et pilotage_data.js, rouverte seulement si le classeur a ete enregistre depuis.
+    Dim parMat As Object, parJour As Object, total As Long, msg As String, k As Variant, d As Object
+    On Error GoTo KO
+    If mDecJour <> Date Then                   ' nouveau jour : on repart de zero
+        mDecJson = "[]": mDecMoisJson = "[]": mDecTotal = 0
+    End If
+    msg = Rejets_Lire(parMat, parJour, total)
+    If Len(msg) > 0 Then
+        Note "Decelees (Controle des rejets) : " & msg
+        Exit Sub
+    End If
+    mDecJson = JsonCompteMat(parMat)
+    Set d = CreateObject("Scripting.Dictionary")
+    For Each k In parJour.Keys
+        d(CLng(DateSerial(CLng(Left$(k, 4)), CLng(Mid$(k, 6, 2)), CLng(Right$(k, 2))))) = CLng(parJour(k))
+    Next k
+    mDecMoisJson = JsonParJour(d)
+    mDecTotal = total
+    mDecJour = Date
+    Exit Sub
+KO:
+    Note "Decelees (Controle des rejets) : " & Err.Description & " (dernier releve conserve)"
+End Sub
+
+""" + code["M03_EXPORT"][i1:]
+remplacer("M03_EXPORT", "'  DECELEES : fichier du mois sur le commun, un onglet par jour (jjmmaa)", "'  DECELEES : Controle_Rejets.xlsm, lu par modPilotageLive (meme lecture pour data.js et pilotage_data.js)")
 banniere("M03_EXPORT")
 
 # ── modPilotageLive : pilotage_data.js ──
 P = "modPilotageLive"
 remplacer(P, "Public Sub Pilotage_Installer()", "Private Sub Pilotage_Installer()")
+# Controle des rejets : un seul lecteur (ce module) pour les deux fichiers de l'ecran, matricule retrouve si la colonne est vide
+remplacer(P, """    Dim dMat As Object, dJour As Object, m As String
+""", """    Dim dMat As Object, dJour As Object, m As String, dOpe As Object
+""")
+remplacer(P, """    If Len(Dir$(chemin)) = 0 Then
+        Noter "controle des rejets", "fichier introuvable : " & chemin
+        Exit Function
+    End If""", """    If Len(Dir$(chemin)) = 0 Then
+        Noter "controle des rejets", "fichier introuvable : " & chemin
+        EcrireReglage "DECELEES_DU_JOUR", "ERREUR : fichier introuvable (" & chemin & ")"
+        Exit Function
+    End If""")
+# deja ouvert dans cet Excel par un autre chemin (lecteur Z: au lieu du chemin reseau complet) : on prend celui-la
+remplacer(P, """    For Each wb In Application.Workbooks
+        If StrComp(wb.FullName, chemin, vbTextCompare) = 0 Then
+            Set OuvrirLecture = wb
+            Exit Function
+        End If
+    Next wb
+""", """    For Each wb In Application.Workbooks
+        If StrComp(wb.FullName, chemin, vbTextCompare) = 0 Then
+            Set OuvrirLecture = wb
+            Exit Function
+        End If
+    Next wb
+    For Each wb In Application.Workbooks
+        If StrComp(wb.Name, Mid$(chemin, InStrRev(chemin, "\\") + 1), vbTextCompare) = 0 Then
+            Set OuvrirLecture = wb
+            Exit Function
+        End If
+    Next wb
+""")
+remplacer(P, """    auj = CLng(Date)
+    Set wb = OuvrirLecture(chemin, aFermer)
+""", """    auj = CLng(Date)
+    Set wb = OuvrirLecture(chemin, aFermer)
+    Set dOpe = OperateursRejets(wb)            ' NOM PRENOM -> matricule, si la colonne Matricule est vide
+""")
+remplacer(P, """                        m = MatriculeDe(v(i, 12))
+""", """                        m = MatriculeDe(v(i, 12))
+                        If Len(m) = 0 Then m = MatriculeOperateur(v(i, 9), dOpe)
+""")
+remplacer(P, """                    m = MatriculeDe(v(i, 11))
+""", """                    m = MatriculeDe(v(i, 11))
+                    If Len(m) = 0 Then m = MatriculeOperateur(v(i, 10), dOpe)
+""")
+remplacer(P, '''    DeceleesClasseur = """decelees"":{""total"":''', '''    Set mDecParMat = dMat
+    Set mDecParJourD = dJour
+    mDecTotalJ = total
+    EcrireReglage "DECELEES_DU_JOUR", total & " erreur(s) aujourd'hui  " & ChrW$(183) & "  " & dMat.Count & " op" & ChrW$(233) & "rateur(s)" & _
+        IIf(Len(derniere) > 0, "  " & ChrW$(183) & "  derni" & ChrW$(232) & "re " & ChrW$(224) & " " & derniere, "") & "  " & ChrW$(183) & "  lu " & ChrW$(224) & " " & Format$(Now, "hh:nn")
+    DeceleesClasseur = """decelees"":{""total"":''')
+remplacer(P, """Erreur:
+    Noter "controle des rejets", Err.Description
+""", """Erreur:
+    Noter "controle des rejets", Err.Description
+    EcrireReglage "DECELEES_DU_JOUR", "ERREUR : lecture impossible (" & Err.Description & "), dernier releve conserve"
+""")
+remplacer(P, """' Matricule d'une cellule : texte tel quel, nombre remis sur 3 chiffres (17 -> "017")""", """' Onglet OPERATEURS du Controle des rejets (tableau T_OPE, des la ligne 6) : NOM PRENOM -> matricule.
+' Sert quand la colonne Matricule de la saisie est vide (macros du poste de rejet desactivees).
+Private Function OperateursRejets(ByVal wb As Workbook) As Object
+    Dim d As Object, ws As Worksheet, v As Variant, i As Long, der As Long, nomOp As String, m As String
+    Set d = CreateObject("Scripting.Dictionary")
+    d.CompareMode = vbTextCompare
+    Set OperateursRejets = d
+    On Error Resume Next
+    Set ws = wb.Worksheets("OPERATEURS")
+    On Error GoTo 0
+    If ws Is Nothing Then Exit Function
+    der = ws.Cells(ws.Rows.Count, 1).End(xlUp).Row
+    If der < 6 Then Exit Function
+    v = ws.Range(ws.Cells(6, 1), ws.Cells(der, 4)).Value2
+    For i = 1 To UBound(v, 1)
+        m = MatriculeDe(v(i, 1))
+        nomOp = UCase$(Trim$(TexteCellule(v(i, 4))))
+        If Len(m) > 0 And Len(nomOp) > 0 Then
+            If Not d.Exists(nomOp) Then d.Add nomOp, m
+        End If
+    Next i
+End Function
+
+' Operateur tape dans la saisie : un matricule tel quel, sinon le NOM PRENOM retrouve dans OPERATEURS
+Private Function MatriculeOperateur(ByVal v As Variant, ByVal d As Object) As String
+    Dim s As String
+    s = Trim$(TexteCellule(v))
+    If Len(s) = 0 Then Exit Function
+    If IsNumeric(s) Then
+        MatriculeOperateur = MatriculeDe(s)
+    ElseIf Not d Is Nothing Then
+        If d.Exists(UCase$(s)) Then MatriculeOperateur = d(UCase$(s))
+    End If
+End Function
+
+' Matricule d'une cellule : texte tel quel, nombre remis sur 3 chiffres (17 -> "017")""")
 remplacer(P, "Public Sub Pilotage_Tester()", "Private Sub Pilotage_Tester()")
 masquer(P, ["Pilotage_Demarrer", "Pilotage_Arreter", "Pilotage_Actualiser", "Pilotage_OuvrirPage"])
 remplacer(P, """Private mCacheSuiviA As Date
@@ -120,6 +244,9 @@ remplacer(P, """Private mCacheSuiviA As Date
 Private mCacheDec As String                    ' Controle des rejets : relu seulement s'il a ete enregistre depuis
 Private mCacheDecFichier As Date
 Private mCacheDecJour As Date
+Private mDecParMat As Object                   ' derniere lecture du Controle des rejets, partagee avec M03_EXPORT (data.js)
+Private mDecParJourD As Object
+Private mDecTotalJ As Long
 """)
 remplacer(P, """'==============================================================================
 '  BOUCLE
@@ -165,6 +292,25 @@ Public Function Pilotage_Reglage(ByVal nom As String) As String
     Pilotage_Reglage = Cfg(nom, "")
 End Function
 
+' Controle des rejets pour M03_EXPORT (data.js) et le TEST : une seule lecture pour les deux fichiers de l'ecran,
+' rouverte seulement si le classeur a ete enregistre depuis. parMat : matricule -> erreurs du jour ;
+' parJour : "aaaa-mm-jj" -> erreurs (mois en cours, avant aujourd'hui). Renvoie "" si tout va bien, sinon la raison.
+Public Function Rejets_Lire(ByRef parMat As Object, ByRef parJour As Object, ByRef total As Long) As String
+    Dim chemin As String
+    chemin = Cfg("FICHIER_REJETS", "")
+    If Len(chemin) = 0 Then
+        Rejets_Lire = "chemin vide (onglet PILOTAGE, ligne FICHIER_REJETS)"
+        Exit Function
+    End If
+    If Len(DeceleesEnCache(chemin)) = 0 Or mDecParMat Is Nothing Then
+        Rejets_Lire = "illisible ou introuvable : " & chemin
+        Exit Function
+    End If
+    Set parMat = mDecParMat
+    Set parJour = mDecParJourD
+    total = mDecTotalJ
+End Function
+
 '==============================================================================
 '  BOUCLE
 '==============================================================================""")
@@ -182,7 +328,7 @@ Private Function DeceleesEnCache(ByVal chemin As String) As String
     dt = FileDateTime(chemin)
     On Error GoTo 0
     For Each wb In Application.Workbooks
-        If StrComp(wb.FullName, chemin, vbTextCompare) = 0 Then
+        If StrComp(wb.FullName, chemin, vbTextCompare) = 0 Or StrComp(wb.Name, Mid$(chemin, InStrRev(chemin, "\\") + 1), vbTextCompare) = 0 Then
             ouvert = True
             Exit For
         End If
@@ -260,7 +406,27 @@ for n in standards:
 open(os.path.join(dsec, "ThisWorkbook - a coller.txt"), "w", encoding="cp1252", newline="\r\n").write(
     open(os.path.join(dvba, "ThisWorkbook.txt"), encoding="utf-8").read())
 
-# ═════════════════════════════ 2. l'onglet ACCUEIL ═════════════════════════════
+# ═════════════════════════════ 2. les chemins du Contrôle des rejets ═════════════════════════════
+# chemin réseau du dossier CONVOYEUR (hors dépôt public) : PP_REJETS_DOSSIER=\\serveur\...\CONVOYEUR\ python3 fabriquer.py ...
+# sans cette variable, les chemins déjà écrits dans le classeur sont gardés tels quels.
+REJETS_DOSSIER = os.environ.get("PP_REJETS_DOSSIER", "")
+if REJETS_DOSSIER and not REJETS_DOSSIER.endswith("\\"): REJETS_DOSSIER += "\\"
+REJETS_FICHIER = REJETS_DOSSIER + "Controle_Rejets.xlsm"
+inl = lambda ref, st, txt: '<c r="%s"%s t="inlineStr"><is><t xml:space="preserve">%s</t></is></c>' % (ref, ' s="%s"' % st if st else "", html.escape(txt, quote=False))
+fp_ = "xl/worksheets/sheet12.xml"; x = parts[fp_].decode("utf-8")
+m = re.search(r'<c r="B5"[^>]*>.*?</c>', x); assert m and "Controle_Rejets" in m.group(0), "PILOTAGE!B5"
+if REJETS_DOSSIER: x = x.replace(m.group(0), inl("B5", None, REJETS_FICHIER))
+assert '<row r="39"' not in x and "DECELEES_DU_JOUR" not in x
+x = x.replace("</sheetData>", '<row r="39">%s%s</row></sheetData>' % (inl("A39", None, "DECELEES_DU_JOUR"), inl("C39", None, "Rempli par le module : erreurs du jour lues dans le Controle des rejets.")))
+x = x.replace('<dimension ref="A1:C38"/>', '<dimension ref="A1:C39"/>')
+parts[fp_] = x.encode("utf-8")
+fp_ = "xl/worksheets/sheet1.xml"; x = parts[fp_].decode("utf-8")
+for ref, val in ((("B16", REJETS_DOSSIER), ("B17", "Controle_Rejets.xlsm")) if REJETS_DOSSIER else ()):
+    m = re.search(r'<c r="%s"( s="\d+")?[^>]*?>.*?</c>' % ref, x); assert m, ref
+    st = re.search(r' s="(\d+)"', m.group(0)); x = x.replace(m.group(0), inl(ref, st.group(1) if st else None, val))
+parts[fp_] = x.encode("utf-8")
+
+# ═════════════════════════════ 3. l'onglet ACCUEIL ═════════════════════════════
 sty = parts["xl/styles.xml"].decode("utf-8")
 
 
@@ -315,9 +481,9 @@ parts["xl/styles.xml"] = sty.encode("utf-8")
 
 LARG = {1: 2.7, 10: 2.7}
 for c in range(2, 10): LARG[c] = 17.5
-HAUT = {1: 8, 2: 34, 3: 18, 4: 10, 5: 10, 6: 24, 7: 24, 8: 24, 9: 18, 10: 12, 11: 22, 12: 21, 13: 21, 14: 21, 15: 30, 16: 21,
-        17: 12, 18: 22, 19: 21, 20: 21, 21: 21, 22: 21, 23: 21, 24: 12, 25: 30}
-NCOL, NLIG = 11, 30
+HAUT = {1: 8, 2: 34, 3: 18, 4: 10, 5: 10, 6: 24, 7: 24, 8: 24, 9: 18, 10: 12, 11: 22, 12: 21, 13: 21, 14: 21, 15: 21, 16: 30, 17: 21,
+        18: 12, 19: 22, 20: 21, 21: 21, 22: 21, 23: 21, 24: 21, 25: 12, 26: 30}
+NCOL, NLIG = 11, 31
 col = lambda c: "ABCDEFGHIJK"[c - 1]
 cell = {}                                        # (ligne, colonne) -> (style, type, contenu)
 for r in range(1, NLIG + 1):
@@ -345,29 +511,30 @@ T("B11", "ÉTAT EN DIRECT", "section"); zone(11, 2, 9, "section")
 etat = [
     (12, "Écran du Flip (data.js)", 'IF(EXPORT!B3="","pas encore d\'export",TEXT(EXPORT!B3,"hh:mm:ss")&"   ·   "&EXPORT!B7)'),
     (13, "Logys (tournées, rejets)", 'IF(C_MSG="","pas encore lu",TEXT(C_MAJ,"hh:mm:ss")&"   ·   "&C_MSG)'),
-    (14, "Pilotage (pilotage_data.js)", 'IFERROR(IF(INDEX(PILOTAGE!$B$1:$B$80,MATCH("DERNIER_PASSAGE",PILOTAGE!$A$1:$A$80,0))="","pas encore lancé",INDEX(PILOTAGE!$B$1:$B$80,MATCH("ETAT",PILOTAGE!$A$1:$A$80,0))&"   ·   dernier passage "&INDEX(PILOTAGE!$B$1:$B$80,MATCH("DERNIER_PASSAGE",PILOTAGE!$A$1:$A$80,0))),"")'),
-    (15, "Compte rendu du pilotage", 'IFERROR(INDEX(PILOTAGE!$B$1:$B$80,MATCH("DERNIER_MESSAGE",PILOTAGE!$A$1:$A$80,0))&"","")'),
+    (14, "Contrôle des rejets (erreurs)", 'IFERROR(IF(INDEX(PILOTAGE!$B$1:$B$80,MATCH("DECELEES_DU_JOUR",PILOTAGE!$A$1:$A$80,0))&""="","pas encore lu",INDEX(PILOTAGE!$B$1:$B$80,MATCH("DECELEES_DU_JOUR",PILOTAGE!$A$1:$A$80,0))&""),"pas encore lu")'),
+    (15, "Pilotage (pilotage_data.js)", 'IFERROR(IF(INDEX(PILOTAGE!$B$1:$B$80,MATCH("DERNIER_PASSAGE",PILOTAGE!$A$1:$A$80,0))="","pas encore lancé",INDEX(PILOTAGE!$B$1:$B$80,MATCH("ETAT",PILOTAGE!$A$1:$A$80,0))&"   ·   dernier passage "&INDEX(PILOTAGE!$B$1:$B$80,MATCH("DERNIER_PASSAGE",PILOTAGE!$A$1:$A$80,0))),"")'),
+    (16, "Compte rendu du pilotage", 'IFERROR(INDEX(PILOTAGE!$B$1:$B$80,MATCH("DERNIER_MESSAGE",PILOTAGE!$A$1:$A$80,0))&"","")'),
 ]
 for r, lib, f in etat:
     T("B%d" % r, lib, "etiq"); fusions.append("B%d:C%d" % (r, r))
     F("D%d" % r, f, "valeur"); zone(r, 4, 9, "valeur"); fusions.append("D%d:I%d" % (r, r))
-T("B16", "Dernière commande", "etiq"); fusions.append("B16:C16")
-T("D16", "Classeur remis en ordre : clique « Démarrer la journée » ou attends le démarrage automatique", "valeur"); zone(16, 4, 9, "valeur"); fusions.append("D16:I16")
-T("B18", "CHAQUE JOUR, C'EST TOUT", "section"); zone(18, 2, 9, "section")
+T("B17", "Dernière commande", "etiq"); fusions.append("B17:C17")
+T("D17", "Classeur remis en ordre : clique « Démarrer la journée » ou attends le démarrage automatique", "valeur"); zone(17, 4, 9, "valeur"); fusions.append("D17:I17")
+T("B19", "CHAQUE JOUR, C'EST TOUT", "section"); zone(19, 2, 9, "section")
 etapes = [
-    (19, "1", "Le matin : NOUVELLE JOURNÉE. L'équipe est rechargée depuis le Suivi Op, tout le monde passe présent, la saisie du jour est vidée."),
-    (20, "2", "Passe les absents à NON dans EQUIPE, puis saisis la 1re vague et les attendus de 15h45 et 17h45 dans SAISIE."),
-    (21, "3", "DÉMARRER LA JOURNÉE se fait tout seul 15 secondes après l'ouverture de ce classeur. Ensuite, l'écran se met à jour chaque minute."),
-    (22, "", "Un chiffre tout de suite : ACTUALISER. Un doute, un écran figé, un voyant orange : TEST, il dit quoi corriger."),
-    (23, "", "Laisse ce classeur ouvert toute la journée. En le fermant, les mises à jour s'arrêtent."),
+    (20, "1", "Le matin : NOUVELLE JOURNÉE. L'équipe est rechargée depuis le Suivi Op, tout le monde passe présent, la saisie du jour est vidée."),
+    (21, "2", "Passe les absents à NON dans EQUIPE, puis saisis la 1re vague et les attendus de 15h45 et 17h45 dans SAISIE."),
+    (22, "3", "DÉMARRER LA JOURNÉE se fait tout seul 15 secondes après l'ouverture de ce classeur. Ensuite, l'écran se met à jour chaque minute."),
+    (23, "", "Un chiffre tout de suite : ACTUALISER. Un doute, un écran figé, un voyant orange : TEST, il dit quoi corriger."),
+    (24, "", "Laisse ce classeur ouvert toute la journée. En le fermant, les mises à jour s'arrêtent."),
 ]
 for r, n, txt in etapes:
     if n: T("B%d" % r, n, "num")
-    T("C%d" % r, txt, "texte"); fusions.append("C%d:%s%d" % (r, "G" if r == 20 else "I", r))
-liens = [("H20", "→ onglet EQUIPE", "EQUIPE"), ("I20", "→ onglet SAISIE", "SAISIE")]
+    T("C%d" % r, txt, "texte"); fusions.append("C%d:%s%d" % (r, "G" if r == 21 else "I", r))
+liens = [("H21", "→ onglet EQUIPE", "EQUIPE"), ("I21", "→ onglet SAISIE", "SAISIE")]
 for ref, txt, feuille in liens: T(ref, txt, "lien")
-T("C25", "Réglages, une seule fois : onglets PARAMETRES (Logys, chemins, horaires) et PILOTAGE (pilotage.html). "
-         "Si quelque chose ne va pas : TEST, puis une photo du compte rendu.", "note"); fusions.append("C25:I25")
+T("C26", "Réglages, une seule fois : onglets PARAMETRES (Logys, chemins, horaires) et PILOTAGE (pilotage.html). "
+         "Si quelque chose ne va pas : TEST, puis une photo du compte rendu.", "note"); fusions.append("C26:I26")
 
 esc = lambda s: html.escape(s, quote=False)
 lignes = []
@@ -389,7 +556,8 @@ cols += '<col min="%d" max="16384" width="9" style="%d"/>' % (NCOL, S["fond"])
 cf = ""
 if DXF_ROUGE is not None:
     cf = ('<conditionalFormatting sqref="D13:I13"><cfRule type="expression" dxfId="%d" priority="1"><formula>LEFT(C_MSG,6)="ERREUR"</formula></cfRule></conditionalFormatting>'
-          '<conditionalFormatting sqref="D15:I15"><cfRule type="expression" dxfId="%d" priority="2"><formula>AND($D$15&lt;&gt;"",$D$15&lt;&gt;"OK")</formula></cfRule></conditionalFormatting>') % (DXF_ROUGE, DXF_ROUGE)
+          '<conditionalFormatting sqref="D14:I14"><cfRule type="expression" dxfId="%d" priority="2"><formula>LEFT($D$14,6)="ERREUR"</formula></cfRule></conditionalFormatting>'
+          '<conditionalFormatting sqref="D16:I16"><cfRule type="expression" dxfId="%d" priority="3"><formula>AND($D$16&lt;&gt;"",$D$16&lt;&gt;"OK")</formula></cfRule></conditionalFormatting>') % (DXF_ROUGE, DXF_ROUGE, DXF_ROUGE)
 hl = "<hyperlinks>%s</hyperlinks>" % "".join('<hyperlink ref="%s" location="\'%s\'!A1" display="%s"/>' % (ref, f, esc(txt)) for ref, txt, f in liens)
 feuille = ('<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n'
            '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">'
@@ -456,7 +624,7 @@ wbx = re.sub(r'localSheetId="(\d+)"', lambda m: 'localSheetId="%d"' % (int(m.gro
 wbx = re.sub(r'activeTab="\d+"', 'activeTab="0"', wbx)
 wbx = re.sub(r' firstSheet="\d+"', "", wbx)
 assert '<definedName name="J_INFO"' not in wbx
-nom = '<definedName name="J_INFO">ACCUEIL!$D$16</definedName>'
+nom = '<definedName name="J_INFO">ACCUEIL!$D$17</definedName>'
 noms_def = re.findall(r'<definedName name="([^"]+)"', wbx)
 suivant = next((n for n in noms_def if not n.startswith("_") and n.upper() > "J_INFO"), None)
 wbx = wbx.replace('<definedName name="%s"' % suivant, nom + '<definedName name="%s"' % suivant, 1) if suivant else wbx.replace("</definedNames>", nom + "</definedNames>")

@@ -109,6 +109,7 @@ End Sub
 Public Sub TEST()
 Attribute TEST.VB_ProcData.VB_Invoke_Func = "T\n14"
     Dim r As String, ok As Boolean, d As String, x As String, t0 As Date
+    Dim pm As Object, pj As Object, nDec As Long
     On Error GoTo Erreur
     ok = True
     ReglerDossier
@@ -131,8 +132,7 @@ Attribute TEST.VB_ProcData.VB_Invoke_Func = "T\n14"
 
     ' 3. les fichiers lus sur le commun
     VerifierChemin r, ok, "Suivi Op (équipe, cadences)", NomVal("P_SUIVI_OP"), False
-    VerifierChemin r, ok, "Dossier des décelées", NomVal("P_DOSSIER_DECELEES"), True
-    VerifierChemin r, ok, "Contrôle des rejets (dossards)", Pilotage_Reglage("FICHIER_REJETS"), False
+    VerifierChemin r, ok, "Contrôle des rejets (erreurs, dossards)", Pilotage_Reglage("FICHIER_REJETS"), False
     VerifierChemin r, ok, "Suivi Op (indicateurs)", Pilotage_Reglage("FICHIER_SUIVI_OP"), False
 
     ' 4. un passage complet : Logys, data.js, pilotage_data.js
@@ -154,6 +154,12 @@ Attribute TEST.VB_ProcData.VB_Invoke_Func = "T\n14"
             Ligne r, ok, True, "pilotage_data.js écrit (" & Pilotage_NbRequetes() & " requêtes Logys)"
         Else
             Ligne r, ok, False, "pilotage_data.js n'a pas été écrit : " & Pilotage_Fichier()
+        End If
+        x = Rejets_Lire(pm, pj, nDec)
+        If Len(x) = 0 Then
+            Ligne r, ok, True, "Contrôle des rejets : " & nDec & " erreur(s) aujourd'hui, " & pm.Count & " opérateur(s) concerné(s)"
+        Else
+            Ligne r, ok, False, "Contrôle des rejets : " & x
         End If
         x = Incidents()
         If Len(x) > 0 Then Ligne r, ok, False, "Incidents du passage :" & vbCrLf & "        " & Replace(x, vbCrLf, vbCrLf & "        ")

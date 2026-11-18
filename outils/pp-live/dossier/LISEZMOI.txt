@@ -36,7 +36,12 @@ CHAQUE JOUR
 CE QUI A CHANGÉ
  - Alt+F8 ne montre plus que les 4 commandes. Les anciennes (TOUT_DEMARRER, DEMARRER_LIVE, Pilotage_...,
    CHARGER_EQUIPE...) sont cachées ou remplacées : elles travaillent en coulisse, rien à lancer à la main.
- - L'onglet ACCUEIL montre en direct l'état de l'écran, de Logys et du pilotage.
+ - L'onglet ACCUEIL montre en direct l'état de l'écran, de Logys, du Contrôle des rejets et du pilotage.
+ - Erreurs décelées : lues dans le classeur du poste de rejet,
+   Controle_Rejets.xlsm, dans le dossier CONVOYEUR du commun.
+   Les opérateurs en erreur (dossards) et le nombre d'erreurs du jour se mettent à jour environ 1 minute après
+   chaque saisie. L'ancien fichier « Erreur NOVEMBRE.xlsx » n'est plus lu. Le chemin se change dans l'onglet
+   PILOTAGE, ligne FICHIER_REJETS.
  - Le Contrôle des rejets n'est plus rouvert à chaque passage s'il n'a pas changé : Excel travaille moins
    et l'écran du Flip rame moins.
  - L'écran s'adapte seul à la puissance du PC. S'il rame encore : ajouter ?fluide=3 à la fin de l'adresse
