@@ -46,7 +46,7 @@ class SceneRejet {
     this.cv.parentNode.insertBefore(c, this.cv.nextSibling);
     try {
       /* tour de caméra calé sur la durée d'un écran : ensemble, retrait, allée (les dossards arrivent à la table entre 6,5 et 12 s), puis poste, balance, cercleuses */
-      this.sc3 = new window.PosteRejet3D(c, { demo: false, gestes: false, rejouer: true, zoom: 0.9, qualite: this.force ? "haute" : "auto",
+      this.sc3 = new window.PosteRejet3D(c, { demo: false, gestes: false, rejouer: true, zoom: 0.9, qualite: this.force ? "haute" : "auto", alleger: this.force || typeof Fluidite === "undefined" ? 0 : Fluidite.niv,
         tour: [[0, 8], [2, 6], [1, 6], [3, 6], [4, 5], [5, 5]], vague: [6.5, 12], surTropLent: () => this.repli("poste trop lent") });
     } catch (e) { this.sc3 = null; c.remove(); this.rate = true; if (window.console) console.warn("Scène 3D indisponible : la scène dessinée reste en place.", e); return; }
     this.c3 = c; this.sc3.donnees(...this.args); this.cv.style.visibility = "hidden";

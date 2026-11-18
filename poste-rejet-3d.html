@@ -448,7 +448,8 @@ class Rendu {
   passe(mat, cible) { this.plein.material = mat; this.r.setRenderTarget(cible); this.r.render(this.sp, this.cam); }
   image(scene, cam, t) {
     const r = this.r, sc = this.sc, uS = sc.uSol;
-    r.shadowMap.needsUpdate = true;
+    this.nImg = (this.nImg || 0) + 1;
+    r.shadowMap.needsUpdate = !sc.ombreDemi || this.nImg % 2 === 1;      // poste lent : ombres recalculées une image sur deux
     if (this.reflet && this.rtR) {
       /* caméra miroir sous le sol */
       const c = this.camR, P = cam.position, V = sc.vise;
@@ -966,7 +967,9 @@ class Colis {
   retirer() { if (this.bulle) { this.bulle.fin(); this.bulle = null; } if (this.g.parent) this.g.parent.remove(this.g); }
 }
 
-/* ───────── Bulles : pastilles de texte face caméra (dossard, rejet, verdict) ───────── */
+/* ───────── Bulles : pastilles de texte face caméra (dossard, rejet, verdict) ─────────
+   Chaque texte n'est dessiné qu'une fois : sa texture est gardée et resservie (pas d'à-coup à chaque nouvelle étiquette). */
+const TEX_BULLES = new Map();
 class Bulle {
   constructor(sc, s, fond, encre, t = 0.3) {
     this.sc = sc; this.t = t; this.mat = new T.SpriteMaterial({ depthWrite: false, transparent: true }); this.sp = new T.Sprite(this.mat); this.sp.center.set(0.5, 0); this.sp.renderOrder = 5;
@@ -974,16 +977,18 @@ class Bulle {
   }
   texte(s, fond, encre) {
     if (s === this.s && fond === this.fond) return; this.s = s; this.fond = fond;
+    const cle = s + "|" + fond + "|" + encre, deja = TEX_BULLES.get(cle);
+    if (deja) { this.mat.map = deja.tex; this.mat.needsUpdate = true; this.sp.scale.set(this.t * deja.W / deja.H, this.t, 1); return; }
     const H = 96, f = `900 62px ${F_D}`, m = toile(8, 8, () => {}).getContext("2d"); m.font = f;
     const W = Math.ceil(m.measureText(s).width) + 56;
     const c = toile(W, H, x => { rrect(x, 3, 3, W - 6, H - 6, 26); x.fillStyle = fond; x.fill(); x.lineWidth = 5; x.strokeStyle = "rgba(8,12,22,.75)"; x.stroke(); ecrire(x, s, W / 2, H / 2 + 4, 62, { g: 900, f: F_D, c: encre, al: "center", base: "middle" }); });
-    if (this.mat.map) this.mat.map.dispose();
     this.mat.map = texture(c); this.mat.needsUpdate = true; this.sp.scale.set(this.t * W / H, this.t, 1);
+    TEX_BULLES.set(cle, { tex: this.mat.map, W, H });
   }
   en(x, y, z) { this.sp.position.set(x, y, z); }
   maj(dt) { this.vie -= dt; this.a = vers(this.a, this.vie > 0 ? 1 : 0, dt * 9); this.mat.opacity = this.a; return this.vie > 0 || this.a > 0.02; }
   fin(delai = 0) { this.vie = Math.min(this.vie, delai); }
-  detruire() { this.sc.grBulles.remove(this.sp); if (this.mat.map) this.mat.map.dispose(); this.mat.dispose(); }
+  detruire() { this.sc.grBulles.remove(this.sp); this.mat.dispose(); }
 }
 
 /* ───────── La vie de la scène : flux de colis, balance, cercleuses, contrôleur, dossards ───────── */
@@ -998,7 +1003,8 @@ const V1 = new T.Vector3(), V2 = new T.Vector3();
 const SIM = {
   vider() {
     for (const c of [...this.princ, ...this.dev, ...this.rej, ...this.divers]) c.retirer();
-    for (const o of this.ops) { for (const c of [...o.pile, ...o.portes, ...(o.aPrendre || [])]) c.retirer(); o.perso.retirer(this); }
+    this.parc = this.parc || new Map();
+    for (const o of this.ops) { for (const c of [...o.pile, ...o.portes, ...(o.aPrendre || [])]) c.retirer(); o.perso.racine.visible = false; this.parc.set(o.cle, o.perso); }
     for (const b of this.bulles) b.detruire();
     this.princ = []; this.dev = []; this.rej = []; this.divers = []; this.ops = []; this.bulles = [];
   },
@@ -1024,7 +1030,12 @@ const SIM = {
     /* dossards */
     this.ops = this.vig.map((v, k) => {
       const o = { k, mat: String(v.mat), n: +v.n || 0, d: DOSS[v.d] ? v.d : "jaune", x: caseX(k), sCase: sCase(k), pile: [], portes: [], etat: "absent", t: 0, s: 0, seg: 0, debut: 0, vit: 1.52 + r() * 0.2 };
-      o.perso = new Perso(this, { i: k, d: o.d, num: o.mat, casquette: k % 3 !== 1, gants: k % 2 === 0, x: X_PORTE, z: Z_ALLER, cap: PI / 2, ech: 0.97 + r() * 0.07 });
+      const ech = 0.97 + r() * 0.07; o.cle = k + "|" + o.mat + "|" + o.d;
+      const garde = this.parc && this.parc.get(o.cle);
+      if (garde) {
+        this.parc.delete(o.cle); o.perso = garde;
+        Object.assign(garde, { x: X_PORTE, z: Z_ALLER, cap: PI / 2, v: 0, charge: 0, ech }); garde.racine.scale.setScalar(ech); garde.pose({}, true); garde.poser(1);
+      } else o.perso = new Perso(this, { i: k, d: o.d, num: o.mat, casquette: k % 3 !== 1, gants: k % 2 === 0, x: X_PORTE, z: Z_ALLER, cap: PI / 2, ech });
       o.perso.racine.visible = false;
       const e = DOSS[o.d]; o.bulle = new Bulle(this, `${o.mat}  ×${o.n}`, e.css, o.d === "rouge" ? "#FFFFFF" : "#12151C", 0.34); o.bulle.sp.visible = false;
       for (let i = 0; i < Math.min(o.n, 6); i++) this.empiler(o, new Colis(this, r, { w: 0.3 + r() * 0.13, d: 0.25 + r() * 0.08, h: 0.13 + r() * 0.07 }));
@@ -1033,6 +1044,8 @@ const SIM = {
       if (s0 >= 0) this.partir(o, s0); else o.debut = -s0 / allure;
       return o;
     });
+    /* personnages qui ne servent plus (la liste des dossards a changé) : rendus à la mémoire */
+    if (this.parc) { for (const p of this.parc.values()) p.retirer(this); this.parc.clear(); }
     this.poste = { etat: "attend", t: 0, colis: null, verdict: null }; this.ctrl.x = HX; this.ctrl.z = HZ; this.ctrl.cap = PI; this.ctrl.charge = 0; this.ctrl.pose({}, true);
     for (const c of [...this.ctrl.porte.children]) this.ctrl.porte.remove(c);
     this.pousseU = 0; this.sale = true; this.dessinerCases(); this.dessinerBalance(); this.majEcrans(1, true);
@@ -1433,6 +1446,7 @@ class PosteRejet3D {
     this.rendu = new Rendu(this);
     this.q = { prMax: Math.min(o.pr || window.devicePixelRatio || 1, 2), pr: 1, budget: 2.4e6, niveau: 0 }; this.w = 0; this.h = 0;
     if (o.qualite === "basse") { this.rendu.halo = this.rendu.reflet = false; this.rendu.mode(); this.q.budget = 1.2e6; }
+    for (let i = 0; i < (o.alleger || 0); i++) this.alleger();          // l'écran est déjà connu pour être lent : on part allégé
     this.cam = { c: new T.Vector3(), az: 0, el: 0, d: 10 }; this.vel = {}; this.plan = 0; this.tPlan = 0; this.auto = o.auto !== false; this.libre = { az: 0, el: 0, z: 1, t: 0 };
     this.actif = false; this._raf = 0; this._der = 0; this.temps = 0; this.noir = 0; this.fondu = null; this.pret = false;
     this.perf = { n: 0, s: 0, calme: 0 }; this._boucle = this._boucle.bind(this);
@@ -1539,6 +1553,7 @@ class PosteRejet3D {
     const q = this.q, R = this.rendu;
     if (q.budget > 1.1e6) q.budget *= 0.66;
     else if (R.reflet) R.reflet = false;
+    else if (!this.ombreDemi) this.ombreDemi = true;
     else if (R.halo) { R.halo = false; R.mode(); for (const n in this.M) { const m = this.M[n]; if (m && m.isMaterial) m.needsUpdate = true; } }
     else if (this.cle.shadow.mapSize.x > 1024) { this.cle.shadow.mapSize.set(1024, 1024); if (this.cle.shadow.map) { this.cle.shadow.map.dispose(); this.cle.shadow.map = null; } }
     else return false;
@@ -1583,7 +1598,13 @@ class PosteRejet3D {
   }
   arreter() { this.actif = false; cancelAnimationFrame(this._raf); }
   liberer() { this.arreter(); try { this.rendu.liberer(); this.renderer.dispose(); this.renderer.forceContextLoss(); } catch (e) {} }
-  rafraichir() { if (this.fige || !this.actif) this.image(0); }
+  /* écran caché : rien à dessiner, il le sera en revenant */
+  visible() {
+    if (getComputedStyle(this.cv).visibility === "hidden") return false;
+    const r = this.cv.getBoundingClientRect();
+    return r.width > 4 && r.height > 4 && r.bottom > 0 && r.top < innerHeight;
+  }
+  rafraichir() { if (this.actif && !this.fige) return; if (this.visible()) this.image(0); }
   /* image fixe après t secondes de vie (mouvement réduit, vignette, essais) */
   image(t = 0) { if (!this.taille()) return; for (let i = 0, n = Math.round(t / 0.033); i < n; i++) this.simuler(0.033); this.cadrer(0, true); this.rendu.image(this.scene, this.camera, this.temps); }
 }

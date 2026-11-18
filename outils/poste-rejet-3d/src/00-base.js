@@ -349,7 +349,8 @@ class Rendu {
   passe(mat, cible) { this.plein.material = mat; this.r.setRenderTarget(cible); this.r.render(this.sp, this.cam); }
   image(scene, cam, t) {
     const r = this.r, sc = this.sc, uS = sc.uSol;
-    r.shadowMap.needsUpdate = true;
+    this.nImg = (this.nImg || 0) + 1;
+    r.shadowMap.needsUpdate = !sc.ombreDemi || this.nImg % 2 === 1;      // poste lent : ombres recalculées une image sur deux
     if (this.reflet && this.rtR) {
       /* caméra miroir sous le sol */
       const c = this.camR, P = cam.position, V = sc.vise;

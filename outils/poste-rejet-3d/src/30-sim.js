@@ -10,7 +10,8 @@ const V1 = new T.Vector3(), V2 = new T.Vector3();
 const SIM = {
   vider() {
     for (const c of [...this.princ, ...this.dev, ...this.rej, ...this.divers]) c.retirer();
-    for (const o of this.ops) { for (const c of [...o.pile, ...o.portes, ...(o.aPrendre || [])]) c.retirer(); o.perso.retirer(this); }
+    this.parc = this.parc || new Map();
+    for (const o of this.ops) { for (const c of [...o.pile, ...o.portes, ...(o.aPrendre || [])]) c.retirer(); o.perso.racine.visible = false; this.parc.set(o.cle, o.perso); }
     for (const b of this.bulles) b.detruire();
     this.princ = []; this.dev = []; this.rej = []; this.divers = []; this.ops = []; this.bulles = [];
   },
@@ -36,7 +37,12 @@ const SIM = {
     /* dossards */
     this.ops = this.vig.map((v, k) => {
       const o = { k, mat: String(v.mat), n: +v.n || 0, d: DOSS[v.d] ? v.d : "jaune", x: caseX(k), sCase: sCase(k), pile: [], portes: [], etat: "absent", t: 0, s: 0, seg: 0, debut: 0, vit: 1.52 + r() * 0.2 };
-      o.perso = new Perso(this, { i: k, d: o.d, num: o.mat, casquette: k % 3 !== 1, gants: k % 2 === 0, x: X_PORTE, z: Z_ALLER, cap: PI / 2, ech: 0.97 + r() * 0.07 });
+      const ech = 0.97 + r() * 0.07; o.cle = k + "|" + o.mat + "|" + o.d;
+      const garde = this.parc && this.parc.get(o.cle);
+      if (garde) {
+        this.parc.delete(o.cle); o.perso = garde;
+        Object.assign(garde, { x: X_PORTE, z: Z_ALLER, cap: PI / 2, v: 0, charge: 0, ech }); garde.racine.scale.setScalar(ech); garde.pose({}, true); garde.poser(1);
+      } else o.perso = new Perso(this, { i: k, d: o.d, num: o.mat, casquette: k % 3 !== 1, gants: k % 2 === 0, x: X_PORTE, z: Z_ALLER, cap: PI / 2, ech });
       o.perso.racine.visible = false;
       const e = DOSS[o.d]; o.bulle = new Bulle(this, `${o.mat}  ×${o.n}`, e.css, o.d === "rouge" ? "#FFFFFF" : "#12151C", 0.34); o.bulle.sp.visible = false;
       for (let i = 0; i < Math.min(o.n, 6); i++) this.empiler(o, new Colis(this, r, { w: 0.3 + r() * 0.13, d: 0.25 + r() * 0.08, h: 0.13 + r() * 0.07 }));
@@ -45,6 +51,8 @@ const SIM = {
       if (s0 >= 0) this.partir(o, s0); else o.debut = -s0 / allure;
       return o;
     });
+    /* personnages qui ne servent plus (la liste des dossards a changé) : rendus à la mémoire */
+    if (this.parc) { for (const p of this.parc.values()) p.retirer(this); this.parc.clear(); }
     this.poste = { etat: "attend", t: 0, colis: null, verdict: null }; this.ctrl.x = HX; this.ctrl.z = HZ; this.ctrl.cap = PI; this.ctrl.charge = 0; this.ctrl.pose({}, true);
     for (const c of [...this.ctrl.porte.children]) this.ctrl.porte.remove(c);
     this.pousseU = 0; this.sale = true; this.dessinerCases(); this.dessinerBalance(); this.majEcrans(1, true);

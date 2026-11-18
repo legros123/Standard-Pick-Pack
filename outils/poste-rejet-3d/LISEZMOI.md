@@ -27,6 +27,27 @@ depuis leur base commune, sans conflit. Une seule retouche : la couleur des liss
 
 **Pour toute nouvelle modification du pilotage, partir de ce fichier**, sinon les modifications précédentes se perdent.
 
+## Fluidité sur le Flip
+
+La page mesure ses propres images et descend d'un cran si l'écran peine (constaté : jusqu'à 2 fois plus d'images par seconde sur l'accueil en 4K).
+
+| Cran | Définition des animations | Images/s | Reflet du sol (accueil) | Lueurs d'ambiance |
+|---|---|---|---|---|
+| 0 | jusqu'à 2,2 millions de points | 30 | à chaque image | oui |
+| 1 | 1,5 million | 30 | une image sur deux | oui |
+| 2 | 1 million | 20 | une sur trois, plus léger | oui |
+| 3 | 0,7 million | 20 | aucun | coupées |
+
+Le cran est retenu par l'écran ; chaque nouveau jour il remonte d'un cran pour réessayer. Pour l'imposer : `pilotage.html?fluide=0` à `?fluide=3`.
+La scène 3D du poste de rejet démarre directement allégée d'autant de crans, et garde son propre réglage automatique.
+
+Autres corrections des à-coups « par moment » :
+- un rafraîchissement des données ne met à jour tout de suite que l'écran affiché, les autres un par un entre deux images, jamais pendant l'entrée d'un écran ;
+- les animations cachées ne sont plus redessinées à chaque rafraîchissement ;
+- la scène 3D réutilise ses personnages et ses étiquettes d'un passage à l'autre au lieu de les refabriquer.
+
+Si l'écran rame encore : vérifier dans le navigateur que l'accélération graphique est activée (Edge : Paramètres › Système).
+
 ## Mettre à jour la scène 3D
 
 ```bash

@@ -34,6 +34,7 @@ class PosteRejet3D {
     this.rendu = new Rendu(this);
     this.q = { prMax: Math.min(o.pr || window.devicePixelRatio || 1, 2), pr: 1, budget: 2.4e6, niveau: 0 }; this.w = 0; this.h = 0;
     if (o.qualite === "basse") { this.rendu.halo = this.rendu.reflet = false; this.rendu.mode(); this.q.budget = 1.2e6; }
+    for (let i = 0; i < (o.alleger || 0); i++) this.alleger();          // l'écran est déjà connu pour être lent : on part allégé
     this.cam = { c: new T.Vector3(), az: 0, el: 0, d: 10 }; this.vel = {}; this.plan = 0; this.tPlan = 0; this.auto = o.auto !== false; this.libre = { az: 0, el: 0, z: 1, t: 0 };
     this.actif = false; this._raf = 0; this._der = 0; this.temps = 0; this.noir = 0; this.fondu = null; this.pret = false;
     this.perf = { n: 0, s: 0, calme: 0 }; this._boucle = this._boucle.bind(this);
@@ -140,6 +141,7 @@ class PosteRejet3D {
     const q = this.q, R = this.rendu;
     if (q.budget > 1.1e6) q.budget *= 0.66;
     else if (R.reflet) R.reflet = false;
+    else if (!this.ombreDemi) this.ombreDemi = true;
     else if (R.halo) { R.halo = false; R.mode(); for (const n in this.M) { const m = this.M[n]; if (m && m.isMaterial) m.needsUpdate = true; } }
     else if (this.cle.shadow.mapSize.x > 1024) { this.cle.shadow.mapSize.set(1024, 1024); if (this.cle.shadow.map) { this.cle.shadow.map.dispose(); this.cle.shadow.map = null; } }
     else return false;
@@ -184,7 +186,13 @@ class PosteRejet3D {
   }
   arreter() { this.actif = false; cancelAnimationFrame(this._raf); }
   liberer() { this.arreter(); try { this.rendu.liberer(); this.renderer.dispose(); this.renderer.forceContextLoss(); } catch (e) {} }
-  rafraichir() { if (this.fige || !this.actif) this.image(0); }
+  /* écran caché : rien à dessiner, il le sera en revenant */
+  visible() {
+    if (getComputedStyle(this.cv).visibility === "hidden") return false;
+    const r = this.cv.getBoundingClientRect();
+    return r.width > 4 && r.height > 4 && r.bottom > 0 && r.top < innerHeight;
+  }
+  rafraichir() { if (this.actif && !this.fige) return; if (this.visible()) this.image(0); }
   /* image fixe après t secondes de vie (mouvement réduit, vignette, essais) */
   image(t = 0) { if (!this.taille()) return; for (let i = 0, n = Math.round(t / 0.033); i < n; i++) this.simuler(0.033); this.cadrer(0, true); this.rendu.image(this.scene, this.camera, this.temps); }
 }

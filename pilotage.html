@@ -502,6 +502,9 @@ body[data-statut=info]{--amb:57,135,229;--pouls:7s}
   box-shadow:inset 0 0 8rem -1.5rem rgba(var(--amb),.8),inset 0 0 1.4rem rgba(var(--amb),.55);
   animation:halo var(--pouls) ease-in-out infinite alternate;transition:border-color 1s,box-shadow 1s}
 @keyframes halo{from{opacity:.45}to{opacity:1}}
+/* fluidité, cran le plus léger : plus de lueurs animées en plein écran */
+body[data-fluide="3"] .fond i,body[data-fluide="3"] .halo{animation:none!important}
+body[data-fluide="3"] .halo{opacity:.75}
 
 /* rail fin */
 .app{grid-template-rows:6.2rem minmax(0,1fr) 4.4rem}
@@ -1187,7 +1190,8 @@ class Rendu {
   passe(mat, cible) { this.plein.material = mat; this.r.setRenderTarget(cible); this.r.render(this.sp, this.cam); }
   image(scene, cam, t) {
     const r = this.r, sc = this.sc, uS = sc.uSol;
-    r.shadowMap.needsUpdate = true;
+    this.nImg = (this.nImg || 0) + 1;
+    r.shadowMap.needsUpdate = !sc.ombreDemi || this.nImg % 2 === 1;      // poste lent : ombres recalculées une image sur deux
     if (this.reflet && this.rtR) {
       /* caméra miroir sous le sol */
       const c = this.camR, P = cam.position, V = sc.vise;
@@ -1705,7 +1709,9 @@ class Colis {
   retirer() { if (this.bulle) { this.bulle.fin(); this.bulle = null; } if (this.g.parent) this.g.parent.remove(this.g); }
 }
 
-/* ───────── Bulles : pastilles de texte face caméra (dossard, rejet, verdict) ───────── */
+/* ───────── Bulles : pastilles de texte face caméra (dossard, rejet, verdict) ─────────
+   Chaque texte n'est dessiné qu'une fois : sa texture est gardée et resservie (pas d'à-coup à chaque nouvelle étiquette). */
+const TEX_BULLES = new Map();
 class Bulle {
   constructor(sc, s, fond, encre, t = 0.3) {
     this.sc = sc; this.t = t; this.mat = new T.SpriteMaterial({ depthWrite: false, transparent: true }); this.sp = new T.Sprite(this.mat); this.sp.center.set(0.5, 0); this.sp.renderOrder = 5;
@@ -1713,16 +1719,18 @@ class Bulle {
   }
   texte(s, fond, encre) {
     if (s === this.s && fond === this.fond) return; this.s = s; this.fond = fond;
+    const cle = s + "|" + fond + "|" + encre, deja = TEX_BULLES.get(cle);
+    if (deja) { this.mat.map = deja.tex; this.mat.needsUpdate = true; this.sp.scale.set(this.t * deja.W / deja.H, this.t, 1); return; }
     const H = 96, f = `900 62px ${F_D}`, m = toile(8, 8, () => {}).getContext("2d"); m.font = f;
     const W = Math.ceil(m.measureText(s).width) + 56;
     const c = toile(W, H, x => { rrect(x, 3, 3, W - 6, H - 6, 26); x.fillStyle = fond; x.fill(); x.lineWidth = 5; x.strokeStyle = "rgba(8,12,22,.75)"; x.stroke(); ecrire(x, s, W / 2, H / 2 + 4, 62, { g: 900, f: F_D, c: encre, al: "center", base: "middle" }); });
-    if (this.mat.map) this.mat.map.dispose();
     this.mat.map = texture(c); this.mat.needsUpdate = true; this.sp.scale.set(this.t * W / H, this.t, 1);
+    TEX_BULLES.set(cle, { tex: this.mat.map, W, H });
   }
   en(x, y, z) { this.sp.position.set(x, y, z); }
   maj(dt) { this.vie -= dt; this.a = vers(this.a, this.vie > 0 ? 1 : 0, dt * 9); this.mat.opacity = this.a; return this.vie > 0 || this.a > 0.02; }
   fin(delai = 0) { this.vie = Math.min(this.vie, delai); }
-  detruire() { this.sc.grBulles.remove(this.sp); if (this.mat.map) this.mat.map.dispose(); this.mat.dispose(); }
+  detruire() { this.sc.grBulles.remove(this.sp); this.mat.dispose(); }
 }
 
 /* ───────── La vie de la scène : flux de colis, balance, cercleuses, contrôleur, dossards ───────── */
@@ -1737,7 +1745,8 @@ const V1 = new T.Vector3(), V2 = new T.Vector3();
 const SIM = {
   vider() {
     for (const c of [...this.princ, ...this.dev, ...this.rej, ...this.divers]) c.retirer();
-    for (const o of this.ops) { for (const c of [...o.pile, ...o.portes, ...(o.aPrendre || [])]) c.retirer(); o.perso.retirer(this); }
+    this.parc = this.parc || new Map();
+    for (const o of this.ops) { for (const c of [...o.pile, ...o.portes, ...(o.aPrendre || [])]) c.retirer(); o.perso.racine.visible = false; this.parc.set(o.cle, o.perso); }
     for (const b of this.bulles) b.detruire();
     this.princ = []; this.dev = []; this.rej = []; this.divers = []; this.ops = []; this.bulles = [];
   },
@@ -1763,7 +1772,12 @@ const SIM = {
     /* dossards */
     this.ops = this.vig.map((v, k) => {
       const o = { k, mat: String(v.mat), n: +v.n || 0, d: DOSS[v.d] ? v.d : "jaune", x: caseX(k), sCase: sCase(k), pile: [], portes: [], etat: "absent", t: 0, s: 0, seg: 0, debut: 0, vit: 1.52 + r() * 0.2 };
-      o.perso = new Perso(this, { i: k, d: o.d, num: o.mat, casquette: k % 3 !== 1, gants: k % 2 === 0, x: X_PORTE, z: Z_ALLER, cap: PI / 2, ech: 0.97 + r() * 0.07 });
+      const ech = 0.97 + r() * 0.07; o.cle = k + "|" + o.mat + "|" + o.d;
+      const garde = this.parc && this.parc.get(o.cle);
+      if (garde) {
+        this.parc.delete(o.cle); o.perso = garde;
+        Object.assign(garde, { x: X_PORTE, z: Z_ALLER, cap: PI / 2, v: 0, charge: 0, ech }); garde.racine.scale.setScalar(ech); garde.pose({}, true); garde.poser(1);
+      } else o.perso = new Perso(this, { i: k, d: o.d, num: o.mat, casquette: k % 3 !== 1, gants: k % 2 === 0, x: X_PORTE, z: Z_ALLER, cap: PI / 2, ech });
       o.perso.racine.visible = false;
       const e = DOSS[o.d]; o.bulle = new Bulle(this, `${o.mat}  ×${o.n}`, e.css, o.d === "rouge" ? "#FFFFFF" : "#12151C", 0.34); o.bulle.sp.visible = false;
       for (let i = 0; i < Math.min(o.n, 6); i++) this.empiler(o, new Colis(this, r, { w: 0.3 + r() * 0.13, d: 0.25 + r() * 0.08, h: 0.13 + r() * 0.07 }));
@@ -1772,6 +1786,8 @@ const SIM = {
       if (s0 >= 0) this.partir(o, s0); else o.debut = -s0 / allure;
       return o;
     });
+    /* personnages qui ne servent plus (la liste des dossards a changé) : rendus à la mémoire */
+    if (this.parc) { for (const p of this.parc.values()) p.retirer(this); this.parc.clear(); }
     this.poste = { etat: "attend", t: 0, colis: null, verdict: null }; this.ctrl.x = HX; this.ctrl.z = HZ; this.ctrl.cap = PI; this.ctrl.charge = 0; this.ctrl.pose({}, true);
     for (const c of [...this.ctrl.porte.children]) this.ctrl.porte.remove(c);
     this.pousseU = 0; this.sale = true; this.dessinerCases(); this.dessinerBalance(); this.majEcrans(1, true);
@@ -2172,6 +2188,7 @@ class PosteRejet3D {
     this.rendu = new Rendu(this);
     this.q = { prMax: Math.min(o.pr || window.devicePixelRatio || 1, 2), pr: 1, budget: 2.4e6, niveau: 0 }; this.w = 0; this.h = 0;
     if (o.qualite === "basse") { this.rendu.halo = this.rendu.reflet = false; this.rendu.mode(); this.q.budget = 1.2e6; }
+    for (let i = 0; i < (o.alleger || 0); i++) this.alleger();          // l'écran est déjà connu pour être lent : on part allégé
     this.cam = { c: new T.Vector3(), az: 0, el: 0, d: 10 }; this.vel = {}; this.plan = 0; this.tPlan = 0; this.auto = o.auto !== false; this.libre = { az: 0, el: 0, z: 1, t: 0 };
     this.actif = false; this._raf = 0; this._der = 0; this.temps = 0; this.noir = 0; this.fondu = null; this.pret = false;
     this.perf = { n: 0, s: 0, calme: 0 }; this._boucle = this._boucle.bind(this);
@@ -2278,6 +2295,7 @@ class PosteRejet3D {
     const q = this.q, R = this.rendu;
     if (q.budget > 1.1e6) q.budget *= 0.66;
     else if (R.reflet) R.reflet = false;
+    else if (!this.ombreDemi) this.ombreDemi = true;
     else if (R.halo) { R.halo = false; R.mode(); for (const n in this.M) { const m = this.M[n]; if (m && m.isMaterial) m.needsUpdate = true; } }
     else if (this.cle.shadow.mapSize.x > 1024) { this.cle.shadow.mapSize.set(1024, 1024); if (this.cle.shadow.map) { this.cle.shadow.map.dispose(); this.cle.shadow.map = null; } }
     else return false;
@@ -2322,7 +2340,13 @@ class PosteRejet3D {
   }
   arreter() { this.actif = false; cancelAnimationFrame(this._raf); }
   liberer() { this.arreter(); try { this.rendu.liberer(); this.renderer.dispose(); this.renderer.forceContextLoss(); } catch (e) {} }
-  rafraichir() { if (this.fige || !this.actif) this.image(0); }
+  /* écran caché : rien à dessiner, il le sera en revenant */
+  visible() {
+    if (getComputedStyle(this.cv).visibility === "hidden") return false;
+    const r = this.cv.getBoundingClientRect();
+    return r.width > 4 && r.height > 4 && r.bottom > 0 && r.top < innerHeight;
+  }
+  rafraichir() { if (this.actif && !this.fige) return; if (this.visible()) this.image(0); }
   /* image fixe après t secondes de vie (mouvement réduit, vignette, essais) */
   image(t = 0) { if (!this.taille()) return; for (let i = 0, n = Math.round(t / 0.033); i < n; i++) this.simuler(0.033); this.cadrer(0, true); this.rendu.image(this.scene, this.camera, this.temps); }
 }
@@ -2358,6 +2382,49 @@ const ic = (nom, cls = "") => `<svg class="ic ${cls}" aria-hidden="true"><use hr
 const pastille = (niv, txt, grand, icone) => `<span class="pastille${grand ? " grand" : ""}" data-niv="${niv}">${ic(icone || niv)}<span>${esc(txt)}</span></span>`;
 const rem = () => parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
 const mouvementReduit = () => window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+/* ───────── Fluidité : les animations s'adaptent à la puissance de l'écran (Samsung Flip, PC) ─────────
+   La page mesure ses propres images ; si elles arrivent en retard ou par à-coups, elle descend d'un cran.
+   0 : pleine qualité · 1 : définition réduite, reflet une image sur deux
+   2 : définition basse, 20 images/s, reflet allégé · 3 : définition minimale, sans reflet ni lueurs d'ambiance.
+   Le cran est retenu par l'écran ; chaque nouveau jour, il remonte d'un cran pour réessayer.
+   Pour l'imposer : pilotage.html?fluide=0 (pleine qualité) à ?fluide=3 (le plus léger). */
+const Fluidite = (() => {
+  const NIV = [
+    { budget: 2.2e6, ips: 30, reflet: 1, finRef: 2 },
+    { budget: 1.5e6, ips: 30, reflet: 2, finRef: 2 },
+    { budget: 1.0e6, ips: 20, reflet: 3, finRef: 3 },
+    { budget: 0.7e6, ips: 20, reflet: 0, finRef: 3 }
+  ];
+  const CLE = "pp-fluidite", AUJ = new Date().toISOString().slice(0, 10);
+  let niv = 0, force = false, ech = [], attente = 0;
+  const p = new URLSearchParams(location.search).get("fluide");
+  if (p != null && /^[0-3]$/.test(p)) { niv = +p; force = true; }
+  else {
+    try { const m = JSON.parse(localStorage.getItem(CLE) || "null"); if (m && m.niv >= 0 && m.niv <= 3) niv = m.jour === AUJ ? m.niv : Math.max(0, m.niv - 1); } catch (e) { /* stockage indisponible : on repart de 0 */ }
+  }
+  const poser = () => { if (document.body) document.body.dataset.fluide = niv; };
+  if (document.body) poser(); else document.addEventListener("DOMContentLoaded", poser);
+  return {
+    get niv() { return niv; },
+    get r() { return NIV[niv]; },
+    /* une image dessinée : cout = temps de dessin (ms), iv = écart avec la précédente (ms) */
+    mesure(cout, iv) {
+      if (force || niv >= 3) return;
+      if (iv > 600) { ech = []; return; }                  // onglet masqué, changement d'écran : ce n'est pas un à-coup
+      const t = performance.now(); if (t < attente) return;
+      ech.push([cout, iv]); if (ech.length < 90) return;
+      const vise = 1000 / NIV[niv].ips, ivs = ech.map(e => e[1]).sort((a, b) => a - b), med = ivs[ivs.length >> 1];
+      const acoups = ivs.filter(v => v > Math.max(2.2 * med, 2 * vise)).length / ivs.length, cmoy = ech.reduce((a, e) => a + e[0], 0) / ech.length;
+      ech = [];
+      if (med > 1.5 * vise || acoups > 0.08 || cmoy > 0.6 * vise) {
+        niv++; attente = t + 3000; poser();
+        try { localStorage.setItem(CLE, JSON.stringify({ niv, jour: AUJ })); } catch (e) { /* tant pis : valable pour cette session */ }
+        console.info(`Fluidité : cran ${niv} (image médiane ${med.toFixed(0)} ms, à-coups ${(acoups * 100).toFixed(0)} %, dessin ${cmoy.toFixed(1)} ms)`);
+      }
+    }
+  };
+})();
 const modeDeroule = () => window.matchMedia("(max-width:860px),(max-aspect-ratio:1/1)").matches;
 
 /* heures : « 14:35 » ou « 14h35 » -> minutes depuis minuit, et retour */
@@ -2974,7 +3041,9 @@ class Scene3D {
     this._boucle = this._boucle.bind(this);
   }
   taille() {
-    const w = this.cv.clientWidth, h = this.cv.clientHeight, dpr = Math.min(2, window.devicePixelRatio || 1);
+    const w = this.cv.clientWidth, h = this.cv.clientHeight;
+    /* définition plafonnée : sur un écran 4K, dessiner 8 millions de points par image fait ramer pour rien à 3 m de distance */
+    const dpr = Math.max(0.5, Math.round(Math.min(2, window.devicePixelRatio || 1, Math.sqrt(Fluidite.r.budget / Math.max(1, w * h))) * 20) / 20);
     if (w !== this.w || h !== this.h || dpr !== this.dpr) {
       this.w = w; this.h = h; this.dpr = dpr;
       this.cv.width = Math.max(1, Math.round(w * dpr)); this.cv.height = Math.max(1, Math.round(h * dpr));
@@ -3097,10 +3166,12 @@ class Scene3D {
   _boucle(ts) {
     if (!this.actif) return;
     this._raf = requestAnimationFrame(this._boucle);
-    if (this._der && ts - this._der < 30) return;
-    const dt = this._der ? Math.min(0.1, (ts - this._der) / 1000) : 0.016;
+    if (this._der && ts - this._der < 1000 / Fluidite.r.ips - 3) return;
+    const iv = this._der ? ts - this._der : 0, dt = iv ? Math.min(0.1, iv / 1000) : 0.016;
     this._der = ts; this.t += dt;
+    const t0 = performance.now();
     this.image(dt);
+    if (iv) Fluidite.mesure(performance.now() - t0, iv);
   }
   image(dt) {
     if (!this.taille()) return;
@@ -3113,7 +3184,13 @@ class Scene3D {
     this.suivreCadre(); this.camera();
     this.dessiner(dt || 0);
   }
-  rafraichir() { if (this.fige || !this.actif) this.image(0); }
+  /* une scène cachée n'est pas redessinée à chaque rafraîchissement des données : elle le sera en revenant à l'écran */
+  visible() {
+    if (getComputedStyle(this.cv).visibility === "hidden") return false;
+    const r = this.cv.getBoundingClientRect();
+    return r.width > 4 && r.height > 4 && r.bottom > 0 && r.top < innerHeight;
+  }
+  rafraichir() { if (this.actif && !this.fige) return; if (this.visible()) this.image(0); }
 }
 
 /* ───────── Scène 1 : les piles de la journée (à venir -> reste à faire -> fait) ───────── */
@@ -4193,9 +4270,15 @@ class SceneAccueil extends Scene3D {
   }
   /* le sol est brillant : tout ce qui est bas s'y reflète (rendu à demi-définition, puis fondu) */
   reflet(st, t) {
-    const cv = this.cvR, W = Math.max(1, Math.round(this.cv.width / 2)), H = Math.max(1, Math.round(this.cv.height / 2)), X = this.ctx, r = this.cxR;
+    /* le reflet est flou et à 34 % : on le recalcule une image sur 1, 2 ou 3 selon le cran de fluidité, et plus du tout au cran 3 */
+    const Q = Fluidite.r; if (!Q.reflet) return;
+    const f = Q.finRef, cv = this.cvR, W = Math.max(1, Math.round(this.cv.width / f)), H = Math.max(1, Math.round(this.cv.height / f)), X = this.ctx, r = this.cxR;
+    this._nRef = (this._nRef || 0) + 1;
+    const neuf = cv.width !== W || cv.height !== H || this.fige || !this._refOk || this._nRef % Q.reflet === 0;
+    if (!neuf) { X.globalAlpha = 0.34; X.drawImage(cv, 0, 0, this.w, this.h); X.globalAlpha = 1; return; }
+    this._refOk = true;
     if (cv.width !== W || cv.height !== H) { cv.width = W; cv.height = H; }
-    r.setTransform(this.dpr / 2, 0, 0, this.dpr / 2, 0, 0); r.clearRect(0, 0, this.w, this.h); r.lineJoin = "round";
+    r.setTransform(this.dpr / f, 0, 0, this.dpr / f, 0, 0); r.clearRect(0, 0, this.w, this.h); r.lineJoin = "round";
     this.ctx = r; this.mir = true;
     try { this.monde(st, t); } finally { this.ctx = X; this.mir = false; }
     r.globalCompositeOperation = "destination-in";
@@ -4538,7 +4621,7 @@ class SceneRejet {
     this.cv.parentNode.insertBefore(c, this.cv.nextSibling);
     try {
       /* tour de caméra calé sur la durée d'un écran : ensemble, retrait, allée (les dossards arrivent à la table entre 6,5 et 12 s), puis poste, balance, cercleuses */
-      this.sc3 = new window.PosteRejet3D(c, { demo: false, gestes: false, rejouer: true, zoom: 0.9, qualite: this.force ? "haute" : "auto",
+      this.sc3 = new window.PosteRejet3D(c, { demo: false, gestes: false, rejouer: true, zoom: 0.9, qualite: this.force ? "haute" : "auto", alleger: this.force || typeof Fluidite === "undefined" ? 0 : Fluidite.niv,
         tour: [[0, 8], [2, 6], [1, 6], [3, 6], [4, 5], [5, 5]], vague: [6.5, 12], surTropLent: () => this.repli("poste trop lent") });
     } catch (e) { this.sc3 = null; c.remove(); this.rate = true; if (window.console) console.warn("Scène 3D indisponible : la scène dessinée reste en place.", e); return; }
     this.c3 = c; this.sc3.donnees(...this.args); this.cv.style.visibility = "hidden";
@@ -5103,8 +5186,23 @@ const Appli = (() => {
       appliquer();
     } finally { enCharge = false; }
   }
+  let genApp = 0, aFaire = new Set(), dernApp = -1e9, tTransition = -1e9, tDiffere = 0;
+  /* met à jour un écran ; renvoie s'il est disponible */
+  function majEcran(i) {
+    const e = ECRANS[i]; aFaire.delete(i);
+    let ok = false;
+    try { ok = !!e.dispo(M, A, brutL); } catch (err) { ok = false; }
+    if (ok) { try { const v = e.maj(M, reg, A, brutL); if (v != null) $("#vd-" + e.id).innerHTML = v; } catch (err) { console.error("Écran « " + e.nom + " »", err); ok = false; } }
+    dispo[i] = ok && !reg.exclus.includes(e.id);
+    puces[i].classList.toggle("saute", !dispo[i]);
+    secs[i].hidden = deroule && !dispo[i];
+  }
   function appliquer() {
     if (!brut && !brutL) return;
+    /* pendant l'entrée d'un écran, on attend la fin de son animation */
+    const att = 1100 - (performance.now() - tTransition);
+    if (pret && att > 0) { clearTimeout(tDiffere); tDiffere = setTimeout(appliquer, att); return; }
+    dernApp = performance.now();
     const now = mode === "demo" ? new Date(brut.maj) : new Date(), avant = M, forcer = {};
     if (reg.finVisee) forcer.finVisee = reg.finVisee;
     try {
@@ -5115,14 +5213,15 @@ const Appli = (() => {
       A = modeleAccueil(brutL, M, now, mode === "demo" ? forceStatut : null);
     } catch (err) { console.error("Données illisibles", err); return; }
     majRail(); majSource();
-    ECRANS.forEach((e, i) => {
-      let ok = false;
-      try { ok = !!e.dispo(M, A, brutL); } catch (err) { ok = false; }
-      if (ok) { try { const v = e.maj(M, reg, A, brutL); if (v != null) $("#vd-" + e.id).innerHTML = v; } catch (err) { console.error("Écran « " + e.nom + " »", err); ok = false; } }
-      dispo[i] = ok && !reg.exclus.includes(e.id);
-      puces[i].classList.toggle("saute", !dispo[i]);
-      secs[i].hidden = deroule && !dispo[i];
-    });
+    const g = ++genApp;
+    if (!pret || deroule) ECRANS.forEach((e, i) => majEcran(i));
+    else {
+      /* l'écran affiché tout de suite ; les autres un par un, entre deux images, pour ne jamais bloquer l'animation */
+      aFaire = new Set(ECRANS.map((e, i) => i));
+      if (iActif >= 0) majEcran(iActif);
+      const etape = () => { if (g !== genApp) return; const i = aFaire.values().next().value; if (i == null) return; majEcran(i); setTimeout(() => requestAnimationFrame(etape), 0); };
+      requestAnimationFrame(etape);
+    }
     construireInfos();
     if (avant && avant.aCharge && avant.pct < 1 && M.pct >= 1 && M.fait > 0) Fete.lancer();
     if (!pret) { pret = true; reglerMode(true); }
@@ -5181,6 +5280,8 @@ const Appli = (() => {
   function aller(i, sens, retour) {
     if (deroule) { secs[i].scrollIntoView({ behavior: mouvementReduit() ? "auto" : "smooth", block: "start" }); return; }
     if (i === iActif || i < 0 || i >= ECRANS.length) return;
+    if (aFaire.has(i)) majEcran(i);          // pas encore à jour : on le met à jour avant de l'afficher
+    tTransition = performance.now();
     const anc = iActif;
     if (anc >= 0) {
       secs[anc].classList.remove("actif"); secs[anc].classList.toggle("sorti", sens !== -1);
@@ -5438,7 +5539,7 @@ const Appli = (() => {
     cycle();
     setInterval(cycle, 30000);
     setInterval(() => { if (mode === "demo" && brut) { brut = Demo.instantane(); brutL = demoLive(brut); appliquer(); } }, 5000);
-    setInterval(() => { if (mode === "live") appliquer(); }, 20000);
+    setInterval(() => { if (mode === "live" && performance.now() - dernApp > 15000) appliquer(); }, 20000);   // pas deux fois de suite pour rien
     setInterval(tic, 200);
     setInterval(() => { if (infos.length > 1) { iInfo = (iInfo + 1) % infos.length; montrerInfo(true); } }, 9000);
     $("#b-prec").addEventListener("click", precedent); $("#b-suiv").addEventListener("click", suivant);

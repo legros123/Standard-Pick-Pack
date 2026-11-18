@@ -114,7 +114,9 @@ class Colis {
   retirer() { if (this.bulle) { this.bulle.fin(); this.bulle = null; } if (this.g.parent) this.g.parent.remove(this.g); }
 }
 
-/* ───────── Bulles : pastilles de texte face caméra (dossard, rejet, verdict) ───────── */
+/* ───────── Bulles : pastilles de texte face caméra (dossard, rejet, verdict) ─────────
+   Chaque texte n'est dessiné qu'une fois : sa texture est gardée et resservie (pas d'à-coup à chaque nouvelle étiquette). */
+const TEX_BULLES = new Map();
 class Bulle {
   constructor(sc, s, fond, encre, t = 0.3) {
     this.sc = sc; this.t = t; this.mat = new T.SpriteMaterial({ depthWrite: false, transparent: true }); this.sp = new T.Sprite(this.mat); this.sp.center.set(0.5, 0); this.sp.renderOrder = 5;
@@ -122,14 +124,16 @@ class Bulle {
   }
   texte(s, fond, encre) {
     if (s === this.s && fond === this.fond) return; this.s = s; this.fond = fond;
+    const cle = s + "|" + fond + "|" + encre, deja = TEX_BULLES.get(cle);
+    if (deja) { this.mat.map = deja.tex; this.mat.needsUpdate = true; this.sp.scale.set(this.t * deja.W / deja.H, this.t, 1); return; }
     const H = 96, f = `900 62px ${F_D}`, m = toile(8, 8, () => {}).getContext("2d"); m.font = f;
     const W = Math.ceil(m.measureText(s).width) + 56;
     const c = toile(W, H, x => { rrect(x, 3, 3, W - 6, H - 6, 26); x.fillStyle = fond; x.fill(); x.lineWidth = 5; x.strokeStyle = "rgba(8,12,22,.75)"; x.stroke(); ecrire(x, s, W / 2, H / 2 + 4, 62, { g: 900, f: F_D, c: encre, al: "center", base: "middle" }); });
-    if (this.mat.map) this.mat.map.dispose();
     this.mat.map = texture(c); this.mat.needsUpdate = true; this.sp.scale.set(this.t * W / H, this.t, 1);
+    TEX_BULLES.set(cle, { tex: this.mat.map, W, H });
   }
   en(x, y, z) { this.sp.position.set(x, y, z); }
   maj(dt) { this.vie -= dt; this.a = vers(this.a, this.vie > 0 ? 1 : 0, dt * 9); this.mat.opacity = this.a; return this.vie > 0 || this.a > 0.02; }
   fin(delai = 0) { this.vie = Math.min(this.vie, delai); }
-  detruire() { this.sc.grBulles.remove(this.sp); if (this.mat.map) this.mat.map.dispose(); this.mat.dispose(); }
+  detruire() { this.sc.grBulles.remove(this.sp); this.mat.dispose(); }
 }
