@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#0B0C0E">
+<meta name="description" content="Heure du dernier EDIX de chaque opérateur, à partir de la liste des traces sur contenant (LISTCONT).">
+<title>Dernier EDIX</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;600;800&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+/* Même signalétique que l'appli Standards : béton, marquage, jaune sécurité */
+:root{
+  --beton:#0B0C0E; --plate:#1B1E24; --plate-2:#23272E;
+  --edge:rgba(255,255,255,.08); --edge-2:rgba(255,255,255,.15);
+  --craie:#F4F5F6; --acier:#98A0AC; --acier-2:#6B7380;
+  --jaune:#FFD400; --rouge:#FF6B61; --vert:#3FBF6E;
+  --ff:'Archivo',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+  --fm:'IBM Plex Mono',ui-monospace,Consolas,'Courier New',monospace;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--beton);color:var(--craie);font:15px/1.5 var(--ff);
+  font-feature-settings:"tnum" 1;-webkit-font-smoothing:antialiased}
+button,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--jaune);outline-offset:2px}
+.hidden{display:none!important}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+.danger{height:6px;background:repeating-linear-gradient(-45deg,var(--jaune) 0 12px,#111 12px 24px)}
+.wrap{max-width:960px;margin:0 auto;padding:28px 16px 40px}
+
+.sur{margin:0;font:600 12px/1 var(--fm);letter-spacing:.14em;text-transform:uppercase;color:var(--jaune)}
+h1{margin:10px 0 4px;font-size:clamp(26px,4.5vw,36px);line-height:1.1;font-weight:800;letter-spacing:-.01em}
+.sous{margin:0 0 22px;color:var(--acier);max-width:60ch}
+
+.bloc{background:var(--plate);border:1px solid var(--edge);border-radius:6px;padding:18px}
+
+.etapes{list-style:none;margin:0 0 14px;padding:0;display:grid;gap:8px;counter-reset:e}
+.etapes li{counter-increment:e;display:grid;grid-template-columns:26px 1fr;gap:10px;color:var(--acier);font-size:14px}
+.etapes li::before{content:counter(e);display:grid;place-items:center;width:22px;height:22px;margin-top:1px;
+  border-radius:3px;background:var(--plate-2);border:1px solid var(--edge-2);color:var(--jaune);font:600 12px/1 var(--fm)}
+.etapes b{color:var(--craie);font-weight:600}
+kbd{font:600 11.5px/1 var(--fm);padding:2px 5px;border-radius:3px;border:1px solid var(--edge-2);
+  border-bottom-width:2px;background:var(--beton);color:var(--craie)}
+
+textarea{display:block;width:100%;min-height:190px;padding:12px;resize:vertical;
+  background:var(--beton);border:1px solid var(--edge-2);border-radius:4px;
+  font:12.5px/1.45 var(--fm);color:var(--craie);white-space:pre;overflow:auto}
+textarea::placeholder{color:var(--acier-2)}
+textarea:focus{outline:none;border-color:var(--jaune)}
+textarea.survol{border-color:var(--jaune);border-style:dashed}
+
+.actions{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-top:14px}
+.btn-go{background:var(--jaune);color:#111;border:0;border-radius:4px;padding:13px 24px;
+  font-weight:800;font-size:15px;letter-spacing:.04em;text-transform:uppercase}
+.btn-go:hover{filter:brightness(1.06)}
+.btn-go:active{transform:translateY(1px)}
+.btn{background:transparent;border:1px solid var(--edge-2);border-radius:4px;padding:11px 16px;font-weight:600;font-size:14px}
+.btn:hover{border-color:var(--acier)}
+.lien{background:none;border:0;padding:4px 2px;color:var(--acier);font-size:13.5px;text-decoration:underline;text-underline-offset:3px}
+.lien:hover{color:var(--craie)}
+.actions .lien{margin-left:auto}
+
+.message{margin:16px 0 0;padding:12px 14px;border-radius:4px;border:1px solid var(--edge-2);
+  border-left:3px solid var(--jaune);background:var(--plate);font-size:14px;color:var(--craie)}
+.message.erreur{border-left-color:var(--rouge)}
+
+#resultat{margin-top:22px}
+.res-tete{display:flex;flex-wrap:wrap;align-items:end;gap:12px 18px;margin-bottom:12px}
+.champ{display:grid;gap:5px}
+.champ label{font:600 11px/1 var(--fm);letter-spacing:.1em;text-transform:uppercase;color:var(--acier)}
+select{background:var(--plate);border:1px solid var(--edge-2);border-radius:4px;padding:9px 10px;font-size:14px;min-width:220px}
+.resume{margin:0;color:var(--acier);font-size:14px;padding-bottom:9px}
+.resume b{color:var(--craie);font-weight:600}
+.res-tete .btn{margin-left:auto}
+
+.table-cadre{background:var(--plate);border:1px solid var(--edge);border-radius:6px;overflow-x:auto}
+table{width:100%;border-collapse:collapse}
+th{padding:0;text-align:left;border-bottom:1px solid var(--edge-2)}
+th button{display:flex;align-items:center;gap:6px;width:100%;padding:11px 14px;background:none;border:0;
+  font:600 11px/1 var(--fm);letter-spacing:.1em;text-transform:uppercase;color:var(--acier);text-align:left;white-space:nowrap}
+th button:hover{color:var(--craie)}
+th[aria-sort] button{color:var(--craie)}
+th[aria-sort="ascending"] button::after{content:"▲";font-size:9px;color:var(--jaune)}
+th[aria-sort="descending"] button::after{content:"▼";font-size:9px;color:var(--jaune)}
+th.n button{justify-content:flex-end}
+td{padding:11px 14px;border-bottom:1px solid var(--edge);vertical-align:middle}
+tbody tr:last-child td{border-bottom:0}
+tbody tr:hover td{background:rgba(255,255,255,.025)}
+td.code{font-family:var(--fm);color:var(--acier);white-space:nowrap}
+td.nom{font-weight:600}
+td.heure{font:600 19px/1 var(--fm);color:var(--jaune);white-space:nowrap}
+td.heure small{font-size:12px;color:var(--acier);font-weight:400;margin-right:6px}
+td.n{text-align:right;font-family:var(--fm);color:var(--acier)}
+.vide{color:var(--acier-2);font-style:italic;font-weight:400}
+
+footer{margin-top:28px;color:var(--acier-2);font-size:12.5px}
+
+@media (max-width:560px){
+  .wrap{padding-top:20px}
+  .actions .lien{margin-left:0}
+  .btn-go{flex:1 1 100%}
+  select{min-width:0;width:100%}
+  .champ{flex:1 1 100%}
+  .res-tete .btn{margin-left:0}
+  td,th button{padding-left:10px;padding-right:10px}
+  td.heure{font-size:17px}
+}
+</style>
+</head>
+<body>
+<div class="danger" aria-hidden="true"></div>
+<main class="wrap">
+  <p class="sur">Expéditions · LISTCONT</p>
+  <h1>Dernier EDIX par opérateur</h1>
+  <p class="sous">L'heure à laquelle chaque opérateur a fini, d'après la liste des traces sur contenant.</p>
+
+  <section class="bloc" aria-labelledby="t-coller">
+    <h2 id="t-coller" class="sr">Coller la liste des traces</h2>
+    <ol class="etapes">
+      <li><span>Dans <b>LISTCONT</b> : <b>Date Maj</b> = la journée, <b>Opé Maj</b> vide pour avoir tous les opérateurs, puis lancer la liste. Mettre <b>Etat = EDIX</b> allège la liste, mais ce n'est pas obligatoire.</span></li>
+      <li><span>Cliquer dans la liste, puis <kbd>Ctrl</kbd> + <kbd>A</kbd> et <kbd>Ctrl</kbd> + <kbd>C</kbd>. Autre solution : exporter vers Excel et tout copier.</span></li>
+      <li><span>Coller ci-dessous avec <kbd>Ctrl</kbd> + <kbd>V</kbd>. On peut aussi glisser un fichier .csv ou .txt.</span></li>
+    </ol>
+    <label for="zone" class="sr">Liste des traces sur contenant</label>
+    <textarea id="zone" spellcheck="false" autocomplete="off"
+      placeholder="Coller ici la liste des traces (Ctrl + V)…"></textarea>
+    <div class="actions">
+      <button id="lancer" class="btn-go" type="button">Lancer la recherche</button>
+      <button id="effacer" class="btn" type="button">Effacer</button>
+      <button id="exemple" class="lien" type="button">Essayer avec un exemple</button>
+    </div>
+  </section>
+
+  <p id="message" class="message hidden" role="status" aria-live="polite"></p>
+
+  <section id="resultat" class="hidden" aria-labelledby="t-res">
+    <h2 id="t-res" class="sr">Résultat</h2>
+    <div class="res-tete">
+      <div class="champ">
+        <label for="jour">Journée</label>
+        <select id="jour"></select>
+      </div>
+      <p id="resume" class="resume"></p>
+      <button id="copier" class="btn" type="button">Copier pour Excel / Outlook</button>
+    </div>
+    <div class="table-cadre">
+      <table>
+        <caption class="sr">Dernier EDIX de chaque opérateur</caption>
+        <thead>
+          <tr>
+            <th data-cle="ope"><button type="button">Opé</button></th>
+            <th data-cle="nom"><button type="button">Nom</button></th>
+            <th data-cle="last"><button type="button">Dernier EDIX</button></th>
+            <th data-cle="nb" class="n"><button type="button">Nb EDIX</button></th>
+          </tr>
+        </thead>
+        <tbody id="lignes"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <footer>Tout se fait sur ce poste. Les données collées ne sont ni envoyées ni enregistrées.</footer>
+</main>
+
+<script>
+(() => {
+'use strict';
+
+const $ = id => document.getElementById(id);
+const zone = $('zone'), msg = $('message'), res = $('resultat');
+const selJour = $('jour'), resume = $('resume'), corps = $('lignes'), btnCopier = $('copier');
+
+/* ── état ── */
+let recs = [];                         // traces EDIX lues : {dt, ope, nom}
+let groupes = [];                      // résultat pour la journée choisie
+let tri = { cle: 'last', sens: 1 };    // par défaut : ordre de fin, du premier au dernier
+
+/* ── outils texte / dates ── */
+const norm = s => String(s == null ? '' : s).normalize('NFD').replace(/[̀-ͯ]/g, '')
+  .toLowerCase().replace(/[^a-z0-9]/g, '');
+const RE_DATE  = /(\d{1,2})[\/.\-](\d{1,2})[\/.\-](\d{2,4})/;
+const RE_ISO   = /(\d{4})-(\d{2})-(\d{2})/;
+const RE_HEURE = /(\d{1,2}):(\d{2})(?::(\d{2}))?/;
+const RE_LIGNE = /(\d{1,2}[\/.\-]\d{1,2}[\/.\-]\d{2,4}|\d{4}-\d{2}-\d{2})[ T]+(\d{1,2}:\d{2}(?::\d{2})?)\s+(\S+)(?:\s+(.+?))?\s*$/;
+const aDate = s => RE_DATE.test(s) || RE_ISO.test(s);
+const p2 = n => String(n).padStart(2, '0');
+const cleJour = d => d.getFullYear() + '-' + p2(d.getMonth() + 1) + '-' + p2(d.getDate());
+const hm = d => p2(d.getHours()) + ':' + p2(d.getMinutes());
+const jjmm = d => p2(d.getDate()) + '/' + p2(d.getMonth() + 1);
+const complet = d => jjmm(d) + '/' + d.getFullYear() + ' ' + hm(d);
+
+/* « 17/11/26 22:26 », « 17/11/2026 22:26:05 », « 2026-11-17 22:26 » → Date (null si pas d'heure) */
+function lireDateHeure(s) {
+  s = String(s || '');
+  let a, m, j, t;
+  if ((t = s.match(RE_ISO))) { a = +t[1]; m = +t[2]; j = +t[3]; }
+  else if ((t = s.match(RE_DATE))) { j = +t[1]; m = +t[2]; a = +t[3]; if (a < 100) a += 2000; }
+  else return null;
+  const h = s.replace(t[0], ' ').match(RE_HEURE);
+  if (!h) return null;
+  if (m < 1 || m > 12 || j < 1 || j > 31 || +h[1] > 23 || +h[2] > 59) return null;
+  return new Date(a, m - 1, j, +h[1], +h[2], +(h[3] || 0));
+}
+
+/* ── découpage des lignes ── */
+function detecterSeparateur(lignes) {
+  const ech = lignes.slice(0, 60);
+  const txt = ech.join('\n');
+  if (txt.includes('\t')) return '\t';
+  if ((txt.match(/;/g) || []).length >= ech.length) return ';';
+  if ((txt.match(/,/g) || []).length >= ech.length * 3) return ',';
+  return null;                                         // colonnes alignées par des espaces
+}
+function decouper(ligne, sep) {
+  if (sep === '\t') return ligne.split('\t').map(c => c.trim());
+  if (!sep) return ligne.trim().split(/\s{2,}/);
+  const out = []; let cel = '', guill = false;         // CSV avec guillemets éventuels
+  for (let i = 0; i < ligne.length; i++) {
+    const c = ligne[i];
+    if (c === '"') { if (guill && ligne[i + 1] === '"') { cel += '"'; i++; } else guill = !guill; }
+    else if (c === sep && !guill) { out.push(cel.trim()); cel = ''; }
+    else cel += c;
+  }
+  out.push(cel.trim());
+  return out;
+}
+
+/* Ligne d'en-tête (export Excel / CSV) : repère les colonnes par leur nom */
+function trouverEntete(rows) {
+  for (let i = 0; i < Math.min(rows.length, 15); i++) {
+    const n = rows[i].map(norm);
+    const idx = f => n.findIndex(f);
+    let iEtat = idx(x => x === 'etat');
+    if (iEtat < 0) iEtat = idx(x => x.startsWith('etat') && !x.includes('stock'));
+    let iDate = idx(x => x === 'datemaj');
+    if (iDate < 0) iDate = idx(x => x.startsWith('date'));
+    if (iEtat < 0 || iDate < 0) continue;
+    let iOpe = idx(x => x === 'opemaj' || x === 'operateur' || x === 'codeoperateur' || x === 'ope');
+    if (iOpe < 0) iOpe = idx(x => x.startsWith('ope') && !x.includes('nom'));
+    let iNom = idx(x => x === 'nomopemaj' || x.startsWith('nomope'));
+    if (iNom < 0) iNom = idx(x => x.includes('nom'));
+    return { ligne: i, iEtat, iDate, iHeure: idx(x => x.startsWith('heure')), iOpe, iNom };
+  }
+  return null;
+}
+
+/* Avec en-tête : null = pas un EDIX ; {dt:null} = EDIX à date illisible */
+function lireAvecEntete(c, h) {
+  if (norm(c[h.iEtat]) !== 'edix') return null;
+  const txt = (c[h.iDate] || '') + ' ' + (h.iHeure >= 0 ? (c[h.iHeure] || '') : '');
+  return { dt: lireDateHeure(txt), ope: h.iOpe >= 0 ? c[h.iOpe] : '', nom: h.iNom >= 0 ? c[h.iNom] : '' };
+}
+
+/* Sans en-tête (copie directe de la grille) : Etat = EDIX, puis Date Maj, Opé Maj, Nom Opé Maj */
+function lireSansEntete(c, brut) {
+  if (!/\bEDIX\b/i.test(brut)) return null;
+  if (c.some(x => norm(x) === 'edix')) {
+    for (let j = 0; j < c.length; j++) {
+      if (!aDate(c[j])) continue;
+      let txt = c[j], k = j + 1;
+      if (!RE_HEURE.test(txt) && c[k] && RE_HEURE.test(c[k]) && !aDate(c[k])) { txt += ' ' + c[k]; k++; }
+      const dt = lireDateHeure(txt);
+      if (!dt) continue;
+      const reste = c.slice(k).filter(x => x !== '' && x !== '-');
+      let ope = '', nom = '';
+      if (reste.length >= 2 && !/\s/.test(reste[0])) { ope = reste[0]; nom = reste[1]; }
+      else if (reste.length === 1) { if (/\s/.test(reste[0]) || !/\d/.test(reste[0])) nom = reste[0]; else ope = reste[0]; }
+      return { dt, ope, nom };
+    }
+  }
+  const m = brut.match(RE_LIGNE);                      // dernier recours : texte brut
+  if (!m) return { dt: null };
+  return { dt: lireDateHeure(m[1] + ' ' + m[2]), ope: m[3], nom: m[4] || '' };
+}
+
+function analyser(texte) {
+  const vues = new Set();
+  let doublons = 0;
+  const lignes = texte.split(/\r?\n/).filter(l => {
+    const t = l.trim();
+    if (!t) return false;
+    if (vues.has(t)) { doublons++; return false; }   // même ligne collée deux fois
+    vues.add(t); return true;
+  });
+  const sep = detecterSeparateur(lignes);
+  const rows = lignes.map(l => decouper(l, sep));
+  const h = trouverEntete(rows);
+  const out = []; let illisibles = 0;
+  rows.forEach((c, i) => {
+    if (h && i <= h.ligne) return;
+    const r = h ? lireAvecEntete(c, h) : lireSansEntete(c, lignes[i]);
+    if (!r) return;
+    if (!r.dt) { illisibles++; return; }
+    out.push({ dt: r.dt, ope: String(r.ope || '').trim(), nom: String(r.nom || '').trim().replace(/\s+/g, ' ') });
+  });
+  return { recs: out, illisibles, doublons, nbLignes: lignes.length };
+}
+
+/* ── regroupement par opérateur ── */
+function regrouper(jour) {
+  const m = new Map();
+  for (const r of recs) {
+    if (jour !== '*' && cleJour(r.dt) !== jour) continue;
+    const k = r.ope ? 'c' + r.ope.toUpperCase() : 'n' + norm(r.nom);
+    let g = m.get(k);
+    if (!g) { g = { ope: r.ope, nom: r.nom, last: r.dt, nb: 0 }; m.set(k, g); }
+    g.nb++;
+    if (r.dt >= g.last) { g.last = r.dt; if (r.nom) g.nom = r.nom; }
+    if (!g.nom && r.nom) g.nom = r.nom;
+  }
+  return [...m.values()];
+}
+
+const comparer = {
+  ope:  (a, b) => a.ope.localeCompare(b.ope, 'fr', { numeric: true }),
+  nom:  (a, b) => a.nom.localeCompare(b.nom, 'fr', { sensitivity: 'base' }),
+  last: (a, b) => a.last - b.last,
+  nb:   (a, b) => a.nb - b.nb
+};
+const tries = () => [...groupes].sort((a, b) => tri.sens * comparer[tri.cle](a, b) || comparer.last(a, b));
+
+/* ── affichage ── */
+function afficherMessage(texte, erreur) {
+  msg.textContent = texte;
+  msg.classList.toggle('erreur', !!erreur);
+  msg.classList.toggle('hidden', !texte);
+}
+
+function remplirJours() {
+  const parJour = new Map();
+  for (const r of recs) { const k = cleJour(r.dt); parJour.set(k, (parJour.get(k) || 0) + 1); }
+  const jours = [...parJour.keys()].sort().reverse();
+  selJour.innerHTML = '';
+  for (const k of jours) {
+    const [a, m, j] = k.split('-').map(Number);
+    const d = new Date(a, m - 1, j);
+    const lib = d.toLocaleDateString('fr-FR', { weekday: 'long', day: '2-digit', month: '2-digit', year: 'numeric' });
+    selJour.add(new Option(lib.charAt(0).toUpperCase() + lib.slice(1) + '  (' + parJour.get(k) + ' EDIX)', k));
+  }
+  if (jours.length > 1) selJour.add(new Option('Tous les jours collés', '*'));
+  selJour.value = jours[0];                             // la journée la plus récente
+  selJour.disabled = jours.length === 1;
+  return jours.length;
+}
+
+function afficherTableau() {
+  const jour = selJour.value;
+  groupes = regrouper(jour);
+  const avecDate = jour === '*';
+  corps.innerHTML = '';
+  for (const g of tries()) {
+    const tr = document.createElement('tr');
+    const td = (cls, contenu) => { const c = document.createElement('td'); c.className = cls; c.append(contenu); tr.append(c); return c; };
+    td('code', g.ope || '—');
+    const n = td('nom', g.nom || 'Nom non renseigné');
+    if (!g.nom) n.classList.add('vide');
+    const h = td('heure', hm(g.last));
+    if (avecDate) { const s = document.createElement('small'); s.textContent = jjmm(g.last); h.prepend(s); }
+    h.title = complet(g.last);
+    td('n', String(g.nb));
+    corps.append(tr);
+  }
+  const total = groupes.reduce((s, g) => s + g.nb, 0);
+  const nbOp = groupes.length;
+  resume.innerHTML = '';
+  const b = t => { const e = document.createElement('b'); e.textContent = t; return e; };
+  resume.append(b(nbOp), nbOp > 1 ? ' opérateurs · ' : ' opérateur · ', b(total), ' EDIX');
+  document.querySelectorAll('th[data-cle]').forEach(th => {
+    if (th.dataset.cle === tri.cle) th.setAttribute('aria-sort', tri.sens > 0 ? 'ascending' : 'descending');
+    else th.removeAttribute('aria-sort');
+  });
+}
+
+function lancer() {
+  const texte = zone.value;
+  if (!texte.trim()) {
+    res.classList.add('hidden');
+    afficherMessage('Rien à analyser : colle d\'abord la liste des traces (Ctrl + V).', true);
+    zone.focus();
+    return;
+  }
+  const a = analyser(texte);
+  recs = a.recs;
+  if (!recs.length) {
+    res.classList.add('hidden');
+    afficherMessage('Aucune ligne EDIX trouvée dans les ' + a.nbLignes + ' lignes collées. Vérifie que la colonne Etat est copiée (valeur EDIX) et que la date contient l\'heure (ex. 17/11/26 22:26).', true);
+    return;
+  }
+  const nbJours = remplirJours();
+  afficherTableau();
+  res.classList.remove('hidden');
+  const notes = [];
+  if (nbJours > 1) notes.push('La liste couvre ' + nbJours + ' jours : la journée la plus récente est affichée, change-la au besoin.');
+  if (a.illisibles) notes.push(a.illisibles + (a.illisibles > 1 ? ' lignes EDIX ignorées' : ' ligne EDIX ignorée') + ' (date ou heure illisible).');
+  if (a.doublons) notes.push(a.doublons + (a.doublons > 1 ? ' lignes en double ignorées.' : ' ligne en double ignorée.'));
+  afficherMessage(notes.join(' '), false);
+}
+
+/* ── copie : tableau HTML (Excel, Outlook) + texte tabulé ── */
+async function copier() {
+  const avecDate = selJour.value === '*';
+  const lignes = tries().map(g => [g.ope, g.nom, avecDate ? complet(g.last) : hm(g.last), String(g.nb)]);
+  const tete = ['Opé', 'Nom', 'Dernier EDIX', 'Nb EDIX'];
+  const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const titre = avecDate ? 'Dernier EDIX par opérateur' : 'Dernier EDIX par opérateur — ' + selJour.options[selJour.selectedIndex].text.replace(/\s+\(.*\)$/, '');
+  const html = '<p><b>' + esc(titre) + '</b></p><table border="1" cellpadding="4" style="border-collapse:collapse;font-family:Calibri,Arial,sans-serif;font-size:11pt">'
+    + '<tr>' + tete.map(t => '<th style="background:#FFD400;text-align:left">' + esc(t) + '</th>').join('') + '</tr>'
+    + lignes.map(l => '<tr>' + l.map(v => '<td>' + esc(v) + '</td>').join('') + '</tr>').join('') + '</table>';
+  const tsv = [tete, ...lignes].map(l => l.join('\t')).join('\r\n');
+  let ok = false;
+  try {
+    if (window.ClipboardItem && navigator.clipboard && navigator.clipboard.write) {
+      await navigator.clipboard.write([new ClipboardItem({
+        'text/html': new Blob([html], { type: 'text/html' }),
+        'text/plain': new Blob([tsv], { type: 'text/plain' })
+      })]);
+      ok = true;
+    }
+  } catch (e) { ok = false; }
+  if (!ok) {                                            // repli : sélection d'un tableau caché
+    const div = document.createElement('div');
+    div.style.cssText = 'position:fixed;left:-9999px;top:0';
+    div.innerHTML = html;
+    document.body.append(div);
+    const r = document.createRange(); r.selectNodeContents(div);
+    const s = window.getSelection(); s.removeAllRanges(); s.addRange(r);
+    try { ok = document.execCommand('copy'); } catch (e) { ok = false; }
+    s.removeAllRanges(); div.remove();
+  }
+  btnCopier.textContent = ok ? 'Copié ✓ — Ctrl + V dans Excel ou Outlook' : 'Copie impossible sur ce poste';
+  setTimeout(() => { btnCopier.textContent = 'Copier pour Excel / Outlook'; }, 2600);
+}
+
+/* ── exemple fictif (format d'une copie directe de la grille) ── */
+function exemple() {
+  const ops = [
+    ['108', 'Marc DURAND',   ['21:02', '21:18', '21:47']],
+    ['121', 'Sofia BENALI',  ['21:40', '22:05', '22:26', '22:31']],
+    ['134', 'Kevin MULLER',  ['20:55', '21:12']],
+    ['142', 'Laura PETIT',   ['21:30', '21:58', '22:14']],
+    ['157', 'Nicolas FABER', ['21:20', '21:51', '22:08', '22:19']]
+  ];
+  const l = [];
+  let cle = 902489543200;
+  for (const [code, nom, heures] of ops) {
+    for (const h of heures) {
+      cle += 37;
+      const [hh, mm] = h.split(':').map(Number);
+      const avant = p2(hh) + ':' + p2(Math.max(0, mm - 6));
+      l.push([cle, 'CONTENANT', '', 'PREPARE', '-', '54AQU', '', '17/11/26 ' + avant, code, nom].join('\t'));
+      l.push([cle, 'CONTENANT', '', 'CHGT TRANS', '-', '54AQU', '', '17/11/26 ' + avant, code, nom].join('\t'));
+      l.push([cle, 'CONTENANT', '', 'EDIX', '-', '', '', '17/11/26 ' + h, code, nom].join('\t'));
+    }
+  }
+  zone.value = l.join('\n');
+  lancer();
+}
+
+/* ── fichier glissé (.csv / .txt) ── */
+function lireFichier(f) {
+  if (/\.(xlsx?|xlsm)$/i.test(f.name)) {
+    afficherMessage('Fichier Excel : ouvre-le, fais Ctrl + A puis Ctrl + C, et colle ici.', true);
+    return;
+  }
+  const lire = enc => new Promise((ok, ko) => {
+    const fr = new FileReader();
+    fr.onload = () => ok(fr.result); fr.onerror = ko;
+    fr.readAsText(f, enc);
+  });
+  lire('utf-8')
+    .then(t => t.includes('�') ? lire('windows-1252') : t)   // exports Windows en ANSI
+    .then(t => { zone.value = t; lancer(); })
+    .catch(() => afficherMessage('Impossible de lire ce fichier.', true));
+}
+
+/* ── événements ── */
+$('lancer').addEventListener('click', lancer);
+$('effacer').addEventListener('click', () => {
+  zone.value = ''; recs = []; groupes = [];
+  res.classList.add('hidden'); afficherMessage(''); zone.focus();
+});
+$('exemple').addEventListener('click', exemple);
+btnCopier.addEventListener('click', copier);
+selJour.addEventListener('change', afficherTableau);
+document.querySelectorAll('th[data-cle] button').forEach(b => b.addEventListener('click', () => {
+  const cle = b.parentElement.dataset.cle;
+  tri = tri.cle === cle ? { cle, sens: -tri.sens } : { cle, sens: 1 };
+  afficherTableau();
+}));
+zone.addEventListener('keydown', e => { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); lancer(); } });
+zone.addEventListener('paste', () => setTimeout(lancer, 0));
+zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('survol'); });
+zone.addEventListener('dragleave', () => zone.classList.remove('survol'));
+zone.addEventListener('drop', e => {
+  zone.classList.remove('survol');
+  const f = e.dataTransfer && e.dataTransfer.files[0];
+  if (f) { e.preventDefault(); lireFichier(f); }
+});
+})();
+</script>
+</body>
+</html>
