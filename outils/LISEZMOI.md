@@ -39,3 +39,27 @@ Réglages (seuils, poids, URL du site) en tête de `bilan_mensuel.py`.
 **Aucun classement n'est affiché** (ni sur les pages, ni sur les cartes, ni dans la synthèse) : chacun se compare à la moyenne de l'équipe via sa carte joueur et son hexagone. OVR = 45 + 2,5 × note /20 (10/20 = 70) · bronze < 65 · argent 65-77 · or 78-84 · icône ≥ 85.
 
 **Pages perso** : `NNN_nom.html` (une par opérateur, données intégrées) — le QR du recto pointe vers `https://legros123.github.io/Suivi-P-P-/<Mois>/NNN_nom.html`. Fonctionne sur tous les téléphones et lecteurs QR. Pour un nouveau mois : copier le dossier `bilan/<Mois>/` produit par le script à la racine de Suivi-P-P-. Seuil carte : 15 h de picking réel (heures − hors pick).
+
+---
+
+# Dernier EDIX par opérateur (expéditions)
+
+Heure du dernier EDIX de chaque opérateur, pour savoir à quelle heure chacun a fini.
+
+| Outil | Source des données | Usage |
+|---|---|---|
+| `edix.html` (racine du site) | Liste LISTCONT copiée-collée | Coller, puis « Lancer la recherche ». Rien à installer. |
+| `Dernier_EDIX.xlsx` | Base Oracle du WMS, en direct (ODBC, Power Query, sans macro) | S'actualise à l'ouverture. Mise en route expliquée dans l'onglet « Mode d'emploi ». |
+
+Générer le classeur (requête : `outils/dernier_edix.m`) :
+
+```bash
+npm install --no-save @microsoft/connected-workbooks
+node outils/dernier_edix_excel.js --sortie Dernier_EDIX.xlsx
+# une fois la connexion et la table connues, le classeur peut sortir déjà rempli :
+node outils/dernier_edix_excel.js --sortie Dernier_EDIX.xlsx --connexion NOM_DSN \
+     --table SCHEMA.TABLE --etat COL --date COL --ope COL [--nom COL] [--col-table COL]
+```
+
+Sans réglage, la requête liste les tables candidates (traces / historiques) pour repérer la bonne.
+Lecture seule : uniquement des `SELECT`. Le classeur n'est pas versionné (`*.xlsx`).
